@@ -1,8 +1,8 @@
 /* -*- Mode: C; c-file-style: "bsd" -*- */
 
-/*  "hash cash" mint and verification 
+/*  hashcash mint and verification 
  * 
- *  hash cash is payment in burnt CPU cycles by calculating n-bit
+ *  hashcash is payment in burnt CPU cycles by calculating n-bit
  *  partial hash collisions
  *
  *  see:         http://www.hashcash.org/
@@ -51,7 +51,6 @@
 				/* were not checked */
 #define EXIT_ERROR 3
 
-#define MAX_DATE 50		/* Sun Mar 10 19:25:06 2002 (EST) */
 #define MAX_PERIOD 11		/* max time_t = 10 plus 's' */
 #define MAX_HDR 256
 #define MAX_LINE 1024
@@ -88,6 +87,10 @@ int do_purge( DB* db, time_t expires_before, time_t now, int all,
 
 int main( int argc, char* argv[] )
 {
+    long validity_period = 28*TIME_DAY; /* default validity period: 28 days */
+    long grace_period = 2*TIME_DAY; /* default grace period: 2 days */
+
+    char period[ MAX_PERIOD+1 ];
     const char* db_filename = "hashcash.db";
     int db_exists = 0;
     int boundary;
@@ -126,8 +129,6 @@ int main( int argc, char* argv[] )
     char line[ MAX_LINE+1 ];
     char token_resource[ MAX_RES+1 ];
     char resource[ MAX_RES+1 ];
-    char* zone = "UTC";
-    char date[ MAX_DATE+1 ];
 
     long purge_period = 0;
     char purge_utime[ MAX_UTC+1 ];	/* time token created */
@@ -137,14 +138,13 @@ int main( int argc, char* argv[] )
     time_t last_time;
     long valid_for = 0;
 
-    long validity_period = 0;	/* default validity period: forever */
-    char period[ MAX_PERIOD+1 ];
 
     char token_utime[ MAX_UTC+1 ];	/* time token created */
     time_t token_time;
     time_t local_time;
-    time_t real_time = utctime(0); /* now, in UTCTIME */
+    time_t real_time = time(0); /* now, in UTCTIME */
     time_t now_time = real_time;
+    int time_width_flag = 0;	/* -z option, default 6 YYMMDD */
     int time_width = 6;		/* default YYMMDD */
     long time_period;
 
@@ -172,7 +172,7 @@ int main( int argc, char* argv[] )
     opterr = 0;
 
     while ( ( opt = getopt( argc, argv, 
-			    "a:b:cde:f:hij:klmnp:qr:st:uvwx:yVX" ) ) > 0 )
+			    "a:b:cde:f:g:hij:klmnp:qr:st:uvwx:yz:VX" ) ) > 0 )
     {
 	switch ( opt )
 	{
@@ -198,6 +198,16 @@ int main( int argc, char* argv[] )
 	    }
 	    break;
 	case 'f': db_filename = strdup( optarg ); break;
+	case 'g': 
+	    if ( optarg[0] == '-' ) 
+	    {
+		usage( "error: -g -ve grace period not valid\n\n" );
+	    }
+	    if ( !parse_period( optarg, &grace_period ) )
+	    {
+		usage( "error: -g invalid grace period format\n\n" );
+	    }
+	    break;
 	case 'h': usage( "" ); break;
 	case 'i': ignore_boundary_flag = 1; break;
 	case 'j': 
@@ -234,12 +244,11 @@ int main( int argc, char* argv[] )
 	    }
 	    else 
 	    {
-		now_time = from_utctimestr( optarg );
+		now_time = from_utctimestr( optarg, utc_flag );
 		if ( now_time == (time_t)-1 ) 
 		{ 
 		    usage( "error: -t invalid time format\n\n" ); 
 		}
-		if ( !utc_flag ) { now_time = local_to_utctime( now_time ); }
 	    }
 	    break;
 	case 'u': utc_flag = 1; break;
@@ -255,6 +264,14 @@ int main( int argc, char* argv[] )
 	    sstrncpy( header, "X-Hashcash: ", MAX_HDR );
 	    break;
 	case 'y': yes_flag = 1; break;
+	case 'z': 
+	    time_width_flag = 1; 
+	    time_width = atoi( optarg );
+	    if ( time_width <= 0 || time_width % 2 || time_width > 12)
+	    {
+	        usage( "error: -z invalid time width: must be 2,4,6,8,10 or 12\n\n" );
+	    }
+	    break;
 	case '?': 
 	    fprintf( stderr, "error: unrecognized option -%c\n\n", optopt );
 	    usage( "" );
@@ -318,7 +335,7 @@ int main( int argc, char* argv[] )
 	    goto dbleave;	/* should always be there */
 	}
 
-	last_time = from_utctimestr( purge_utime );
+	last_time = from_utctimestr( purge_utime, 1 );
 	if ( last_time < 0 ) /* not first time, but corrupted */
 	{ 
 	    purge_period = 0; /* purge now */
@@ -511,13 +528,16 @@ int main( int argc, char* argv[] )
 	}
 
 	timer_start();
-	time_width = validity_to_width( validity_period );
-	switch ( time_width )
+	if ( validity_flag && !time_width_flag )
 	{
-	case HASHCASH_INVALID_VALIDITY_PERIOD:
-	    die_msg( "error: negative validity period\n" );
+	    time_width = validity_to_width( validity_period );
+	    switch ( time_width )
+	    {
+	    case HASHCASH_INVALID_VALIDITY_PERIOD:
+		die_msg( "error: negative validity period\n" );
+	    }
+	    if ( time_width < 0 ) { die_msg( "error: unknown failure\n" ); }
 	}
-	if ( time_width < 0 ) { die_msg( "error: unknown failure\n" ); }
 	err = hashcash_mint( now_time, time_width, resource, bits, 
 			     validity_period, anon_period, 
 			     token, MAX_TOK, &anon_random, &tries_taken );
@@ -536,6 +556,7 @@ int main( int argc, char* argv[] )
 	case HASHCASH_INVALID_VALIDITY_PERIOD:
 	    die_msg( "error: negative validity period\n" );
 	case HASHCASH_INVALID_TIME_WIDTH:
+	    die_msg( "error: invalid time width\n" );
 	case HASHCASH_NULL_ARG:
 	    die_msg( "error: internal error\n" );
 	case HASHCASH_OK:
@@ -641,27 +662,20 @@ int main( int argc, char* argv[] )
 	    }
 	} 
 	
-	if ( utc_flag ) { local_time = now_time; zone = "UTC"; }
-	else { local_time = utctime_to_local( now_time ); zone = tzname[0]; }
-	sstrncpy( date, ctime( &local_time ), MAX_DATE );
-	date[strlen(date)-1] = '\0'; /* remove trailing \n */
-	VPRINTF( stderr, "current time: %s (%s)\n", date, zone );
+	VPRINTF( stderr, "current time: %s\n", strtime(&now_time, utc_flag) );
 
-	token_time = from_utctimestr( token_utime );
+	token_time = from_utctimestr( token_utime, 1 );
 	if ( token_time == -1 ) 
 	{ 
 	    QPUTS( stderr, "rejected: malformed token\n" );
 	    valid_for = HASHCASH_INVALID;
 	    goto leave;
 	}
-	if ( utc_flag ) { local_time = token_time; zone = "UTC"; }
-	else { local_time = utctime_to_local( token_time ); zone = tzname[0]; }
-	sstrncpy( date, ctime( &local_time ), MAX_DATE );
-	date[strlen(date)-1] = '\0'; /* remove trailing \n */
-	VPRINTF( stderr, "token created: %s (%s)\n", date, zone );
+
+	VPRINTF( stderr, "token created: %s\n",strtime(&token_time,utc_flag) );
 
 	valid_for = hashcash_valid_for( token_time, validity_period, 
-					now_time );
+					grace_period, now_time );
 	switch( valid_for )
 	{
 	case HASHCASH_VALID_IN_FUTURE:
@@ -863,6 +877,7 @@ void usage( const char* msg )
     fprintf( stderr, "\t-d\t\tuse database (for double spending detection)\n" );
     fprintf( stderr, "\t-r resource\tresource name for minting or checking token\n" );
     fprintf( stderr, "\t-e period\ttime until token expires\n" );
+    fprintf( stderr, "\t-g\t\tgrace period for clock skew\n" );
     fprintf( stderr, "\t-t time\t\tmodify current time token created at\n" );
     fprintf( stderr, "\t-a time\t\tmodify time by random amount in range given\n" );
     fprintf( stderr, "\t-u\t\tgive time in UTC instead of local time\n" );
@@ -876,6 +891,7 @@ void usage( const char* msg )
     fprintf( stderr, "\t-X\t\tshorthand for -x 'X-Hashcash: '\n" );
     fprintf( stderr, "\t-i\t\twith -x/-X and -c, check msg body as well\n" );
     fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
+    fprintf( stderr, "\t-z width\twidth of time field 2,4,6,8,10 or 12 chars (default 6)\n" );
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -b20 foo                               # mint 20 bit collision\n" );
     fprintf( stderr, "\thashcash -cdb20 -r foo 0:020814:foo:55f4316f29cd98f2  # check collision\n" );
@@ -942,7 +958,7 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     }
     expiry_period = atoi( val );
     if ( expiry_period < 0 ) { *err = EINPUT; return 0; } /* corrupted */
-    created = from_utctimestr( token_utime );
+    created = from_utctimestr( token_utime, 1 );
     if ( created < 0 ) { *err = EINPUT; return 0; } /* corrupted */
     expires = created + expiry_period;
     if ( expires <= arg->expires_before ) { return 0; }	/* delete if expired */

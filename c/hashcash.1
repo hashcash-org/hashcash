@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2003-06-28" "0.26" "hashcash"
+.TH HASHCASH 1 "2003-09-20" "0.28" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
@@ -254,12 +254,13 @@ also the \fI\-y\fR flag.)
 If the \fI\-d\fR flag is used with the \fI\-c\fR flag a database of spent
 tokens is kept.  
 .PP
-By default tokens do not expire, and over time the database will grow
-indefinately.  To prevent this, you can specify an expiry period with
-the \fI\-e\fR flag.  A recommended expiry period is 28 days.  After the
-expiry period amount of time, the token is anyway considered expired
-and may be purged from the database to save space.  (See 
-\&\*(L"Purging Periodically vs on Next Access\*(R" for how to purge tokens.)
+By default tokens expire after 28 days, without expiry the database
+would grow indefinately.  You can specify an alternate expiry period
+with the \fI\-e\fR flag.  The recommended (and default) expiry period for
+email is 28 days.  After the expiry period amount of time, the token
+is anyway considered expired and may be purged from the database to
+save space.  (See \*(L"Purging Periodically vs on Next Access\*(R" for how to
+purge tokens.)
 .PP
 For efficiency reasons a token is verified before it is checked in the
 database; if it is otherwise invalid no database activity will occur.
@@ -339,18 +340,22 @@ tokens for other resources would be accepted, and therefore hashcash
 returns exit code unchecked (exit code 2) on exit.
 .IP "\fI\-e time\fR" 4
 .IX Item "-e time"
-Expiry period for spent tokens.  While checking tokens (using the
-\&\fI\-c\fR flag), if the token was minted more than the specified amount of
-time ago, it is considered expired.  If this option is not used, by
-default tokens do not expire (they have an expiry period of forever).
-The expiry period is given in seconds by default (an argument of 0
-means forever).  A single character suffix can be used to specify
-alternate units (m = minutes, h = hours, d = days, M = months, y = Y =
-years, and s = seconds).
+Expiry period for spent tokens.  While checking tokens (using the \fI\-c\fR
+flag), if the token was minted more than the specified amount of time ago,
+it is considered expired.  If this option is not used, by default tokens
+expire after 28 days.  The expiry period is given in seconds by default (an
+argument of 0 means forever).  A single character suffix can be used to
+specify alternate units (m = minutes, h = hours, d = days, M = months, y = Y
+= years, and s = seconds).
 .Sp
 If used with the \fI\-d\fR option, the spent token and it's expiry period
 is recorded in the database.  See the \fI\-p\fR option for description of
 how to purge tokens from the database.
+.Sp
+The following \fI\-e\fR usage to give an implicit time resolution while minting
+is deprecated, use explicit \fI\-z\fR option instead.  (\fI\-z\fR overrides \fI\-e\fR if
+both are given.  \fI\-e\fR still works for backwards compatibility.  If neither
+are given the default is 6 chars (time format: \s-1YYMMDD\s0)).
 .Sp
 While minting tokens, the \fI\-e\fR flag can have an effect on the
 resolution of time created in the token.  Without the \fI\-e\fR option,
@@ -379,15 +384,38 @@ lead to initially suprising results when rounding down to eg days in
 time zones other than \s-1GMT\s0 (\s-1UTC\s0 = \s-1GMT\s0).  It may be clearer to
 understand if you use the \fI\-u\fR option.
 .RE
+.IP "\fI\-z width\fR" 4
+.IX Item "-z width"
+The \fI\-z\fR option is for use during minting and deprecates the \fI\-e\fR option
+given in combination with \fI\-m\fR to specify an implicit time field width. 
+Valid widths are 2,4,6,8,10 or 12 chars corresponding respectively to: \s-1YY\s0,
+\&\s-1YYMM\s0, \s-1YYMMDD\s0, YYMMDDhh, YYMMDDhhmm, and YYMMDDhhmmss rounded down to the
+nearest year, month, day, hour, minute respectively.
+.Sp
+Note the rounding down is based on \s-1UTC\s0 time, not local time.  This can
+lead to initially suprising results when rounding down to eg days in
+time zones other than \s-1GMT\s0 (\s-1UTC\s0 = \s-1GMT\s0).  It may be clearer to
+understand if you use the \fI\-u\fR option.
+.IP "\fI\-g period\fR" 4
+.IX Item "-g period"
+The \fI\-g\fR option is for use when checking hashcash stamps with the
+\&\fI\-c\fR option and specifies a grace period for clock skew, ie if a
+hashcash stamp arrives with a date in the future or in the past it
+will not be rejected as having a futuristic date (or as being expired)
+unless it is more futuristic (or has been expired for longer) than
+this period.  The default is 2 days, which means as long as the
+sending system's clock is no more than 2 days ahead (or 2 days behind)
+of the receiving system's clock, the hashcash stamp will still be
+accepted.
+.Sp
+The default units for grace period are seconds.  A single character
+suffix can be used to specify alternate units (m = minutes, h = hours,
+d = days, M = months, y = Y = years, and s = seconds).
 .IP "\fI\-d\fR" 4
 .IX Item "-d"
 Store tokens in a double spend database.  If token has been seen
 before it will be rejected even if it is otherwise valid.  The default
 database file is \fIdatabase.db\fR in the current directory.
-.Sp
-It is recommended that you use the \fI\-e\fR option with the database
-option, to prevent the database growing indefinately over time.  A
-suggested value is \fI\-e 28d\fR, 28 days.
 .IP "\fI\-f dbname\fR" 4
 .IX Item "-f dbname"
 Use \fIdbname\fR instead of default filename for double spend database.  
@@ -470,6 +498,10 @@ argument with + or \-.  The default units for relative time are
 seconds.  A single character suffix can be used to specify alternate
 units (m = minutes, h = hours, d = days, M = months, y = Y = years,
 and s = seconds).
+.Sp
+Note: when time is expressed in local time, if there is daylight
+savings in your timezone, there are one or two ambiguous hours per
+year at the time of change from daylight savings time to normal time.
 .IP "\fI\-u\fR" 4
 .IX Item "-u"
 Input and output absolute times in \s-1UTC\s0 (\s-1GMT\s0) instead of local time.
@@ -489,6 +521,12 @@ code unchecked on exit.
 .IX Item "-l"
 Print number of seconds left before token expires.  Returns exit code
 unchecked on exit.
+.Sp
+Note: the calculation includes the grace period, so can be up to 2
+times grace period longer than you might otherwise expect (clock fast
+but system has to presume it could be slow).  If you want to exclude
+the grace period add \fI\-g0\fR to set grace period to 0 for the
+calculation.
 .IP "\fI\-w\fR" 4
 .IX Item "-w"
 Print number of bits of collision of token.  Returns exit code
@@ -610,7 +648,7 @@ expired though otherwise valid token.
 .PP
 The first field of the token is the \s-1UTC\s0 time since 1st January 1970.
 The default time format is \s-1YYMMDD\s0, time rounded down to the nearest
-day.  The default validity period is forever.
+day.  The default validity period is 28 days.
 .PP
 You can provide an alternative validity period with the \fI\-e\fR option.
 .ie n .IP """hashcash \-cd \-b 10 \-e 2d \-r foo 0:020811:foo:21dd87d4c9f5aae1""" 4

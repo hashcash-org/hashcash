@@ -33,63 +33,50 @@ static int century_offset_to_year( int century_offset )
     return year;
 }
 
-/* the portable C library functionality for time manipulation is a bit
- * poor.  We actually have to convert to structured time just to find
- * out what UCT is.
- */
+#define MAX_DATE 50		/* Sun Mar 10 19:25:06 2002 (EST) */
 
-time_t local_to_utctime( time_t local_time )
+/* more logical time_t to string conversion */
+
+const char* strtime( time_t* timep, int utc )
 {
-    struct tm* tms;
-    tms = gmtime( &local_time ); /* convert to UTCtime */
-    return mktime( tms ); /* no conversion, so stays in UTC */
-}
-
-/* converting back from utctime to local time is even worse
- * have to guess and correct! due to day light time startin
- * at different absolute times depending on time zones
- */
-
-time_t utctime_to_local( time_t utc_time )
-{
-    time_t try_time;
-    time_t diff_time;
-    time_t local_time;
-    time_t check_utc_time;
-/* try converting time utc_time into UTCTIME by pretending it is already
- * in local time, calculate the difference between the utc_time and 
- * converted time and adjust in the other direction
- */
-    try_time = local_to_utctime( utc_time ); 
-    diff_time = try_time - utc_time;
-/* and adjust in the other direction */
-    local_time = utc_time - diff_time;
-
-/* if we're on a day that is switching from or to daylight savings
- * that may not work, so check and if it is wrong adjust accordingly
- */
-    check_utc_time = local_to_utctime( local_time );
-    if ( check_utc_time != utc_time ) 
-    { 
-	diff_time = check_utc_time - utc_time;
-	local_time -= diff_time;
-	check_utc_time = local_to_utctime( local_time );
+    static char str[MAX_DATE];
+    struct tm* isdst;
+    char date[MAX_DATE];
+    char* timestr;
+    char* zone;
+    if ( utc ) {
+	timestr = asctime( gmtime( timep ) );
+	zone = "UTC";
+    } else {
+        isdst = localtime( timep );
+	timestr = asctime( isdst );
+	zone = tzname[isdst->tm_isdst];
     }
-    assert( check_utc_time == utc_time );
-    return local_time;
+    sstrncpy( date, timestr, MAX_DATE );
+    date[strlen(date)-1]='\0';	/* remove trailing \n */
+    snprintf( str, MAX_DATE, "%s (%s)", date, zone );
+    return str;
 }
 
-time_t utctime( time_t* utc_timep )
-{
-    time_t utc_time = local_to_utctime( time(0) );
-    if ( utc_timep != NULL ) { *utc_timep = utc_time; }
-    return utc_time;
+/* alternate form of mktime, this tm struct is in UTC time */
+
+time_t mk_utctime( struct tm* tms ) {
+    char* tz = getenv( "TZ" );
+    time_t res;
+
+    setenv( "TZ", "UTC+0", 1 );
+    res = mktime( tms );
+    if ( tz ) { setenv( "TZ", tz, 1 ); } else { unsetenv( "TZ" ); }
+    return res;
 }
 
-time_t from_utctimestr( const char utct[MAX_UTCTIME+1] )
+time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
 {
     time_t failed = -1;
+    time_t res;
     struct tm tms;
+    int tms_hour;
+    struct tm* dst;
     int utct_len = strlen( utct );
     int century_offset;
 
@@ -101,39 +88,63 @@ time_t from_utctimestr( const char utct[MAX_UTCTIME+1] )
 /* defaults */
     tms.tm_mon = 0; tms.tm_mday = 1;
     tms.tm_hour = 0; tms.tm_min = 0; tms.tm_sec = 0;
-    tms.tm_isdst = 0;		/* ignore daylight savings time */
+    tms.tm_isdst = 0;	/* daylight saving on */
+    tms_hour = tms.tm_hour;
 
 /* year */
     century_offset = char_pair_atoi( utct );
     if ( century_offset < 0 ) { return failed; }
     tms.tm_year = century_offset_to_year( century_offset ) - 1900;
 /* month -- optional */
-    if ( utct_len <= 2 ) { return mktime( &tms ); }
+    if ( utct_len <= 2 ) { goto convert; }
     tms.tm_mon = char_pair_atoi( utct+2 ) - 1;
     if ( tms.tm_mon < 0 ) { return failed; }
 /* day */
-    if ( utct_len <= 4 ) { return mktime( &tms ); }
+    if ( utct_len <= 4 ) { goto convert; }
     tms.tm_mday = char_pair_atoi( utct+4 );
     if ( tms.tm_mday < 0 ) { return failed; }
 /* hour -- optional */
-    if ( utct_len <= 6 ) { return mktime( &tms ); }
+    if ( utct_len <= 6 ) { goto convert; }
     tms.tm_hour = char_pair_atoi( utct+6 );
-    if ( tms.tm_mday < 0 ) { return failed; }
+    if ( tms.tm_hour < 0 ) { return failed; }
 /* minute -- optional */
-    if ( utct_len <= 8 ) { return mktime( &tms ); }
+    if ( utct_len <= 8 ) { goto convert; }
     tms.tm_min = char_pair_atoi( utct+8 );
     if ( tms.tm_min < 0 ) { return failed; }
-    if ( utct_len <= 10 ) { return mktime( &tms ); }
+    if ( utct_len <= 10 ) { goto convert; }
 /* second -- optional */
     tms.tm_sec = char_pair_atoi( utct+10 );
     if ( tms.tm_sec < 0 ) { return failed; }
 
-    return mktime( &tms );
+ convert:
+    if ( utc ) 
+    {
+        return mk_utctime( &tms );
+    }
+    else
+    {
+    /* note when switching from daylight to standard the last daylight
+       hour(s) are ambiguous with the first hour(s) of standard time.  The
+       system calls give you the first hour(s) of standard time which is
+       as good a choice as any. */
+
+    /* note also the undefined hour(s) between the last hour of
+       standard time and the first hour of daylight time (when
+       expressed in localtime) are illegal values and have undefined
+       conversions, this code will do whatever the system calls do */
+
+        tms_hour = tms.tm_hour;
+        res = mktime( &tms );	/* get time without DST adjust */
+ 	dst = localtime( &res ); /* convert back to get DST adjusted  */
+	dst->tm_hour = tms_hour; /* put back in hour to convert */
+ 	res = mktime( dst ); /* redo conversion with DST adjustment  */
+ 	return res;
+    }
 }
 
 int to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t  )
 {
-    struct tm* tms = localtime( &t );
+    struct tm* tms = gmtime( &t );
 
     if ( tms == NULL || len > MAX_UTCTIME || len < 2 ) { return 0; }
     sprintf( utct, "%02d", tms->tm_year % 100 );

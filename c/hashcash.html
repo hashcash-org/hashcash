@@ -188,12 +188,13 @@ also the <em>-y</em> flag.)</p>
 <h2><a name="double_spending_protection">Double Spending Protection</a></h2>
 <p>If the <em>-d</em> flag is used with the <em>-c</em> flag a database of spent
 tokens is kept.</p>
-<p>By default tokens do not expire, and over time the database will grow
-indefinately.  To prevent this, you can specify an expiry period with
-the <em>-e</em> flag.  A recommended expiry period is 28 days.  After the
-expiry period amount of time, the token is anyway considered expired
-and may be purged from the database to save space.  (See 
-<a href="#purging_periodically_vs_on_next_access">Purging Periodically vs on Next Access</a> for how to purge tokens.)</p>
+<p>By default tokens expire after 28 days, without expiry the database
+would grow indefinately.  You can specify an alternate expiry period
+with the <em>-e</em> flag.  The recommended (and default) expiry period for
+email is 28 days.  After the expiry period amount of time, the token
+is anyway considered expired and may be purged from the database to
+save space.  (See <a href="#purging_periodically_vs_on_next_access">Purging Periodically vs on Next Access</a> for how to
+purge tokens.)</p>
 <p>For efficiency reasons a token is verified before it is checked in the
 database; if it is otherwise invalid no database activity will occur.</p>
 <p>Note: The decision about how long the token should be considered valid
@@ -288,19 +289,24 @@ returns exit code unchecked (exit code 2) on exit.</p>
 <dt><strong><a name="item__2de_time"><em>-e time</em></a></strong><br />
 </dt>
 <dd>
-Expiry period for spent tokens.  While checking tokens (using the
-<em>-c</em> flag), if the token was minted more than the specified amount of
-time ago, it is considered expired.  If this option is not used, by
-default tokens do not expire (they have an expiry period of forever).
-The expiry period is given in seconds by default (an argument of 0
-means forever).  A single character suffix can be used to specify
-alternate units (m = minutes, h = hours, d = days, M = months, y = Y =
-years, and s = seconds).
+Expiry period for spent tokens.  While checking tokens (using the <em>-c</em>
+flag), if the token was minted more than the specified amount of time ago,
+it is considered expired.  If this option is not used, by default tokens
+expire after 28 days.  The expiry period is given in seconds by default (an
+argument of 0 means forever).  A single character suffix can be used to
+specify alternate units (m = minutes, h = hours, d = days, M = months, y = Y
+= years, and s = seconds).
 </dd>
 <dd>
 <p>If used with the <em>-d</em> option, the spent token and it's expiry period
 is recorded in the database.  See the <em>-p</em> option for description of
 how to purge tokens from the database.</p>
+</dd>
+<dd>
+<p>The following <em>-e</em> usage to give an implicit time resolution while minting
+is deprecated, use explicit <em>-z</em> option instead.  (<em>-z</em> overrides <em>-e</em> if
+both are given.  <em>-e</em> still works for backwards compatibility.  If neither
+are given the default is 6 chars (time format: YYMMDD)).</p>
 </dd>
 <dd>
 <p>While minting tokens, the <em>-e</em> flag can have an effect on the
@@ -332,17 +338,47 @@ seconds.</a></strong><br />
 lead to initially suprising results when rounding down to eg days in
 time zones other than GMT (UTC = GMT).  It may be clearer to
 understand if you use the <em>-u</em> option.</p>
+<dt><strong><a name="item__2dz_width"><em>-z width</em></a></strong><br />
+</dt>
+<dd>
+The <em>-z</em> option is for use during minting and deprecates the <em>-e</em> option
+given in combination with <em>-m</em> to specify an implicit time field width. 
+Valid widths are 2,4,6,8,10 or 12 chars corresponding respectively to: YY,
+YYMM, YYMMDD, YYMMDDhh, YYMMDDhhmm, and YYMMDDhhmmss rounded down to the
+nearest year, month, day, hour, minute respectively.
+</dd>
+<dd>
+<p>Note the rounding down is based on UTC time, not local time.  This can
+lead to initially suprising results when rounding down to eg days in
+time zones other than GMT (UTC = GMT).  It may be clearer to
+understand if you use the <em>-u</em> option.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__2dg_period"><em>-g period</em></a></strong><br />
+</dt>
+<dd>
+The <em>-g</em> option is for use when checking hashcash stamps with the
+<em>-c</em> option and specifies a grace period for clock skew, ie if a
+hashcash stamp arrives with a date in the future or in the past it
+will not be rejected as having a futuristic date (or as being expired)
+unless it is more futuristic (or has been expired for longer) than
+this period.  The default is 2 days, which means as long as the
+sending system's clock is no more than 2 days ahead (or 2 days behind)
+of the receiving system's clock, the hashcash stamp will still be
+accepted.
+</dd>
+<dd>
+<p>The default units for grace period are seconds.  A single character
+suffix can be used to specify alternate units (m = minutes, h = hours,
+d = days, M = months, y = Y = years, and s = seconds).</p>
+</dd>
+<p></p>
 <dt><strong><a name="item__2dd"><em>-d</em></a></strong><br />
 </dt>
 <dd>
 Store tokens in a double spend database.  If token has been seen
 before it will be rejected even if it is otherwise valid.  The default
 database file is <em>database.db</em> in the current directory.
-</dd>
-<dd>
-<p>It is recommended that you use the <em>-e</em> option with the database
-option, to prevent the database growing indefinately over time.  A
-suggested value is <em>-e 28d</em>, 28 days.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item__2df_dbname"><em>-f dbname</em></a></strong><br />
@@ -467,6 +503,11 @@ seconds.  A single character suffix can be used to specify alternate
 units (m = minutes, h = hours, d = days, M = months, y = Y = years,
 and s = seconds).</p>
 </dd>
+<dd>
+<p>Note: when time is expressed in local time, if there is daylight
+savings in your timezone, there are one or two ambiguous hours per
+year at the time of change from daylight savings time to normal time.</p>
+</dd>
 <p></p>
 <dt><strong><a name="item__2du"><em>-u</em></a></strong><br />
 </dt>
@@ -497,6 +538,13 @@ code unchecked on exit.
 <dd>
 Print number of seconds left before token expires.  Returns exit code
 unchecked on exit.
+</dd>
+<dd>
+<p>Note: the calculation includes the grace period, so can be up to 2
+times grace period longer than you might otherwise expect (clock fast
+but system has to presume it could be slow).  If you want to exclude
+the grace period add <em>-g0</em> to set grace period to 0 for the
+calculation.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item__2dw"><em>-w</em></a></strong><br />
@@ -666,7 +714,7 @@ double spend database can be saved without risk of accepting an
 expired though otherwise valid token.</p>
 <p>The first field of the token is the UTC time since 1st January 1970.
 The default time format is YYMMDD, time rounded down to the nearest
-day.  The default validity period is forever.</p>
+day.  The default validity period is 28 days.</p>
 <p>You can provide an alternative validity period with the <em>-e</em> option.</p>
 <dl>
 <dt><strong><a name="item_hashcash__2dcd__2db_10__2de_2d__2dr_foo_0_3a020811"><code>hashcash -cd -b 10 -e 2d -r foo 0:020811:foo:21dd87d4c9f5aae1</code></a></strong><br />

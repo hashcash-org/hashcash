@@ -230,8 +230,7 @@ time_t round_off( time_t now_time, int digits )
     {
 	return now_time;
     }
-    now_time = utctime_to_local( now_time ); /* to counter act gmtime */
-    now = gmtime( &now_time );	/* converts local -> utct as side effect */
+    now = gmtime( &now_time );	/* still in UTC */
 
     switch ( digits )
     {
@@ -241,7 +240,17 @@ time_t round_off( time_t now_time, int digits )
     case 4: now->tm_min = 0;
     case 2: now->tm_sec = 0;
     }
-    return mktime( now );
+#if 0
+    switch ( digits )
+    {
+/*    case 10: now->tm_mon = 0;
+      case 8: now->tm_mday = 1; */
+    case 6: now_time /= (3600*24); now_time *= (3600*24); break;
+    case 4: now_time /= 3600; now_time *= 3600; break;
+    case 2: now_time /= 60; now_time *= 60; break;
+    }
+#endif
+    return mk_utctime( now );
 }
 
 int validity_to_width( time_t validity_period )
@@ -372,7 +381,7 @@ unsigned hashcash_count( const char* resource, const char* token )
 }
 
 long hashcash_valid_for( time_t token_time, time_t validity_period, 
-			 time_t now_time )
+			 long grace_period, time_t now_time )
 {
     long expiry_time;
 
@@ -380,18 +389,22 @@ long hashcash_valid_for( time_t token_time, time_t validity_period,
     if ( validity_period == 0 )	{ return HASHCASH_VALID_FOREVER; }
 
     /* future date in token */
-    if ( token_time > now_time ) { return HASHCASH_VALID_IN_FUTURE; }; 
+    if ( token_time > now_time + grace_period ) 
+    { 
+	return HASHCASH_VALID_IN_FUTURE; 
+    }
 
     expiry_time = token_time + validity_period;
-    if ( expiry_time > now_time )
+    if ( expiry_time + grace_period > now_time )
     {				/* valid return seconds left */
-	return expiry_time - now_time;
+	return expiry_time + grace_period - now_time;
     }
     return HASHCASH_EXPIRED;	/* otherwise expired */
 }
 
 int hashcash_check( const char* token, const char* resource, time_t now_time, 
-		    time_t validity_period, int required_bits ) {
+		    time_t validity_period, time_t grace_period, 
+		    int required_bits ) {
     time_t token_time;
     char token_utime[ MAX_UTC+1 ];
     char token_resource[ MAX_RES+1 ];
@@ -408,7 +421,7 @@ int hashcash_check( const char* token, const char* resource, time_t now_time,
 	return HASHCASH_UNSUPPORTED_VERSION;
     }
 
-    token_time = from_utctimestr( token_utime );
+    token_time = from_utctimestr( token_utime, 1 );
     if ( token_time == -1 )
     {
 	return HASHCASH_INVALID;
@@ -422,7 +435,8 @@ int hashcash_check( const char* token, const char* resource, time_t now_time,
     {
 	return HASHCASH_INSUFFICIENT_BITS;
     }
-    return hashcash_valid_for( token_time, validity_period, now_time );
+    return hashcash_valid_for( token_time, validity_period, 
+			       grace_period, now_time );
 }
 
 long hashcash_per_sec( void )

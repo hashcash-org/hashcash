@@ -1,3 +1,29 @@
+hashcash-0.28 - 18-Sep-2003 - Adam Back <adam@cypherspace.org>
+
+	* fix bug with timezone handling reported by Joris Bontje
+	  <jbontje@suespammers.org> (turns out utctime function is
+	  redundant and wrong; time(2) gives time in UTCTime (doh)).
+	  Reason for confusion is ctime is in local time, so converts
+	  UTC time into local time even if you don't want that.  But
+	  c-library time handling functions are really not designed
+          for converting back from local to UTCTime when represented
+          as a time_t.  Changed a bunch of time related stuff to fix
+	  this up.
+
+	* add -g flag for grace period suggested by Marc Lehmann
+	  <pcg@goof.com> to avoid undue rejection of hashcash stamps
+	  because of clock skew (or timezone / daylight savings time
+	  off by one errors).  Default for email is 2 days (48 hours)
+	  fast or slow.
+
+	* change validity period default to 28 days; previous default
+	  was forever which did not match recommended email default
+
+	* add -z flag to explicitly specify the width in chars of the
+	  time field.  This flag deprecates and overrides the -m -e
+	  way to implicitly specify date field width.  As before the
+	  default is 6 chars (date only in YYMMDD).
+
 hashcash-0.27 - 11-Sep-2003 - Adam Back <adam@cypherspace.org>
 
 	* add space char after 'X-Hashcash:' header that you get with

@@ -3,15 +3,14 @@
 #if !defined( _utct_h )
 #define _utct_h
 
+#include <time.h>
+
 #if defined( __cplusplus )
 extern "C" {
 #endif
 
-/* function to return current time in utctime */
-
-time_t utctime( time_t* utc_timep ); /* usage like time(2) */
-time_t utctime_to_local( time_t utc_time ); /* convert to local from utc */
-time_t local_to_utctime( time_t local_time ); /* convert to uct from local */
+const char* strtime( time_t* timep, int utc ); /* ctime like with utc arg */
+time_t mk_utctime( struct tm* tms ); /* mktime like with utc struct tm */
 
 /* functions to parse and create UTCTime string which is:
  *    YYMMDDhhmm[ss]Z
@@ -29,8 +28,10 @@ time_t local_to_utctime( time_t local_time ); /* convert to uct from local */
 
 #define MAX_UTCTIME 13
 
-time_t from_utctimestr( const char utct[MAX_UTCTIME+1] );
+time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc );
 int to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t );
+
+#define sstrncpy(d,s,l) (d[l]='\0',strncpy(d,s,l))
 
 #if defined( __cplusplus )
 }
