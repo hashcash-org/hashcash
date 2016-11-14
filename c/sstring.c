@@ -39,3 +39,11 @@ char* sstrtok( const char* str, const char* delim, char** tok, int tok_max,
     *s += *tok_len + ( end == NULL ? 0 : 1 );
     return tok ? *tok : "";
 }
+
+void stolower( char* str ) {
+    if ( !str ) { return; }
+    for ( ; *str; str++ ) {
+        *str = tolower( *str );
+    }
+}
+

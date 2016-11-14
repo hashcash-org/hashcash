@@ -21,6 +21,12 @@
 #include "random.h"
 #include "sha1.h"
 
+#if defined( WIN32 )
+#include "mydll.h"
+#else
+#define EXPORT
+#endif
+
 /* Index into array of available minters */
 static int fastest_minter = -1;
 static unsigned int num_minters = 0;
@@ -231,7 +237,7 @@ void hashcash_select_minter()
 
 /* Do a quick, silent benchmark of the selected backend.  Assumes it
  * works. */
-unsigned long hashcash_per_sec(void)
+unsigned long hashcash_per_sec_calc(void)
 {
 	static const unsigned int test_bits = 64;
 	static const char *test_string = 
@@ -325,10 +331,23 @@ unsigned long hashcash_per_sec(void)
 	return rate;
 }
 
+EXPORT
+unsigned long hashcash_per_sec(void)
+{
+        static int calculated = 0;
+        static unsigned long per_sec = 0;
+        if ( !calculated ) {
+                per_sec = hashcash_per_sec_calc();
+                calculated = 1;
+        }
+        return per_sec;
+}
+
 /* Test and benchmark available hashcash minting backends.  Returns
  * the speed of the fastest valid routine, and updates fastest_minter
  * as appropriate.
  */
+EXPORT
 unsigned long hashcash_benchtest(int verbose)
 {
 	unsigned long i, a, b, got_bits;

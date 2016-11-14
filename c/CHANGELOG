@@ -1,3 +1,7 @@
+hashcash-1.12 - 03-Oct-2004 - Adam Back <adam@cypherspace.org>
+
+	* make a HASHCASH.DLL on windows using MINGW.
+
 hashcash-1.11 - 02-Oct-2004 - Adam Back <adam@cypherspace.org>
 
 	* _really_ fix trailing ascii(32) (spaces).  I have no idea

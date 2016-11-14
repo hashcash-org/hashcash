@@ -1,24 +1,43 @@
+COMPILING
+
 To compile type:
 
 	make
 
 to see a list of platforms.  Current platforms are:
 
-	x86, mingw-x86, g3-osx, ppc-linux, generic
+	x86, mingw, mingw-dll, g3-osx, ppc-linux, generic
 
 Choose platform (or generic if your platform is not listed) and then
 type:
 
 	make <platform>
 
-Note the mingw-x86 target is using the minimum gnu for windows
+COMPILING WINDOWS
+
+Note the mingw target is using the minimum gnu for windows
 (http://www.mingw.org) system.  On that system you have to type:
 
-	mingw32-make mingw-x86
+	mingw32-make mingw
+
+to build win32 executables.
+
+COMPILING WINDOWS DLL
+
+The windows HASHCASH.DLL is also built using mingw:
+
+	mingw32-make mingw-dll
+
+builds a win32 HASHCASH.DLL and HASHCASH.LIB (and a HASHCASH.EXE win32
+app that relies on the HASHCASH.DLL)
+
+INSTALLING
 
 To install the compiled binaries type:
 
 	make install
+
+(obviously install that doesn't work on windows, unix only).
 
 This will install the binaries sha1 and hashcash in /usr/local/bin,
 and the man page hashcash.1 in /usr/local/man/man1.
@@ -28,6 +47,8 @@ the Makefile.  To change the man page installation location change the
 MAN_INSTALL_PATH in the Makefile.
 
 For usage information see the man page.
+
+CUSTOM CC OPTIMIZER FLAGS
 
 To override the COPT argument without editing the Makefile do:
 

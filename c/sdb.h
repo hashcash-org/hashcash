@@ -55,10 +55,6 @@ int sdb_callbacklookupnext( DB*, sdb_rcallback cb, void* arg,
 			    char* key, int klen, char* val, int vlen, 
 			    int* err );
 
-int file_exists( const char* filename, int* err );
-int file_delete( const char* filename, int* err );
-int file_rename( const char* old_name, const char* new_name, int* err );
-
 #if defined( __cplusplus )
 }
 #endif

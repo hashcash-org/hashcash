@@ -14,7 +14,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.11
+#define HASHCASH_VERSION 1.12
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -111,7 +111,7 @@ int hashcash_mint( time_t now_time, int time_width,
  *
  */
 
-int validity_to_width( time_t validity_period );
+int hashcash_validity_to_width( time_t validity_period );
 
 /* count bits of collision in token */
 
@@ -143,9 +143,7 @@ int hashcash_check( const char* token, int case_flag, const char* resource,
 
 /* return how many tries per second the machine can do */
 
-extern long per_sec;
-
-#define hc_per_sec() ( per_sec ? per_sec : ( per_sec = hashcash_per_sec() ) )
+unsigned long hashcash_per_sec( void );
 
 /* estimate how many seconds it would take to mint a token of given size */
 

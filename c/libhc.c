@@ -21,9 +21,14 @@
 #include "random.h"
 #include "sstring.h"
 
-time_t round_off( time_t now_time, int digits );
+#if defined( WIN32 )
+#include "mydll.h"
+#else
+#define EXPORT
+#endif
 
-void stolower( char* str ) ;
+
+time_t round_off( time_t now_time, int digits );
 
 #if DEBUG
 /* smaller base for debugging */
@@ -138,6 +143,7 @@ int email_match( const char* email, const char* pattern )
     return ret;
 }
 
+EXPORT
 int hashcash_mint( time_t now_time, int time_width, 
 		   const char* resource, unsigned bits, 
 		   long anon_period, char** new_token, int tok_len, 
@@ -201,7 +207,7 @@ int hashcash_mint( time_t now_time, int time_width,
        work backwards from time for now -- avoid work if caller
        does not care about tries_taken */
 
-    if ( tries_taken ) { *tries_taken = elapsed * hc_per_sec(); }
+    if ( tries_taken ) { *tries_taken = elapsed * hashcash_per_sec(); }
 
     return HASHCASH_OK;
 }
@@ -226,7 +232,8 @@ time_t round_off( time_t now_time, int digits )
     return mk_utctime( now );
 }
 
-int validity_to_width( time_t validity_period )
+EXPORT
+int hashcash_validity_to_width( time_t validity_period )
 {
     int time_width = 6;		/* default YYMMDD */
     if ( validity_period < 0 ) { return 0; }
@@ -250,7 +257,8 @@ int validity_to_width( time_t validity_period )
 #define VALID_STR_CHARS "/+0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"\
 			"abcdefghijklmnopqrstuvwxyz="
 
-int hashcash_parse( const char* token, int* vers, int* bits, char* utct, 
+EXPORT
+int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
 		    int utct_max, char* token_resource, int res_max, 
 		    char** ext, int ext_max ) 
 {
@@ -299,6 +307,7 @@ int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
     return 1;
 }
 
+EXPORT
 unsigned hashcash_count( const char* token )
 {
     SHA1_ctx ctx;
@@ -352,7 +361,8 @@ unsigned hashcash_count( const char* token )
     return collision_bits;
 }
 
-long hashcash_valid_for( time_t token_time, time_t validity_period, 
+EXPORT
+long hashcash_valid_for( time_t token_time, time_t validity_period,
 			 long grace_period, time_t now_time )
 {
     long expiry_time = 0 ;
@@ -460,7 +470,8 @@ int regexp_match( const char* str, const char* regexp,
 #endif
 }
 
-int resource_match( int type, const char* token_res, const char* res, 
+EXPORT
+int resource_match( int type, const char* token_res, const char* res,
 		    void** compile, char** err ) 
 {
     switch ( type ) {
@@ -479,7 +490,8 @@ int resource_match( int type, const char* token_res, const char* res,
     return 1;
 }
 
-int hashcash_check( const char* token, int case_flag, const char* resource, 
+EXPORT
+int hashcash_check( const char* token, int case_flag, const char* resource,
 		    void **compile, char** re_err, int type, time_t now_time, 
 		    time_t validity_period, long grace_period, 
 		    int required_bits, time_t* token_time ) {
@@ -528,11 +540,13 @@ int hashcash_check( const char* token, int case_flag, const char* resource,
 			       grace_period, now_time );
 }
 
+EXPORT
 double hashcash_estimate_time( int b )
 {
-    return hashcash_expected_tries( b ) / (double)hc_per_sec();
+    return hashcash_expected_tries( b ) / (double)hashcash_per_sec();
 }
 
+EXPORT
 double hashcash_expected_tries( int b )
 {
     double expected_tests = 1;
@@ -543,3 +557,4 @@ double hashcash_expected_tries( int b )
     expected_tests *= ((unsigned long)1) << b;
     return expected_tests;
 }
+

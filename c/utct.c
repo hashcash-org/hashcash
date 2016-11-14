@@ -9,11 +9,14 @@
 #include "utct.h"
 #include "sstring.h"
 
-#if defined( _WIN32 )
+#if defined( WIN32 )
 #include <windows.h>
+#include "mydll.h"
+#else
+#define EXPORT
 #endif
 
-#if defined( _WIN32 )
+#if defined( WIN32 )
 #define snprintf _snprintf
 #endif
 
@@ -85,6 +88,7 @@ time_t mk_utctime( struct tm* tms ) {
     return res;
 }
 
+EXPORT
 time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
 {
     time_t failed = -1;
@@ -153,6 +157,7 @@ time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
     }
 }
 
+EXPORT
 int to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t  )
 {
     struct tm* tms = gmtime( &t );

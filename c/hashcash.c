@@ -91,6 +91,11 @@ void usage( const char* );
 int parse_period( const char* aperiod, long* resp );
 double report_speed( int bits, double* time_est, int display );
 
+/* avoid needing to export stolower from hashcash.dll */
+
+void mystolower( char* str );
+#define stolower mystolower
+
 typedef struct {
     char* str;
     void* regexp;		/* compiled regexp */
@@ -126,9 +131,8 @@ int bit_cmp( const void* ap, const void* bp );
 void array_sort( ARRAY* array, int(*cmp)(const void*, const void*) );
 
 
-void stolower( char* str );
-
-#define hc_est_time(b) ( hashcash_expected_tries(b) / (double)hc_per_sec() )
+#define hc_est_time(b) ( hashcash_expected_tries(b) / \
+        (double)hashcash_per_sec() )
 int quiet_flag;
 int verbose_flag;
 int out_is_tty;
@@ -292,7 +296,7 @@ int main( int argc, char* argv[] )
 
 	    /* infer appropriate time_width from validity period */
 	    if ( validity_flag && !time_width_flag && !inferred_time_width ) {
-		time_width = validity_to_width( validity_period );
+                time_width = hashcash_validity_to_width( validity_period );
 		if ( !time_width ) { 
 		    die_msg( "error: -ve validity period" ); 
 		}
@@ -371,7 +375,7 @@ int main( int argc, char* argv[] )
     }
 
     if ( validity_flag && !time_width_flag && !inferred_time_width ) {
-	time_width = validity_to_width( resource.elt[i].validity );
+        time_width = hashcash_validity_to_width( resource.elt[i].validity );
 	if ( !time_width ) { 
 	    die_msg( "error: -ve validity period" ); 
 	}
@@ -462,15 +466,15 @@ int main( int argc, char* argv[] )
 
 	if ( !verbose_flag && speed_flag && mint_flag ) {
 	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
-		     hc_per_sec() );
-	    PPRINTF( stdout, "%ld\n", hc_per_sec() );
+                     hashcash_per_sec() );
+            PPRINTF( stdout, "%ld\n", hashcash_per_sec() );
 	}
 
 	if ( verbose_flag || ( speed_flag && !bits_flag ) ) {
 	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
-		     hc_per_sec() );
+                     hashcash_per_sec() );
 	    if ( speed_flag && !bits_flag && !mint_flag ) {
-		PPRINTF( stdout, "%ld\n", hc_per_sec() );
+                PPRINTF( stdout, "%ld\n", hashcash_per_sec() );
 		exit( EXIT_SUCCESS ); /* don't actually calculate it */
 	    }
 	}
@@ -498,10 +502,10 @@ int main( int argc, char* argv[] )
 				 verbose_flag ? &tries_taken : NULL, ext );
 
 	    /* verbose_flag ? ... above is work-around hashcash_mint
-	       calls hc_per_sec to reverse compute tries_taken from
+               calls hashcash_per_sec to reverse compute tries_taken from
 	       timer due to hashcash_fastmint not returning number of
 	       tries taken.  If we don't need to output tries_taken,
-	       we can avoid the effort of running hc_per_sec which is
+               we can avoid the effort of running hashcash_per_sec which is
 	       slower now we are using clock() in place of time().  
 	       this results in tries_taken being left at 0 */
 
@@ -1132,13 +1136,6 @@ void db_close( DB* db ) {
     if ( !sdb_close( db, &err ) ) { die( err ); }
 }
 
-void stolower( char* str ) {
-    if ( !str ) { return; }
-    for ( ; *str; str++ ) {
-	*str = tolower( *str );
-    }
-}
-
 /* num = start size, auto-grows */ 
 
 void array_alloc( ARRAY* array, int num ) {
@@ -1374,3 +1371,11 @@ int read_eof( FILE* fp, char* a )
 {
     return feof(fp) && a[0] == '\0';
 }
+
+void mystolower( char* str ) {
+    if ( !str ) { return; }
+    for ( ; *str; str++ ) {
+        *str = tolower( *str );
+    }
+}
+

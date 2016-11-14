@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#if defined( unix ) || defined(_WIN32 )
+#if defined( unix ) || defined(WIN32 )
     #include <unistd.h>
 #elif defined( VMS )
     #include <unixio.h>
@@ -18,11 +18,17 @@
 #include "utct.h"
 #include "lock.h"
 
+#if defined( WIN32 )
+    #include "mydll.h"
+#else
+    #define EXPORT
+#endif
+
 #if defined( VMS )
     #define unlink(x) delete(x)
 #endif
 
-#if defined( _WIN32 )
+#if defined( WIN32 )
     #define ftruncate chsize
 #endif
 
@@ -30,6 +36,7 @@
 
 static int sdb_insert( DB*, const char* key, const char* val, int* err );
 
+EXPORT
 int sdb_open( DB* h, const char* filename, int* err ) 
 {
     int fd = 0 ;
@@ -52,13 +59,15 @@ int sdb_open( DB* h, const char* filename, int* err )
     return 0;
 }
 
-int sdb_close( DB* h, int* err ) 
+EXPORT
+int sdb_close( DB* h, int* err )
 {
     if ( h == NULL || h->file == NULL ) { return 0; }
     if ( fclose( h->file ) == EOF ) { *err = errno; return 0; }
     *err = 0; return 1;
 }
 
+EXPORT
 int sdb_add( DB* h, const char* key, const char* val, int* err )
 {
     *err = 0;
@@ -82,12 +91,14 @@ static void sdb_rewind( DB* h )
     h->write_pos = 0;
 }
 
-int sdb_findfirst( DB* h, char* key, int klen, char* val, int vlen, int* err ) 
+EXPORT
+int sdb_findfirst( DB* h, char* key, int klen, char* val, int vlen, int* err )
 {
     sdb_rewind( h );
     return sdb_findnext( h, key, klen, val, vlen, err );
 }
 
+EXPORT
 int sdb_findnext( DB* h, char* key, int klen, char* val, int vlen, int* err ) 
 {
     char line[MAX_LINE+1] = {0};
@@ -132,27 +143,31 @@ static int sdb_cb_keymatch( const char* key, const char* val,
     return 0;
 } 
 
-int sdb_del( DB* h, const char* key, int* err ) 
+EXPORT
+int sdb_del( DB* h, const char* key, int* err )
 {
     return sdb_updateiterate( h, (sdb_wcallback)sdb_cb_notkeymatch, 
 			      (void*)key, err );
 }
 
-int sdb_lookup( DB* h, const char* key, char* val, int vlen, int* err ) 
+EXPORT
+int sdb_lookup( DB* h, const char* key, char* val, int vlen, int* err )
 {
     char fkey[MAX_KEY+1] = {0};
     return sdb_callbacklookup( h, sdb_cb_keymatch, (void*)key, 
 			       fkey, MAX_KEY, val, vlen, err );
 }
 
-int sdb_lookupnext( DB* h, const char* key, char* val, int vlen, int* err ) 
+EXPORT
+int sdb_lookupnext( DB* h, const char* key, char* val, int vlen, int* err )
 {
     char fkey[MAX_KEY+1] = {0};
     return sdb_callbacklookupnext( h, sdb_cb_keymatch, (void*)key,
 				   fkey, MAX_KEY, val, vlen, err );
 }
 
-int sdb_callbacklookup( DB* h, sdb_rcallback cb, void* arg, 
+EXPORT
+int sdb_callbacklookup( DB* h, sdb_rcallback cb, void* arg,
 			char* key, int klen, char* val, int vlen, 
 			int* err ) 
 {
@@ -160,7 +175,8 @@ int sdb_callbacklookup( DB* h, sdb_rcallback cb, void* arg,
     return sdb_callbacklookupnext( h, cb, arg, key, klen, val, vlen, err );
 }
 
-int sdb_callbacklookupnext( DB* h, sdb_rcallback cb, void* arg, 
+EXPORT
+int sdb_callbacklookupnext( DB* h, sdb_rcallback cb, void* arg,
 			    char* key, int klen, char* val, int vlen, 
 			    int* err ) 
 {
@@ -175,7 +191,7 @@ int sdb_callbacklookupnext( DB* h, sdb_rcallback cb, void* arg,
     return 0;
 }
 
-int sdb_insert( DB* db, const char* key, const char* val, int* err ) 
+int sdb_insert( DB* db, const char* key, const char* val, int* err )
 {
     int res = 0 ;
     *err = 0;
@@ -198,6 +214,7 @@ int sdb_insert( DB* db, const char* key, const char* val, int* err )
     return 0;
 }
 
+EXPORT
 int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
 {
     int found = 0 ;
@@ -219,20 +236,3 @@ int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
  fail:
     return 0;
 }
-
-#if 0
-typedef struct {
-    char* key;
-    char* nval;
-} sdb_cb_update_arg;
-
-static int sdb_cb_update( const char* key, char* val, void* arg, int* err )
-{
-    sdb_cb_update_arg* argt  = (sdb_cb_update_arg*)arg;
-    *err = 0;
-    if ( strncmp( argt->key, key, MAX_KEY ) == 0 ) {
-	strncpy( val, argt->nval, MAX_VAL ); val[MAX_VAL] = '\0';
-    }
-    return 1;
-}
-#endif

@@ -18,6 +18,12 @@
 #include <string.h>
 #include "sha1.h"
 
+#if defined( WIN32 )
+#include "mydll.h"
+#else
+#define EXPORT
+#endif
+
 #define min( x, y ) ( ( x ) < ( y ) ? ( x ) : ( y ) )
 
 /********************* function used for rounds 0..19 ***********/
@@ -106,6 +112,7 @@ static int swap_endian32( void*, size_t );
     (ctx)->hbits = 0;
 #endif
 
+EXPORT
 void SHA1_Init( SHA1_ctx* ctx )
 {
     SHA1_zero_bitcount( ctx );
@@ -248,6 +255,7 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
     H[ 4 ] += E;
 }
 
+EXPORT
 void SHA1_Update( SHA1_ctx* ctx, const void* pdata, size_t data_len )
 {
     const byte* data = (const byte*)pdata;
@@ -289,6 +297,7 @@ void SHA1_Update( SHA1_ctx* ctx, const void* pdata, size_t data_len )
     }
 }
 
+EXPORT
 void SHA1_Final( SHA1_ctx* ctx, byte digest[ SHA1_DIGEST_BYTES ] )
 {
     unsigned mlen = 0 ;
