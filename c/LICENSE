@@ -6,5 +6,34 @@ licenses:
 	LGPL (2.1)
 	GPL (2)
 
-in the order of author preference.  If you need any other licensing
-send email to Adam Back <adam@cypherspace.org>.
+in the order of author preference.  
+
+If your license or support requirements are not met by the above open
+source licenses please contact Adam Back <adam@cypherspace.org> for
+alternative licensing and/or support information.
+
+The following are not licensing requirements, just comments from the
+author:
+
+- If you have to make changes to make this library work for your system or
+  application it would be useful if you could tell me what you had to
+  do, and optionally send me the source changes so I can include them
+  or update the library.  The aim is to make a practically useful
+  library.
+
+- It would be useful if you could inform me if you use or distribute
+  hashcash.  The intent here is to give me feedback and insight into the
+  areas of application which people find useful in practice.
+
+- If you are unclear on how to use hashcash there is a FAQ here:
+  http://www.hashcash.org/faq.html.  If that doesn't answer your question or
+  doesn't apply to your usage, feel free to discuss in email.
+
+- It may help the deployment of hashcash as an anti-spam system if different
+  systems based on hashcash were interoperable as far as that makes
+  sense for your system.  To this end the FAQ
+  http://www.hashcash.org/faq.html and Internet-Draft
+  http://www.hashcash.org/draft-hashcash.txt document my
+  thoughts in this area.  See also the hashcash home page
+  http://www.hashcash.org and paper there as I update with links to deployed
+  systems which it might be useful for you to interoperate with.

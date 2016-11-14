@@ -1,13 +1,19 @@
-hashcash-1.01 - 8-Aug-2004 - Adam Back <adam@cypherspace.org>
+hashcash-1.02 - 11-Aug-2004 - Adam Back <adam@cypherspace.org>
 
-	* fold in patches accumulated by Hubert Chan
-	  <hubert@uhoreg.ca> from several contributors on hashcash
-	  list for debian release.  And another one from Justin
-	  Guylett to clean up some stuff.
+	* minor documentation stuff (put back ref to sha1-hashcash in
+	  hashcash.pod manpage)
 
-	* another couple of minor bug fixes
+	* add back requests to LICENSE file
 
-hashcash-1.00 - 7-Aug-2004 - Adam Back <adam@cypherspace.org>
+hashcash-1.01 - 08-Aug-2004 - Adam Back <adam@cypherspace.org>
+
+	* fold in patches from by Hubert Chan
+	  <hubert@uhoreg.ca> and Justin Guyett <justin@soze.net> to
+	  clean up some stuff and fix minor bugs.
+
+	* another couple of minor bug fixes.
+
+hashcash-1.00 - 07-Aug-2004 - Adam Back <adam@cypherspace.org>
 
 	* increment version number, 1.x to reflect move to version 1
 	  stamp format

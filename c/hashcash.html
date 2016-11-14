@@ -110,7 +110,9 @@ exempt mail sent with hashcash from their blacklists and content based
 filtering rules.</p>
 <p>A hashcash stamp constitutes a proof-of-work which takes a
 parameterizable amount of work to compute for the sender.  The
-recipient can verify received stamps efficiently.</p>
+recipient can verify received stamps efficiently.  This package also
+includes a sha1 implementation which is equivalent in functionality to
+the sha1sum program available on some systems.</p>
 <p>The hashcash proof-of-work function is to compute partial hash
 collisions (the SHA1 hash function is used).  By choosing the number
 of bits of collision, the work required to compute a collision can be
@@ -1028,7 +1030,7 @@ corrupted database contents) an exit status of 3 is returned.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p><a href="http://www.hashcash.org/">http://www.hashcash.org/</a></p>
+<p>sha1sum(1), sha1-hashcash(1), sha1(1), <a href="http://www.hashcash.org/">http://www.hashcash.org/</a></p>
 
 </body>
 
