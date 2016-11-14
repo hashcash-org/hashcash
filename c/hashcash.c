@@ -90,7 +90,6 @@ void die_msg( const char* );
 void usage( const char* );
 int parse_period( const char* aperiod, long* resp );
 double report_speed( int bits, double* time_est, int display );
-void trimspace( char* token );
 
 typedef struct {
     char* str;
@@ -1233,23 +1232,23 @@ void printwrap( FILE* fp, const char* hdr, const char* str, char c,
     if ( c == '\\' ) {
 	fstep = line_len - strlen(hdr) - 1;
 	step = line_len - 1;
-	sprintf( fformat, "%s%%-%ds\\\n", hdr, fstep );
-	sprintf( format, "%%%ds\\\n", step );
+	sprintf( fformat, "%s%%s\\\n", hdr );
+	sprintf( format, "%%s\\\n" );
     } else if ( c == '\t' ) {
 	fstep = line_len - strlen(hdr);
 	step = line_len - 8;
-	sprintf( fformat, "%s%%-%ds\n", hdr, fstep );
-	sprintf( format, "\t%%-%ds\n", step );
+	sprintf( fformat, "%s%%s\n", hdr );
+	sprintf( format, "\t%%s\n" );
     } else if ( c == 0 ) {
 	fstep = line_len - strlen(hdr);
 	step = line_len;
-	sprintf( fformat, "%s%%-%ds\n", hdr, fstep );
-	sprintf( format, "%%-%ds\n", step );
+	sprintf( fformat, "%s%%s\n", hdr );
+	sprintf( format, "%%s\n" );
     } else {
 	fstep = line_len - strlen(hdr);
 	step = line_len-1;
-	sprintf( fformat, "%s%%-%ds\n", hdr, fstep );
-	sprintf( format, "%c%%-%ds\n", c, step );
+	sprintf( fformat, "%s%%s\n", hdr );
+	sprintf( format, "%c%%s\n", c );
     }
     for ( i = 0; i < str_len; 
 	  str += i ? step : fstep, i += i ? step : fstep ) {
@@ -1266,6 +1265,21 @@ void chomplf( char* token ) {
     if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
     if ( token[tok_len-1] == '\r' ) { token[--tok_len] = '\0'; }
     if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
+}
+
+void trimspace( char* token ) {
+    int tok_len = strlen(token);
+    int tok_begin = 0;
+    while ( tok_begin < tok_len && isspace(token[tok_begin]) ) {
+	tok_begin++;
+    }
+    if ( tok_begin > 0 ) {
+	tok_len -= tok_begin;
+	memmove( token, token+tok_begin, strlen(token+tok_begin)+1 );
+    }
+    while ( tok_len > 0 && isspace(token[tok_len-1]) ) {
+	token[--tok_len] = '\0';
+    }
 }
 
 double report_speed( int bits, double* time_est, int display ) 

@@ -1,3 +1,9 @@
+hashcash-1.11 - 02-Oct-2004 - Adam Back <adam@cypherspace.org>
+
+	* _really_ fix trailing ascii(32) (spaces).  I have no idea
+	  how I decided the 1.10 code fixed it.  Must have messed up
+	  the test I was using to check it worked.
+
 hashcash-1.10 - 01-Oct-2004 - Adam Back <adam@cypherspace.org>
 
 	* remove trailing ascii(32) (spaces) which padding somehow
