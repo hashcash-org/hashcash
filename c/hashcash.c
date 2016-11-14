@@ -177,7 +177,7 @@ int main( int argc, char* argv[] )
     char *new_token = NULL ;
     char line_arr[ MAX_LINE+1 ] = { 0 }, *line = line_arr;
     int line_max = MAX_LINE, line_alloc = 0;
-    char ahead[ MAX_LINE+1 ] = { 0 } , *ext = NULL;
+    char ahead[ MAX_LINE+1 ] = { 0 } , *ext = NULL, *junk = NULL;
     ARRAY purge_resource, resource, tokens, args;
 
     clock_t start = 0, end = 0, tmp = 0;
@@ -185,7 +185,7 @@ int main( int argc, char* argv[] )
     long purge_period = 0, valid_for = HASHCASH_INVALID, time_period = 0 ;
     int purge_all = 0;
     int multiple_validity = 0, multiple_bits = 0, multiple_resources = 0;
-    int multiple_grace = 0, accept = 0;
+    int multiple_grace = 0, accept = 0, parsed = 0;
 
     char token_utime[ MAX_UTC+1 ] = { 0 } ;	/* time token created */
     time_t real_time = time(0); /* now, in UTCTIME */
@@ -463,7 +463,7 @@ int main( int argc, char* argv[] )
 		}
 		while ( !feof(stdin) ) {
 		    line[0] = '\0';
-		    fgets( line, MAX_LINE, stdin );
+		    junk = fgets( line, MAX_LINE, stdin );
 		    chomplf( line );
 		    trimspace( line );
 		    if ( line[0] != '\0' ) {
@@ -820,6 +820,7 @@ int main( int argc, char* argv[] )
 			hashcash_parse( token, &vers, &claimed_bits,
 					utcttime, MAX_UTC,
 					token_resource, MAX_RES, &ext, 0 );
+			parsed = 1;
 			QPRINTF( stderr, "token resource name: %s\n", 
 				 token_resource );
 			PPRINTF( stdout, "%s", token_resource );
@@ -827,6 +828,12 @@ int main( int argc, char* argv[] )
 
 		    if ( width_flag || verbose_flag ) {
 			count_bits = hashcash_count( token );
+			if ( !parsed ) {
+			    hashcash_parse( token, &vers, &claimed_bits,
+					    utcttime, MAX_UTC,
+					    token_resource, MAX_RES, &ext, 0 );
+			    parsed = 1;
+			}
 			if ( vers == 1 ) {
 			    count_bits = ( count_bits < claimed_bits ) ? 
 				0 : claimed_bits;
@@ -1401,17 +1408,19 @@ int read_append( char** s, int* smax, int* alloc, char* append )
 char *read_header( FILE* f, char** s, int* smax, int* alloc, 
 		   char* a, int amax )
 {
+    char* junk;
+
     (*s)[0] = '\0';
     if ( a[0] ) {
 	sstrncpy( *s, a, *smax );
     } else {
-	fgets( *s, *smax, f );
+	junk = fgets( *s, *smax, f );
 	chomplf( *s );
     }
 
     do {
 	a[0] = '\0';
-	fgets( a, amax, f );
+	junk = fgets( a, amax, f );
 	chomplf( a );
 	if ( a[0] == '\t' || a[0] == ' ') {
 	    read_append( s, smax, alloc, a+1 );

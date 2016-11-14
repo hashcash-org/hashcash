@@ -1,4 +1,4 @@
-HC_VERS = 1.19
+HC_VERS = 1.20
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -18,14 +18,16 @@ REGEXP=-DREGEXP_POSIX
 COPT_DEBUG = -g
 COPT_GENERIC = -O3
 COPT_GNU = -O3 -funroll-loops
-COPT_X86 = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
+COPT_X86 = -O3 -funroll-loops -march=pentium-mmx -mmmx \
 	-D_REENTRANT -D_THREAD_SAFE -fPIC
-COPT_MINGW = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
+COPT_MINGW = -O3 -funroll-loops -march=pentium-mmx -mmmx \
         -D_REENTRANT -D_THREAD_SAFE
 COPT_G3_OSX = -O3 -funroll-loops -fno-inline -mcpu=750 -faltivec
 COPT_PPC_LINUX = -O3 -funroll-loops -fno-inline -mcpu=604e -maltivec \
 	-mabi=altivec
 LIB=.a
+# request static link of -lcrypto only
+LIBCRYPTO=/usr/lib/libcrypto.a
 EXES = hashcash$(EXE) sha1$(EXE) sha1test$(EXE)
 INSTALL = install
 POD2MAN = pod2man
@@ -79,7 +81,7 @@ ppc-linux:
 
 # mingw windows targets (cross compiler, or native)
 
-mingw: 
+mingw:
 	$(MAKE) "LIB=.lib" "CC=gcc" "EXE=.exe" "CFLAGS=$(COPT_MINGW) -DMONOLITHIC $(COPT)" build
 
 mingw-dll:
@@ -89,22 +91,22 @@ mingw-dll:
 # openSSL versions of targets
 
 x86-openssl:
-	$(MAKE) x86 "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+	$(MAKE) x86 "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) $(LIBCRYPTO)"
 
 g3-osx-openssl:
-	$(MAKE) g3-osx "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+	$(MAKE) g3-osx "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) $(LIBCRYPTO)"
 
 ppc-linux-openssl:
-	$(MAKE) ppc-linux "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+	$(MAKE) ppc-linux "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) $(LIBCRYPTO)"
 
 gnu-openssl:
-	$(MAKE) gnu "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+	$(MAKE) gnu "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) $(LIBCRYPTO)"
 
 generic-openssl:
-	$(MAKE) generic "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+	$(MAKE) generic "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) $(LIBCRYPTO)"
 
 debug-openssl:
-	$(MAKE) debug "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+	$(MAKE) debug "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) $(LIBCRYPTO)"
 
 
 build:	hashcash$(EXE) sha1$(EXE)
@@ -180,7 +182,7 @@ clean:
 
 distclean:
 	$(DELETE) *.o *~ $(EXES) hashcash-dll.* *.db *.bak TAGS core* 
-	$(DELETE) *.bak test/* *.dll *.lib *.exe *.a
+	$(DELETE) *.bak test/* *.dll *.lib *.exe *.a *.sdb
 
 tags:
 	$(ETAGS) *.c *.h

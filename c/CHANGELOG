@@ -1,3 +1,33 @@
+hashcash-1.20 - 20-Dec-2005 - Adam Back <adam@cypherspace.org>
+
+	* fix bug that -w reports using version 0 semantics even with
+	  version 1 stamps (was ignoring the version field and so
+	  defaulting to version 0 semantics).
+
+	* rest are fedora core4 related fixes
+
+	* remove dependency on openssl libcrypto.so.4 -- I compile rpm
+	  on rh9 for forwards compatibility, but then on fc4 they have only
+	  libcrypto.so.5, so the rpm fails to install with missing
+	  dependency.  Dependencies are ugly so I built with static link to
+	  libcrypto.a instead of dynamic to libcrypto.so the builtin SHA1
+	  and avoid using openssl.
+
+	* -mcpu is deprecated apparently so I am supposed to use the
+ 	  equivalent -mtune, but that doesn't work on rh9 era gcc
+	  compilers so used -march=pentium-mmx instead; I think the
+	  result should still work on 486 via Jonathan's exception
+	  catcher trapping absense of mmx cpu.
+
+	* the (mode) syntax for mmx registers is deprecated, apparently
+          we're supposed to use (vector_size)
+
+	* with fc4 the strncpy builtin is more fussy about char/unsigned
+          char matching.
+
+	* with fc4 rpmbuild options getting warnings about ignoring fgets
+	  return code
+
 hashcash-1.19 - 17-Dec-2005 - Adam Back <adam@cypherspace.org>
 
 	* update to documentation for hashcash_free in hashcash.h at

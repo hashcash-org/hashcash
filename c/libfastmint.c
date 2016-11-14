@@ -282,7 +282,7 @@ unsigned long hashcash_per_sec_calc( void )
 		begin = end;
 		do {
 			/* set up SHA-1 block */
-			strncpy(block, test_string, SHA1_INPUT_BYTES);
+			strncpy((char*)block, test_string, SHA1_INPUT_BYTES);
 			block[test_tail] = 0x80;
 			memset(block+test_tail+1, 0, 59-test_tail);
 			PUT_WORD(block+60, test_tail << 3);
@@ -312,7 +312,7 @@ unsigned long hashcash_per_sec_calc( void )
 	 * elapsed time for precision */
 	while(iter_count) {
 		/* set up SHA-1 block */
-		strncpy(block, test_string, SHA1_INPUT_BYTES);
+		strncpy((char*)block, test_string, SHA1_INPUT_BYTES);
 		block[test_tail] = 0x80;
 		memset(block+test_tail+1, 0, 59-test_tail);
 		PUT_WORD(block+60, test_tail << 3);
@@ -410,7 +410,7 @@ unsigned long hashcash_benchtest(int verbose, int core)
 		}
 		
 		/* set up SHA-1 block */
-		strncpy(block, test_string, SHA1_INPUT_BYTES);
+		strncpy((char*)block, test_string, SHA1_INPUT_BYTES);
 		block[test_tail] = 0x80;
 		memset(block+test_tail+1, 0, 59-test_tail);
 		PUT_WORD(block+60, test_tail << 3);
@@ -574,7 +574,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 	buflen = (tail - (tail % SHA1_INPUT_BYTES)) + 2*SHA1_INPUT_BYTES;
 	buffer = malloc(buflen);
 	memset(buffer, 0, buflen);
-	strncpy(buffer, token, buflen);
+	strncpy((char*)buffer, token, buflen);
 	
 	/* Add 96 bits of random data */
 	t = tail + 16;

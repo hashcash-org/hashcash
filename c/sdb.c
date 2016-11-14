@@ -204,7 +204,7 @@ int sdb_insert( DB* db, const char* key, const char* val, int* err )
 
 int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
 {
-    int found = 0 ;
+    int found = 0, res = 0;
     char fkey[MAX_KEY+1] = {0};
     char fval[MAX_VAL+1] = {0};
 
@@ -218,7 +218,7 @@ int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
 	else if ( *err ) { goto fail; }
     }
 
-    ftruncate( fileno( h->file ), h->write_pos );
+    res = ftruncate( fileno( h->file ), h->write_pos );
     return 1;
  fail:
     return 0;

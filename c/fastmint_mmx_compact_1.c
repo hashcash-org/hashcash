@@ -1,8 +1,8 @@
 #include "libfastmint.h"
 
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
-typedef int mmx_d_t __attribute__ ((mode(V2SI)));
-typedef int mmx_q_t __attribute__ ((mode(DI)));
+typedef int mmx_d_t __attribute__ ((vector_size (8)));
+typedef int mmx_q_t __attribute__ ((vector_size (8)));
 #endif
 
 int minter_mmx_compact_1_test(void)
