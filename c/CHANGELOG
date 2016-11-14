@@ -1,3 +1,15 @@
+hashcash-1.14 - 14-Dec-2004 - Adam Back <adam@cypherspace.org>
+
+	* make hashcash -cX accept continuation lines starting with
+	  space as well as tab
+
+	* add library function to wrap lines and use it from hashcash
+	  command line tool.
+
+	* fix long vs time_t prototype mismatch that was giving
+	  compile errors on BSD; also cleaned up some warnings that
+	  can be obtained with gcc -Wall.
+
 hashcash-1.13 - 16-Oct-2004 - Adam Back <adam@cypherspace.org>
 
 	* fix bug where grace period not applied to double-spend db.

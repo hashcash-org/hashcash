@@ -45,7 +45,7 @@ int minter_ansi_standard_1_test(void)
     ROUND5( t + 10, Func, K );\
     ROUND5( t + 15, Func, K )
 
-unsigned long minter_ansi_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
+unsigned long minter_ansi_standard_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
         MINTER_CALLBACK_VARS;
 	unsigned long iters = 0;

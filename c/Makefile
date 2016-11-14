@@ -1,4 +1,4 @@
-HC_VERS = 1.13
+HC_VERS = 1.14
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -36,7 +36,7 @@ FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
 	fastmint_ansi_compact_2.o fastmint_ansi_standard_2.o \
 	fastmint_altivec_standard_1.o fastmint_altivec_standard_2.o \
 	fastmint_altivec_compact_2.o fastmint_ansi_ultracompact_1.o
-OBJS = hashcash.o libsha1.o libhc.o sdb.o lock.o utct.o random.o sstring.o \
+OBJS = libsha1.o libhc.o sdb.o lock.o utct.o random.o sstring.o \
 	getopt.o $(FASTLIBS)
 DLLOBJS = libhc.o libsha1.o utct.o sdb.o lock.o sstring.o random.o $(FASTLIBS)
 EXEOBJS = hashcash.o
@@ -78,11 +78,14 @@ build:	hashcash$(EXE) sha1$(EXE)
 
 build-dll:      hashcash-dll$(EXE) sha1$(EXE)
 
-hashcash$(EXE):	$(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) -o $@
+hashcash$(EXE):	hashcash.o $(OBJS) 
+	$(CC) $(LDFLAGS) hashcash.o $(OBJS) -o $@
 
 sha1$(EXE):	sha1.o libsha1.o
 	$(CC) $(LDFLAGS) sha1.o libsha1.o -o $@
+
+example$(EXE):	example.o $(OBJS)
+	$(CC) $(LDFLAGS) example.o $(OBJS) -o $@
 
 hashcash-dll$(EXE):   $(EXEOBJS) hashcash.dll
 	$(CC) $(LDFLAGS) $(EXEOBJS) hashcash.dll -o $@
@@ -92,7 +95,7 @@ sha1test$(EXE):	sha1test.o libsha1.o
 
 all:	$(EXES)
 
-hashcash.dll:   hashcash.def $(DLLOBJS)
+hashcash.dll:   $(DLLOBJS)
 	$(CC) -shared -o hashcash.dll $(DLLOBJS) \
 	-Wl,--output-def,hashcash.def,--out-implib,libhashcash.a
 	$(MSLIB) /machine:x86 /def:hashcash.def
@@ -150,6 +153,7 @@ dist:
 
 # DO NOT DELETE
 
+example.o: sstring.h sdb.h hashcash.h getopt.h
 fastmint_altivec_compact_2.o: libfastmint.h hashcash.h
 fastmint_altivec_standard_1.o: libfastmint.h hashcash.h
 fastmint_altivec_standard_2.o: libfastmint.h hashcash.h

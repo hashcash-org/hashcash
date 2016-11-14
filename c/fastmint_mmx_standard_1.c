@@ -2,10 +2,6 @@
 #include <setjmp.h>
 #include "libfastmint.h"
 
-//#if defined(WIN32) && !defined(__MMX__)
-//#define __MMX__
-//#endif
-
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
 typedef int mmx_d_t __attribute__ ((mode(V2SI)));
 typedef int mmx_q_t __attribute__ ((mode(DI)));
@@ -288,7 +284,7 @@ static inline mmx_d_t S(int n, mmx_d_t X)
 #endif
 #define MINTER_CALLBACK_CLEANUP_FP __builtin_ia32_emms()
 
-unsigned long minter_mmx_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
+unsigned long minter_mmx_standard_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
   MINTER_CALLBACK_VARS;

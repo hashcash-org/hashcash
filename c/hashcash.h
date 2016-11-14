@@ -26,7 +26,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.13
+#define HASHCASH_VERSION 1.14
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -107,7 +107,7 @@ const char* hashcash_version( void );
  * stamp           -- the stamp output
  *
  * anon_random     -- default NULL, if set to pointer to long
- *                    returns actuall random offset added to time
+ *                    returns actual random offset added to time
  *
  * tries_taken     -- default NULL, if set to pointer to double
  *                    returns number of stamps tested before finding
@@ -120,9 +120,12 @@ const char* hashcash_version( void );
  *
  * cb              -- user defined callback function which is called every 
  *		      1/10th second; if it returns false hashcash_mint
- *                    will return HASHCASH_USER_ABORT
+ *                    will return HASHCASH_USER_ABORT; if you do not need
+ *		      the callback function, pass NULL
  *
- * user_arg        -- user argument passed to the callback function
+ * user_arg        -- user argument passed to the callback function, if you
+ * 		      do not need the callback function or if you do not need
+ *		      the arguement pass NULL.
  *
  */
 
@@ -139,6 +142,25 @@ int hashcash_mint( time_t now_time, int time_width, const char* resource,
 		   long* anon_random, double* tries_taken, char* ext,
 		   int compress, hashcash_callback cb, void* user_arg );
 
+/* convert a stamp into a X-Hashcash: header wrapping lines at line_len
+ * chars.  If line_len = 0, does not wrap, just prepends header.
+ * 
+ * arguments are:
+ *
+ * stamp     -- the stamp to put in the header
+ * line_len  -- the number of chars you want to wrap after (or no wrapping
+ *              if 0 is given)
+ * lf        -- what kind of line feed you want "\r\n" (DOS), "\n" (UNIX), 
+ *              "\r" (MAC).  Actually I think RFC822 requires DOS lf.  If
+ *              you pass NULL it uses the standard RFC822 lf ("\r\n").
+ * 
+ */
+
+HCEXPORT
+char* hashcash_make_header( const char* stamp, int line_len, 
+			    const char* header, char cont, 
+			    const char* lf  );
+
 /* return time field width necessary to express time in sufficient
  * resolution to avoid premature expiry of stamp minted
  * for a resource which advertises the given validity period
@@ -146,7 +168,7 @@ int hashcash_mint( time_t now_time, int time_width, const char* resource,
  */
 
 HCEXPORT
-int hashcash_validity_to_width( time_t validity_period );
+int hashcash_validity_to_width( long validity_period );
 
 /* count bits of collision in stamp */
 
@@ -195,7 +217,7 @@ int hashcash_parse( const char* stamp, int* vers, int* bits, char* utct,
  */
 
 HCEXPORT
-long hashcash_valid_for( time_t stamp_time, time_t validity_period, 
+long hashcash_valid_for( time_t stamp_time, long validity_period, 
 			 long grace_period, time_t now_time );
 
 /* simple function calling hashcash_parse, hashcash_count for convenience 
@@ -239,7 +261,7 @@ long hashcash_valid_for( time_t stamp_time, time_t validity_period,
 HCEXPORT
 int hashcash_check( const char* stamp, int case_flag, const char* resource, 
 		    void **compile, char** re_err, int type, time_t now_time, 
-		    time_t validity_period, long grace_period, 
+		    long validity_period, long grace_period, 
 		    int required_bits, time_t* stamp_time );
 
 /* return how many tries per second the machine can do */
@@ -303,7 +325,7 @@ void hashcash_free( void* ptr);
  * files with the DLL (this is an excerpt from utct.h)
  */
 
-#define MAX_UTCTIME 13
+#define MAX_UTC 13
 
 /* convert utct string into a time_t
  *
@@ -317,7 +339,7 @@ void hashcash_free( void* ptr);
  */
 
 HCEXPORT
-time_t hashcash_from_utctimestr( const char utct[MAX_UTCTIME+1], int utc );
+time_t hashcash_from_utctimestr( const char utct[MAX_UTC+1], int utc );
 
 /* convert time_t into utct string (note utct is always in utc time)
  *
@@ -332,7 +354,7 @@ time_t hashcash_from_utctimestr( const char utct[MAX_UTCTIME+1], int utc );
  */
 
 HCEXPORT
-int hashcash_to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t );
+int hashcash_to_utctimestr( char utct[MAX_UTC+1], int len, time_t t );
 
 /* returns max rate of hashcash / sec using a slower but more accurate
  * benchmarking method
@@ -342,14 +364,22 @@ int hashcash_to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t );
  * verbose     -- verbosity level 0 = no output, 1 = some, 2 = more, 3 = most
  */
 
+/* returns speed of hashcash */
+
 HCEXPORT
 unsigned long hashcash_benchtest( int verbose );
+
+/* returns current core */
 
 HCEXPORT
 int hashcash_core(void);
 
+/* use specified core */
+
 HCEXPORT
 int hashcash_use_core(int);
+
+/* give name of specified core */
 
 HCEXPORT
 const char* hashcash_core_name(int);

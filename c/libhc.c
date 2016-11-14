@@ -147,7 +147,7 @@ int hashcash_mint( time_t now_time, int time_width, const char* resource,
 		   int compress, hashcash_callback cb, void* user_arg )
 {
     long rnd = 0 ;
-    char now_utime[ MAX_UTCTIME+1 ] = {0}; /* current time */
+    char now_utime[ MAX_UTC+1 ] = {0}; /* current time */
     char* token = 0;
     double taken;
 
@@ -202,6 +202,55 @@ int hashcash_mint( time_t now_time, int time_width, const char* resource,
     return HASHCASH_OK;
 }
 
+#define X_HASHCASH "X-Hashcash"
+#define CONT '\t'
+#define LF "\r\n"
+
+char* hashcash_make_header( const char* stamp, int line_len, 
+			    const char* header, char cont, 
+			    const char* lf  )
+{
+    int stamp_len = strlen( stamp ), i, fstep, step, tstep, lf_len;
+    int stamp_left = stamp_len;
+    int lines, header_len, cont_len, max_res;
+    char* res, *resp;
+    char conts[2];
+
+    if ( header == NULL ) { header = X_HASHCASH; }
+    if ( cont == '\0' ) { cont = CONT; }
+    if ( lf == NULL ) { lf = LF; }
+
+    header_len = strlen( header );
+    cont_len = ( cont == CONT ) ? 8 : 1;
+    conts[0] = cont;
+    conts[1] = '\0';
+
+    lines = ((stamp_len+header_len+2) / (line_len-cont_len))+1;
+
+    lf_len = strlen(lf);
+    max_res = lines*(line_len+lf_len+1);
+    res = malloc( max_res+1 );
+    res[0]='\0';
+    resp = res;
+    strncat( resp, header, max_res );
+    resp += header_len;
+
+    fstep = line_len - header_len;
+    step = line_len - cont_len;
+
+    for ( i = 0; i < stamp_len; stamp += tstep, i += tstep ) {
+	tstep = i ? step : fstep;
+	if ( tstep > stamp_left ) { tstep = stamp_left; }
+	if ( i ) { strncat( resp, conts, 1 ); resp++; }
+	strncat( resp, stamp, tstep ); 
+	resp += tstep;
+	strncat( resp, lf, lf_len );
+	resp += lf_len;
+	stamp_left -= tstep;
+    }
+    return res;
+}
+
 time_t round_off( time_t now_time, int digits )
 {
     struct tm* now = NULL ;
@@ -222,7 +271,7 @@ time_t round_off( time_t now_time, int digits )
     return mk_utctime( now );
 }
 
-int hashcash_validity_to_width( time_t validity_period )
+int hashcash_validity_to_width( long validity_period )
 {
     int time_width = 6;		/* default YYMMDD */
     if ( validity_period < 0 ) { return 0; }
@@ -348,7 +397,7 @@ unsigned hashcash_count( const char* token )
     return collision_bits;
 }
 
-long hashcash_valid_for( time_t token_time, time_t validity_period,
+long hashcash_valid_for( time_t token_time, long validity_period,
 			 long grace_period, time_t now_time )
 {
     long expiry_time = 0 ;
@@ -481,7 +530,7 @@ int hashcash_resource_match( int type, const char* token_res, const char* res,
 
 int hashcash_check( const char* token, int case_flag, const char* resource,
 		    void **compile, char** re_err, int type, time_t now_time, 
-		    time_t validity_period, long grace_period, 
+		    long validity_period, long grace_period, 
 		    int required_bits, time_t* token_time ) {
     time_t token_t = 0 ;
     char token_utime[ MAX_UTC+1 ] = {0};

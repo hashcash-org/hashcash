@@ -83,7 +83,7 @@ time_t mk_utctime( struct tm* tms ) {
     return res;
 }
 
-time_t hashcash_from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
+time_t hashcash_from_utctimestr( const char utct[MAX_UTC+1], int utc )
 {
     time_t failed = -1;
     time_t res = 0 ;
@@ -93,7 +93,7 @@ time_t hashcash_from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
     int utct_len = strlen( utct );
     int century_offset = 0;
 
-    if ( utct_len > MAX_UTCTIME || utct_len < 2 || ( utct_len % 2 == 1 ) ) {
+    if ( utct_len > MAX_UTC || utct_len < 2 || ( utct_len % 2 == 1 ) ) {
 	return failed;
     }
 
@@ -151,11 +151,11 @@ time_t hashcash_from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
     }
 }
 
-int hashcash_to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t  )
+int hashcash_to_utctimestr( char utct[MAX_UTC+1], int len, time_t t  )
 {
     struct tm* tms = gmtime( &t );
 
-    if ( tms == NULL || len > MAX_UTCTIME || len < 2 ) { return 0; }
+    if ( tms == NULL || len > MAX_UTC || len < 2 ) { return 0; }
     sprintf( utct, "%02d", tms->tm_year % 100 );
     if ( len == 2 ) { goto leave; }
     sprintf( utct+2, "%02d", tms->tm_mon+1 );

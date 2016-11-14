@@ -36,13 +36,13 @@ time_t mk_utctime( struct tm* tms ); /* mktime like with utc struct tm */
  *    YYMMDD[hh[mm[ss]]][Z]
  */
 
-#define MAX_UTCTIME 13
+#define MAX_UTC 13
 
 HCEXPORT
-time_t hashcash_from_utctimestr( const char utct[MAX_UTCTIME+1], int utc );
+time_t hashcash_from_utctimestr( const char utct[MAX_UTC+1], int utc );
 
 HCEXPORT
-int hashcash_to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t );
+int hashcash_to_utctimestr( char utct[MAX_UTC+1], int len, time_t t );
 
 #if defined( __cplusplus )
 }

@@ -87,7 +87,7 @@ int minter_ansi_standard_2_test(void)
     ROUNDu( t + 3, C, D, E, A, B, Func, K, W );\
     ROUNDu( t + 4, B, C, D, E, A, Func, K, W );
 
-unsigned long minter_ansi_standard_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
+unsigned long minter_ansi_standard_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
 	MINTER_CALLBACK_VARS;
 	unsigned long iters = 0 ;

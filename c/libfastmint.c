@@ -245,7 +245,7 @@ unsigned long hashcash_per_sec_calc(void)
 	unsigned long rate = 0, iter_count = 256;
 	volatile clock_t begin = 0 , end = 0 , tmp = 0 , res = 0 , taken = 0 ;
 	double elapsed = 0 , multiple = 0 ;
-	char block[SHA1_INPUT_BYTES] = {0};
+	unsigned char block[SHA1_INPUT_BYTES] = {0};
 	int gotbits = 0;
 	HC_Mint_Routine best_minter_fp;
 	
@@ -267,8 +267,6 @@ unsigned long hashcash_per_sec_calc(void)
 
 	if ( res > 1000 ) {
 		/* Run minter, with clock running */
-		//		end = clock();
-	        //		while((begin = clock()) == end) {}
 		begin = end;
 		do {
 			/* set up SHA-1 block */
@@ -363,7 +361,7 @@ unsigned long hashcash_benchtest(int verbose)
 	static const int test_tail = 52;  /* must be less than 56 */
 	static const int bit_stats[] = { 8, 10, 16, 20, 22, 
 					 24, 26, 28, 30, 0 };
-	char block[SHA1_INPUT_BYTES] = {0};
+	unsigned char block[SHA1_INPUT_BYTES] = {0};
 	volatile clock_t begin = 0 , end = 0 , tmp = 0 ;
 	double elapsed = 0 , rate = 0 , peak_rate = 0;
 	SHA1_ctx crypter;
@@ -421,11 +419,11 @@ unsigned long hashcash_benchtest(int verbose)
 			hash[a] <<= 1;
 		}
 		if(got_bits != (a*8)+b || got_bits < test_bits || 
-		   block[test_tail] != (char) 0x80) {
+		   block[test_tail] != (unsigned char) 0x80) {
 			if(verbose) {
 				printf("ERROR!\n");
 				printf("    Wanted %u bits, reported %d bits, got %lu bits.\n", test_bits, got_bits, (a*8)+b);
-				if(block[test_tail] == (char) 0x80) {
+				if(block[test_tail] == (unsigned char) 0x80) {
 					printf("    End-of-block marker remains intact.\n");
 				} else {
 					printf("    End-of-block marker damaged!\n");
@@ -530,7 +528,7 @@ double hashcash_fastmint(const int bits, const char *token,
 	SHA1_ctx crypter;
 	unsigned char hash[SHA1_DIGEST_BYTES] = {0};
 	unsigned int IV[SHA1_DIGEST_WORDS] = {0};
-	char *buffer = NULL, *block = NULL, c = 0;
+	unsigned char *buffer = NULL, *block = NULL, c = 0;
 	unsigned int buflen = 0, tail = 0, a = 0, b = 0;
 	unsigned long t = 0, loop = 0, iters = 0;
 	HC_Mint_Routine best_minter;
@@ -626,7 +624,7 @@ double hashcash_fastmint(const int bits, const char *token,
 		goto again;
 	}
 
-	*result = buffer;
+	*result = (char*)buffer;
 	return counter;
 }
 

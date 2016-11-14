@@ -29,6 +29,8 @@
     #define ftruncate chsize
 #endif
 
+#define MAX_UTC 13
+
 /* simple though inefficient implementation of a database function */
 
 static int sdb_insert( DB*, const char* key, const char* val, int* err );
@@ -220,4 +222,45 @@ int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
     return 1;
  fail:
     return 0;
+}
+
+/* higher level functions */
+
+int hashcash_db_open( DB* db, const char* db_filename, int* err ) {
+    int my_err;
+
+    if ( !err ) { err = &my_err; }
+    if ( !sdb_open( db, db_filename, err ) ) { return 0; }
+    fgetc( db->file );		/* try read to trigger EOF */
+    if ( feof( db->file ) ) {
+	if ( !sdb_add( db, PURGED_KEY, "700101000000", err ) ) { 
+	    return 0;
+	}
+    }
+    rewind( db->file );
+    return 1;
+}
+
+int hashcash_db_in( DB* db, char* token, char *period, int* err ) {
+    int in_db = 0;
+    int my_err;
+
+    if ( !err ) { err = &my_err; }
+    *err = 0;
+
+    in_db = sdb_lookup( db, token, period, MAX_UTC, err ); 
+    if ( err ) { return 0; }
+    return in_db;
+}
+
+int hashcash_db_add( DB* db, char* token, char *period, int* err ) {
+    if ( !sdb_add( db, token, period, err ) ) { 
+	return 0; 
+    }
+    return 1;
+}
+
+int hashcash_db_close( DB* db, int* err ) {
+    if ( !sdb_close( db, err ) ) { return 0; }
+    return 1;
 }

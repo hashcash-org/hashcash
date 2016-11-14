@@ -66,7 +66,7 @@
 	} while (0)
 
 typedef unsigned int uInt32;
-typedef unsigned long (* HC_Mint_Routine)(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+typedef unsigned long (* HC_Mint_Routine)(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 typedef int (* HC_Mint_Capable_Routine)(void);
 
 typedef enum {
@@ -140,55 +140,56 @@ extern unsigned long hashcash_benchtest(int verbose);
 /* Standard ANSI-C 1-pipe "compact" implementation - for use on x86 and other
  * register-limited architectures.
  */
-extern unsigned long minter_ansi_compact_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_ansi_compact_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_compact_1_test(void);
 
 /* Standard ANSI-C 1-pipe "Method B" implementation - for use on register-rich architectures.
  */
-extern unsigned long minter_ansi_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_ansi_standard_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_standard_1_test(void);
 
 /* Standard ANSI-C 1-pipe "ultra-compact" implementation - for use on architectures with
  * severely limited L1 caches (eg. M68K).
  */
-extern unsigned long minter_ansi_ultracompact_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_ansi_ultracompact_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_ultracompact_1_test(void);
 
 /* Standard ANSI-C 2-pipe "compact" implementation - for use on register-rich architectures.
  */
-extern unsigned long minter_ansi_compact_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_ansi_compact_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_compact_2_test(void);
 
 /* Standard ANSI-C 2-pipe "Method B" implementation - for use on register-rich architectures.
  */
-extern unsigned long minter_ansi_standard_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_ansi_standard_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_standard_2_test(void);
 
 /* PowerPC Altivec 1x4-pipe "Method B" implementation - for use on G4 and higher systems.
  */
-extern unsigned long minter_altivec_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_altivec_standard_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_altivec_standard_1_test(void);
 
 /* PowerPC Altivec 2x4-pipe "Method B" implementation - for use on G4 and higher systems.  Hand-optimised.
  */
-extern unsigned long minter_altivec_standard_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_altivec_standard_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_altivec_standard_2_test(void);
 
 /* PowerPC Altivec 2x4-pipe "compact" implementation - for use on G4 and higher systems.  Hand-optimised.
  */
-extern unsigned long minter_altivec_compact_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_altivec_compact_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_altivec_compact_2_test(void);
 
 /* AMD64/x86 MMX 1x2-pipe "Method B" implementation - for use on Pentium-MMX/2/3/4, K6-2/3,
  * Athlon, Athlon64, Opteron, and compatible systems.  Hand-optimised.
  */
-extern unsigned long minter_mmx_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_mmx_standard_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+
 extern int minter_mmx_standard_1_test(void);
 
 /* AMD64/x86 MMX 1x2-pipe "compact" implementation - for use on Pentium-MMX/2/3/4, K6-2/3,
  * Athlon, Athlon64, Opteron, and compatible systems.  Hand-optimised.
  */
-extern unsigned long minter_mmx_compact_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+extern unsigned long minter_mmx_compact_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_mmx_compact_1_test(void);
 
 #endif

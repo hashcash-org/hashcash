@@ -624,7 +624,7 @@ static void WF(vector unsigned int *W, int tailIndex)
 }
 #endif
 
-unsigned long minter_altivec_compact_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
+unsigned long minter_altivec_compact_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
 	#if defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
 	MINTER_CALLBACK_VARS;

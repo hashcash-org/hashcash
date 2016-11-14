@@ -78,8 +78,6 @@
 #define VPUTS(f,str) VV { fputs(str,f); }
 
 #define HDR_LINE_LEN 70
-void printwrap( FILE* fp, const char* hdr, const char* str, char c, 
-		int line_len );
 char *read_header( FILE* f, char** s, int* slen, int* alloc, 
 		   char* a, int alen );
 int read_eof( FILE* fp, char* a );
@@ -90,6 +88,12 @@ void die_msg( const char* );
 void usage( const char* );
 int parse_period( const char* aperiod, long* resp );
 double report_speed( int bits, double* time_est, int display );
+
+#if defined( WIN32 )
+#define LINEFEED "\r\n"
+#else
+#define LINEFEED "\n"
+#endif
 
 /* avoid needing to export stolower from hashcash.dll */
 
@@ -116,15 +120,18 @@ typedef struct {
 } ARRAY;
 
 void db_open( DB* db, const char* db_filename );
-void db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
-	       long purge_period, time_t now_time, time_t real_time,
-	       long grace_period );
+void db_purge_arr( DB* db, ARRAY* purge_resource, int purge_all, 
+		   long purge_period, time_t now_time, long validity_period,
+		   long grace_period );
+int db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
+	      long purge_period, time_t now_time, long validity_period,
+	      long grace_period, int verbose, int* err );
 int db_in( DB* db, char* token, char *period );
 void db_add( DB* db, char* token, char *token_utime );
 void db_close( DB* db ) ;
 
 void array_alloc( ARRAY* array, int num );
-void array_push( ARRAY* array, char *str, int type, int case_flag, 
+void array_push( ARRAY* array, const char *str, int type, int case_flag, 
 		 long validity, long grace, long anon, int width, int bits, 
 		 int over );
 #define array_num( a ) ( (a)->num )
@@ -163,6 +170,7 @@ int main( int argc, char* argv[] )
     int mint_flag = 0, ignore_boundary_flag = 0, name_flag = 0, res_flag = 0;
     int auto_version = 0, version_flag = 0, checked = 0, comma = 0;
     char header[ MAX_HDR+1 ] = { 0 };
+    char* header_wrapped = NULL;
     int header_len, token_found = 0, headers_found = 0;
     char token[ MAX_TOK+1 ] = { 0 }, token_resource[ MAX_RES+1 ] = { 0 };
     char *new_token = NULL ;
@@ -242,8 +250,7 @@ int main( int argc, char* argv[] )
 	    }
 	    break;
 	case 'C': case_flag = 1; break;
-	case 'c': check_flag = 1; 
-	    break;
+	case 'c': check_flag = 1; break;
 	case 'd': db_flag = 1; break;
 	case 'e': 
 	    if ( validity_flag ) { multiple_validity = 1; }
@@ -253,9 +260,7 @@ int main( int argc, char* argv[] )
 		usage( "error: -e invalid validity period" ); 
 	    }
 	    break;
-	case 'E': 
-	    str_type = TYPE_REGEXP; 
-	    break;
+	case 'E': str_type = TYPE_REGEXP; break;
 	case 'f': db_filename = strdup( optarg ); break;
 	case 'g': 
 	    if ( grace_flag ) { multiple_grace = 1; }
@@ -291,9 +296,7 @@ int main( int argc, char* argv[] )
 		bits = default_bits;
 	    }
 	    break;
-	case 'M':
-	    str_type = TYPE_WILD;
-	    break;
+	case 'M': str_type = TYPE_WILD; break;
 	case 'p': 
 	    if ( purge_flag ) { usage("error: only one -p flag per call"); }
 	    purge_flag = 1;
@@ -424,14 +427,6 @@ int main( int argc, char* argv[] )
 	usage( "must specify at least one of -m, -c, -d, -n, -l-, -w, -b, -r, -p or -s");
     }
 
-//    if ( check_flag && hdr_flag && name_flag + left_flag + width_flag > 0 ) {
-//	usage( "must not specify -n, -l, or -w with -cx or -cX" );
-//    }
-
-//    if ( check_flag && hdr_flag && !res_flag ) {
-//	usage( "must give -r resource with -cx or -cX" );
-//    }
-
     if ( quiet_flag ) {	verbose_flag = 0; } /* quiet overrides verbose */
     if ( speed_flag && check_flag ) { speed_flag = 0; }	/* ignore speed */
 
@@ -439,7 +434,7 @@ int main( int argc, char* argv[] )
 	db_open( &db, db_filename );
 	db_opened = 1;
 
-	db_purge( &db, &purge_resource, purge_all, purge_period, 
+	db_purge_arr( &db, &purge_resource, purge_all, purge_period, 
 		  now_time, validity_flag ? purge_validity_period : 0,
 		  grace_period );
 
@@ -560,8 +555,17 @@ int main( int argc, char* argv[] )
 	    taken = (end-start)/(double)CLOCKS_PER_SEC;
 	    VPRINTF( stderr, "time: %.0f seconds\n", taken );
 	    
-	    if ( hdr_flag ) { 
-		printwrap( stdout, header, new_token, '\t', HDR_LINE_LEN ); 
+	    if ( hdr_flag ) {
+		header_wrapped = hashcash_make_header( new_token, HDR_LINE_LEN,
+						       header, '\t', 
+						       LINEFEED );
+		if ( header_wrapped == NULL ) { 
+		    /* don't expect this but for security fail closed */
+		    fprintf(stderr,"out of memory\n");
+		    exit( EXIT_FAILURE );
+		}
+		fprintf( stdout, header_wrapped );
+		free( header_wrapped );
 	    } else { 
 		fprintf( stdout, "%s%s\n", 
 			 ((quiet_flag||!out_is_tty)? "" : "hashcash token: "),
@@ -861,7 +865,7 @@ int main( int argc, char* argv[] )
 			       "database: not double spent\n" );
 			checked = yes_flag || ( res_flag && bits_flag);
 			if ( checked ) {
-			    sprintf( period, "%ld", (long)validity_period );
+			    sprintf( period, "%ld", validity_period );
 			    db_add( &db, token, period );
 			}
 		    } else {
@@ -1013,7 +1017,7 @@ void usage( const char* msg )
     fprintf( stderr, "\t-W\t\tmatch following resources with wildcards (default)\n" );
     fprintf( stderr, "\t-E\t\tmatch following resources as regular expression\n" );
     fprintf( stderr, "\t-P\t\tshow progress while searching\n");
-    fprintf( stderr, "\t-O core\tuse specified minting core\n");
+    fprintf( stderr, "\t-O core\t\tuse specified minting core\n");
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit collision\n" );
     fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check collision\n" );
@@ -1104,19 +1108,45 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     return 1;			/* otherwise keep */
 }
 
-void db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
+int hashcash_db_purge( DB* db, const char* purge_resource, int type,
+		       int case_flag, long validity_period, long grace_period,
+		       int purge_all, long purge_period, time_t now_time,
+		       int* err ) {
+    ARRAY* purge_resource_arr = NULL;
+    array_alloc( purge_resource_arr, 1 );
+    array_push( purge_resource_arr, purge_resource, type, case_flag,
+		validity_period, grace_period, 0, 0, 0, 0 );
+    return db_purge( db, purge_resource_arr, purge_all, purge_period, 
+		     now_time, validity_period, grace_period, 0, err );
+}
+
+void db_purge_arr( DB* db, ARRAY* purge_resource, int purge_all, 
 	       long purge_period, time_t now_time, long validity_period,
 	       long grace_period ) {
-    int err = 0 ;
+    int res, err = HASHCASH_FAIL;
+    res = db_purge( db, purge_resource, purge_all, purge_period, now_time, 
+		    validity_period, grace_period, verbose_flag, &err );
+    switch ( res ) {
+    case HASHCASH_INVALID_TIME:
+	die_msg( "error: invalid time argument" ); break;
+    case HASHCASH_FAIL: die( err ); break;
+    case HASHCASH_OK: break;
+    default: die( err );
+    }
+}
+
+int db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
+	       long purge_period, time_t now_time, long validity_period,
+	       long grace_period, int verbose, int* err ) {
     time_t last_time = 0 ;
     char purge_utime[ MAX_UTC+1 ] = {0}; /* time token created */
     int ret = 0;
     db_arg arg;
 
-    if ( now_time < 0 ) { die_msg( "error: outside unix time Epoch" ); }
+    if ( now_time < 0 ) { return HASHCASH_INVALID_TIME; }
 
-    if ( !sdb_lookup( db, PURGED_KEY, purge_utime, MAX_UTC, &err ) ) {
-	die( err );
+    if ( !sdb_lookup( db, PURGED_KEY, purge_utime, MAX_UTC, err ) ) {
+	return 0;
     }
 
     last_time = hashcash_from_utctimestr( purge_utime, 1 );
@@ -1125,7 +1155,7 @@ void db_purge( DB* db, ARRAY* purge_resource, int purge_all,
     }
 
     if ( !hashcash_to_utctimestr( arg.now_utime, MAX_UTC, now_time ) ) {
-	die_msg( "error: converting time" );
+	return HASHCASH_INVALID_TIME;
     }
 
     arg.expires_before = now_time;
@@ -1136,41 +1166,38 @@ void db_purge( DB* db, ARRAY* purge_resource, int purge_all,
 
     if ( purge_period == 0 || now_time >= last_time + purge_period ) {
 	VPRINTF( stderr, "purging database: ..." );
-	ret = sdb_updateiterate( db, sdb_cb_token_matcher, (void*)&arg, &err );
+	ret = sdb_updateiterate( db, sdb_cb_token_matcher, (void*)&arg, err );
 	VPRINTF( stderr, ret ? "done\n" : "failed\n" ); 
     }
+    return ret;
 }
 
 void db_open( DB* db, const char* db_filename ) {
-    int err = 0 ;
-
-    if ( !sdb_open( db, db_filename, &err ) ) { die( err ); }
-    fgetc( db->file );		/* try read to trigger EOF */
-    if ( feof( db->file ) ) {
-	if ( !sdb_add( db, PURGED_KEY, "700101000000", &err ) ) { 
-	    die( err ); 
-	}
-    }
-    rewind( db->file );
+    int err;
+    if (!hashcash_db_open( db, db_filename, &err )) { die(err); }
 }
 
 int db_in( DB* db, char* token, char *period ) {
-    int err = 0 ;
-    int in_db = 0 ;
+    int err = 0;
+    int res;
 
-    in_db = sdb_lookup( db, token, period, MAX_UTC, &err ); 
+    res = hashcash_db_in( db, token, period, &err );
     if ( err ) { die( err ); }
-    return in_db;
+    return res;
 }
 
 void db_add( DB* db, char* token, char *period ) {
-    int err = 0 ;
-    if ( !sdb_add( db, token, period, &err ) ) { die( err ); }
+    int err = 0;
+    if ( !hashcash_db_add( db, token, period, &err ) ) {
+	die( err );
+    }
 }
 
 void db_close( DB* db ) {
-    int err = 0 ;
-    if ( !sdb_close( db, &err ) ) { die( err ); }
+    int err = 0;
+    if (!hashcash_db_close( db, &err ) ) {
+	die( err );
+    }
 }
 
 /* num = start size, auto-grows */ 
@@ -1184,7 +1211,7 @@ void array_alloc( ARRAY* array, int num ) {
 
 /* auto-grow array */
 
-void array_push( ARRAY* array, char *str, int type, int case_flag, 
+void array_push( ARRAY* array, const char *str, int type, int case_flag, 
 		 long validity, long grace, long anon, int width, int bits, 
 		 int over ) 
 {
@@ -1250,46 +1277,6 @@ void die_msg( const char* str )
     QPUTS( stderr, str );
     QPUTS( stderr, "\n" );
     exit( EXIT_ERROR );
-}
-
-void printwrap( FILE* fp, const char* hdr, const char* str, char c, 
-		int line_len )
-{
-    int str_len = strlen( str ), i, fstep, step;
-    char fformat[20], format[20];
-    char line_arr[MAX_LINE+1];
-    char* line = line_arr;
-    int line_alloc = 0;
-
-    if ( line_len > MAX_LINE ) { line = malloc(line_len+1); line_alloc = 1; }
-
-    if ( c == '\\' ) {
-	fstep = line_len - strlen(hdr) - 1;
-	step = line_len - 1;
-	sprintf( fformat, "%s%%s\\\n", hdr );
-	sprintf( format, "%%s\\\n" );
-    } else if ( c == '\t' ) {
-	fstep = line_len - strlen(hdr);
-	step = line_len - 8;
-	sprintf( fformat, "%s%%s\n", hdr );
-	sprintf( format, "\t%%s\n" );
-    } else if ( c == 0 ) {
-	fstep = line_len - strlen(hdr);
-	step = line_len;
-	sprintf( fformat, "%s%%s\n", hdr );
-	sprintf( format, "%%s\n" );
-    } else {
-	fstep = line_len - strlen(hdr);
-	step = line_len-1;
-	sprintf( fformat, "%s%%s\n", hdr );
-	sprintf( format, "%c%%s\n", c );
-    }
-    for ( i = 0; i < str_len; 
-	  str += i ? step : fstep, i += i ? step : fstep ) {
-	sstrncpy( line, str, i ? step : fstep );
-	fprintf( fp, i ? format : fformat, line );
-    }
-    if ( line_alloc ) { free( line ); }
 }
 
 /* remove unix, DOS and MAC linefeeds from line ending */
@@ -1396,10 +1383,10 @@ char *read_header( FILE* f, char** s, int* smax, int* alloc,
 	a[0] = '\0';
 	fgets( a, amax, f );
 	chomplf( a );
-	if ( a[0] == '\t' ) {
+	if ( a[0] == '\t' || a[0] == ' ') {
 	    read_append( s, smax, alloc, a+1 );
 	}
-    } while ( a[0] == '\t' );
+    } while ( a[0] == '\t' || a[0] == ' ' );
 
     return *s;
 }
@@ -1415,4 +1402,3 @@ void mystolower( char* str ) {
         *str = tolower( *str );
     }
 }
-

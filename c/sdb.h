@@ -36,6 +36,25 @@ typedef struct {
 #define READ_MODE 0
 #define WRITE_MODE 1
 
+/* higher level functions */
+
+#define PURGED_KEY "last_purged"
+
+HCEXPORT
+int hashcash_db_open( DB* db, const char* db_filename, int* err );
+
+HCEXPORT
+int hashcash_db_in( DB* db, char* token, char *period, int* err );
+
+HCEXPORT
+int hashcash_db_add( DB* db, char* token, char *period, int* err );
+
+HCEXPORT
+int hashcash_db_close( DB* db, int* err );
+
+
+/* low level functions */
+
 /* empty string matches any key for sdb_find, sdb_findnext */
 
 #define ANY_KEY ""		
@@ -75,6 +94,7 @@ HCEXPORT
 int sdb_callbacklookupnext( DB*, sdb_rcallback cb, void* arg, 
 			    char* key, int klen, char* val, int vlen, 
 			    int* err );
+
 
 #if defined( __cplusplus )
 }
