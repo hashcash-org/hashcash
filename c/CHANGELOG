@@ -1,3 +1,19 @@
+hashcash-0.33 - 13-Apr-2004 - Adam Back <adam@cypherspace.org>
+
+	* allow wild card without @ sign if there is no @ sign in
+	  pattern
+
+	* fix bug reported by Ken Takusagawa <kenta@mit.edu> where for
+	  collisions taking > 2^31 bits of work it reported -ve number of
+	  tries
+
+	* put /dev/urandom macro for MAC from
+	  Jonathan Morton <chromi@chromatix.demon.co.uk> so we use
+	  /dev/urandom on MAC
+
+	* TODO: check logic in find_collision see if it really does tries
+	  work (rather than tries-1)
+
 hashcash-0.32 - 09-Apr-2004 - Adam Back <adam@cypherspace.org>
 
 	* documentation fixes

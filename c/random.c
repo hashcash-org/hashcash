@@ -7,7 +7,7 @@
 
 /* on machines that have /dev/urandom -- use it */
 
-#if defined( __linux__ ) || defined( __FreeBSD__ ) || \
+#if defined( __linux__ ) || defined( __FreeBSD__ ) || defined( __MACH__ ) || \
     defined( __OpenBSD__ ) || defined( DEV_URANDOM )
 
 #define URANDOM_FILE "/dev/urandom"

@@ -8,6 +8,14 @@
 #include <assert.h>
 #include "utct.h"
 
+#if defined( _WIN32 )
+#include <windows.h>
+#endif
+
+#if defined( _WIN32 )
+#define snprintf _snprintf
+#endif
+
 static int char_pair_atoi( const char* pair )
 {
     char str[3];

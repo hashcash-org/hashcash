@@ -98,15 +98,16 @@ int email_match( const char* email, const char* pattern )
     pat_user = strtok( pat, "@" );
     pat_dom = strtok( NULL, "@" );
 
-    if ( pat_dom == NULL ) { return 0; } /* must have @ sign */
-
     sstrncpy( em, email, MAX_RES );
     em_user = strtok( em, "@" );
     em_dom = strtok( NULL, "@" );
 
-    if ( em_dom == NULL ) { return 0; } /* must have @ sign in email too */
+    /* if @ in pattern, must have @ sign in email too */
+    if ( pat_dom && em_dom == NULL ) { return 0; } 
 
     if ( !wild_match( pat_user, em_user ) ) { return 0; }
+
+    if ( !pat_dom && !em_dom ) { return 1; } /* no @ in either, ok */
 
     pat_next = pat_dom; em_next = em_dom;
     do {
@@ -136,7 +137,7 @@ int hashcash_mint( time_t now_time, int time_width,
     int i0f, i1f;
     word32 ran0, ran1, ran2;
     char counter[ MAX_CTR+1 ];
-    int found = 0;
+    word32 found = 0;
     long rnd;
     char now_utime[ MAX_UTCTIME+1 ]; /* current time */
     double tries;
