@@ -1,3 +1,8 @@
+hashcash-1.16 - 15-Jan-2005 - Adam Back <adam@cypherspace.org>
+
+	* fixed bug with -Z2 (and removed workaround mentioned in 1.15
+	  changelog entry)
+
 hashcash-1.15 - 12-Jan-2005 - Adam Back <adam@cypherspace.org>
 
 	* make "Hashcash:" be accepted as well as "X-Hashcash:"

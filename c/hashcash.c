@@ -383,7 +383,7 @@ int main( int argc, char* argv[] )
 	    break;
 	case 'Z': compress = atoi( optarg ); 
             /* temporary work around for bug discovered in 1.15, disable -Z2 */
-	    if ( compress > 1 ) { compress = 1; } 
+/*	    if ( compress > 1 ) { compress = 1; } */
 	    break;
 	case '?': 
 	    fprintf( stderr, "error: unrecognized option -%c", optopt );

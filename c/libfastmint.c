@@ -553,7 +553,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 	double counter = 0, expected = 0;
 	/* this is to allow this fn to call the same callback macro */
 	MINTER_CALLBACK_VARS;
-	int gotBits = 0, bit_rate = 6, chars = 0, blocks = 1;
+	int gotBits = 0, bit_rate = 6, chars = 0, blocks = 1, oldblocks = 0;
 	int* best;		/* NB this is needed for CALLBACK macros */
 
 	best = &gotBits;
@@ -609,6 +609,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 			}
 			break;
 		default:	/* produce very compact stamps */
+		  	oldblocks = blocks;
 			if ( (tail % SHA1_INPUT_BYTES) < i ||
 			     (tail % SHA1_INPUT_BYTES) >= 56 ) {
 				blocks = 2; /* split across block */
@@ -636,6 +637,11 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 
 		/* Fill in the padding and trailer */
 		buffer[tail] = 0x80;
+		/* if number of blocks change get rid of old padding */
+		if ( blocks > oldblocks) { 
+			/* note only need 7 chars as 1 char wider */
+			memset(buffer+tail+1,0,7); 
+		}
 		PUT_WORD(block+(blocks>1?64:0)+60, tail << 3);
 		tail -= t;
 	
