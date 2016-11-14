@@ -1,3 +1,15 @@
+hashcash-0.25 - 15-May-2003 - Adam Back <adam@cypherspace.org>
+
+	* fix VERBOSE trace output of sha1 implementation to match FIPS
+	  180-1 standard test vector examples (Note: this no impact on the
+	  result, just allows direct comparison to the test vectors in
+	  180-1).  The FIPS 180-1 VERBOSE output got broken when I unrolled
+	  the rotates in the round function.
+
+	* remove the automatic turning on of quiet mode if the output
+	  is a pipe per note from Simon Josefsson <jas@extundo.com> about
+	  how that can be inconvenient for scripting
+
 hashcash-0.24 - 15-Mar-2003 - Adam Back <adam@cypherspace.org>
 
 	* fix minor error which made hashcash_expected_tries a tiny
@@ -6,8 +18,9 @@ hashcash-0.24 - 15-Mar-2003 - Adam Back <adam@cypherspace.org>
 hashcash-0.23 - 15-Mar-2003 - Adam Back <adam@cypherspace.org>
 
 	* fix error in libhc would always fail in hashcash_check
-	  reported by Alan Barclay; note this bug does not affect the
-	  hashcash command line tool as it does not use this API
+	  reported by Alan Barclay <gorilla@elaine.furryape.com>; note this
+	  bug does not affect the hashcash command line tool as it does not
+	  use this API
 
 	* minor Makefile changes
 

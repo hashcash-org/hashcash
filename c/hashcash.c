@@ -318,8 +318,6 @@ int main( int argc, char* argv[] )
 
     if ( quiet_flag ) {	verbose_flag = 0; } /* quiet overrides verbose */
 
-    if ( !out_is_tty ) { quiet_flag = 1; } /* !out_is_tty => quiet */
-
     if ( name_flag && !check_flag ) { check_flag = 1; }
     if ( left_flag && !check_flag ) { check_flag = 1; }
     if ( width_flag && !check_flag ) { check_flag = 1; }
