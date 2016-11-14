@@ -55,7 +55,7 @@
                                 MINTER_CALLBACK_CLEANUP_FP;		     \
 				percent = (int)(((counter+iters)/	     \
 					expected*100)+0.5);		     \
-				if (!cb(percent,*best,bits,    \
+				if (!cb(percent,*best,bits,                  \
 					counter+iters,expected,user_args)) { \
 					*best = -1;                          \
 					return 0;			     \

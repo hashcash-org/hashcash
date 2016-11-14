@@ -548,7 +548,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 	unsigned int IV[SHA1_DIGEST_WORDS] = {0};
 	unsigned char *buffer = NULL, *block = NULL, c = 0;
 	unsigned int buflen = 0, tail = 0, a = 0, b = 0, save_tail = 0;
-	unsigned long t = 0, loop = 0, iters = 0, i = 0;
+	unsigned long t = 0, loop = 0, iters = 0, i = 0, first = 1;
 	HC_Mint_Routine best_minter;
 	double counter = 0, expected = 0;
 	/* this is to allow this fn to call the same callback macro */
@@ -589,7 +589,9 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 
 	bit_rate = EncodeBitRate[encodings[fastest_minter]];
 	chars = 31/bit_rate;
-	for ( i = compress ? 1 : chars; i <= chars && gotBits < bits; i++ ) {
+	for ( i = compress ? 1 : chars; 
+	      i <= chars && (first || gotBits < bits); i++ ) {
+		first = 0;
 		tail = save_tail;
 		t = tail + i;
 		for( ; tail < t; tail++) { buffer[tail] = '0'; }

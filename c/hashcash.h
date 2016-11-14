@@ -26,7 +26,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.18
+#define HASHCASH_VERSION 1.19
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -323,6 +323,8 @@ int hashcash_resource_match( int type, const char* stamp_res, const char* res,
  *
  *                hashcash_check
  *                hashcash_mint
+ *                hashcash_parse
+ *                hashcash_simple_mint
  *                hashcash_resource_match
  */
 

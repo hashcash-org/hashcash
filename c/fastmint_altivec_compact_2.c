@@ -652,7 +652,9 @@ unsigned long minter_altivec_compact_2(int bits, int* best, unsigned char *block
 
 	/* Work out which bits to mask out for test */
 	if(maxBits < 32) {
-		bitMask1Low = ~((((uInt32) 1) << (32 - maxBits)) - 1);
+		if ( bits == 0 ) { bitMask1Low = 0; } else {
+			bitMask1Low = ~((((uInt32) 1) << (32 - maxBits)) - 1);
+		}
 		bitMask1High = 0;
 	} else {
 		bitMask1Low = ~0;

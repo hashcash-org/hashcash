@@ -250,6 +250,7 @@ int progress_callback(int percent, int largest, int target,
 	previous_largest = largest;
 	previous_counter = counter;
     }
+    return 0;
     return 1;
 }
 

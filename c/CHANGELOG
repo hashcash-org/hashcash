@@ -1,3 +1,10 @@
+hashcash-1.19 - 17-Dec-2005 - Adam Back <adam@cypherspace.org>
+
+	* update to documentation for hashcash_free in hashcash.h at
+	  Simon Bohlin's suggestion
+
+	* fix for -mb0 reported by bas
+
 hashcash-1.18 - 05-Jul-2005 - Adam Back <adam@cypherspace.org>
 
 	* add a simpler minting API to make it easier to mint stamps

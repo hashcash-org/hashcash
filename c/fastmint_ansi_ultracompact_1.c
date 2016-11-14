@@ -88,7 +88,9 @@ unsigned long minter_ansi_ultracompact_1(int bits, int* best, unsigned char *blo
 	
 	/* Work out which bits to mask out for test */
 	if(maxBits < 32) {
-		bitMask1Low = ~((((uInt32) 1) << (32 - maxBits)) - 1);
+		if ( bits == 0 ) { bitMask1Low = 0; } else {
+			bitMask1Low = ~((((uInt32) 1) << (32 - maxBits)) - 1);
+		}
 		bitMask1High = 0;
 	} else {
 		bitMask1Low = ~0;
