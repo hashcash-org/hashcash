@@ -436,6 +436,8 @@ long hashcash_per_sec( void )
 
     /* wait for start of tick */
 
+    sprintf( counter, GFORMAT, 0 );
+
     timer_read( &t2 );
     do 
     {

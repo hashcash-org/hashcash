@@ -1,3 +1,8 @@
+hashcash-0.22 - 16-Aug-2002 - Adam Back <adam@cypherspace.org>
+
+	* fix uninitialized counter string in hashcash_per_sec, bug
+          reported by Mathias Langer
+
 hashcash-0.21 - 15-Aug-2002 - Adam Back <adam@cypherspace.org>
 
 	* fix compile warnings with VC++ 6. 
