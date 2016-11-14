@@ -1,4 +1,4 @@
-HC_VERS = 1.16
+HC_VERS = 1.17
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -25,6 +25,7 @@ COPT_G3_OSX = -O3 -funroll-loops -fno-inline -mcpu=750 -faltivec
 COPT_PPC_LINUX = -O3 -funroll-loops -fno-inline -mcpu=604e -maltivec \
 	-mabi=altivec
 REGEXP=-DREGEXP_POSIX
+LIB=.a
 EXES = hashcash$(EXE) sha1$(EXE) sha1test$(EXE)
 INSTALL = install
 POD2MAN = pod2man
@@ -49,25 +50,34 @@ default:	help generic
 
 help:
 	@echo "make <platform> where platform is:"
-	@echo "    x86, mingw, mingw-dll, g3-osx, ppc-linux, gnu, generic"
+	@echo "    x86, mingw, mingw-dll, g3-osx, ppc-linux, gnu, generic, debug"
+	@echo "or to link with openSSL for SHA1 rather than builtin:"
+	@echo "    x86-openssl, g3-osx-openssl, ppc-linux-openssl, "
+	@echo "    gnu-openssl, generic-openssl, debug-openssl"
 	@echo "other make targets are docs, install, clean, distclean, docclean"
-	@echo "make <platform> CFLAGS=-DOPENSSL LDFLAGS=-lcrypto"
-	@echo "to use openssl SHA1 implementation rather than builtin"
 	@echo ""
 	@echo "(doing make generic by default)"
 	@echo ""
 
 generic:
-	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_GENERIC) $(COPT)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_GENERIC) $(COPT)" build
 
 debug:
-	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_DEBUG) $(COPT)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_DEBUG) $(COPT)" build
 
 gnu:
-	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_GNU) $(COPT)" "CC=gcc" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_GNU) $(COPT)" "CC=gcc" build
 
 x86: 
-	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_X86) $(COPT)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_X86) $(COPT)" build
+
+g3-osx:
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_G3_OSX) $(COPT)" build
+
+ppc-linux:
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_PPC_LINUX) $(COPT)" build
+
+# mingw windows targets (cross compiler, or native)
 
 mingw: 
 	$(MAKE) "LIB=.lib" "CC=gcc" "EXE=.exe" "CFLAGS=$(COPT_MINGW) -DMONOLITHIC $(COPT)" build
@@ -75,11 +85,27 @@ mingw:
 mingw-dll:
 	$(MAKE) "CC=gcc" "EXE=.exe" "CFLAGS=$(COPT_MINGW) $(COPT)" build-dll
 
-g3-osx:
-	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_G3_OSX) $(COPT)" build
 
-ppc-linux:
-	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_PPC_LINUX) $(COPT)" build
+# openSSL versions of targets
+
+x86-openssl:
+	$(MAKE) x86 "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+
+g3-osx-openssl:
+	$(MAKE) g3-osx "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+
+ppc-linux-openssl:
+	$(MAKE) ppc-linux "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+
+gnu-openssl:
+	$(MAKE) gnu "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+
+generic-openssl:
+	$(MAKE) generic "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+
+debug-openssl:
+	$(MAKE) debug "CFLAGS=$(CFLAGS) -DOPENSSL" "LDFLAGS=$(LDFLAGS) -lcrypto"
+
 
 build:	hashcash$(EXE) sha1$(EXE)
 

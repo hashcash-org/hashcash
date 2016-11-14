@@ -568,11 +568,11 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 
 	expected = hashcash_expected_tries( bits );
 
+ again:
 	/* Set up string for hashing */
 	tail = strlen(token);
 	buflen = (tail - (tail % SHA1_INPUT_BYTES)) + 2*SHA1_INPUT_BYTES;
 	buffer = malloc(buflen);
- again:
 	memset(buffer, 0, buflen);
 	strncpy(buffer, token, buflen);
 	
@@ -684,6 +684,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 	if(b < bits) {
 	  /*		fprintf( stderr, "buffer = %s\n", buffer );
 			fprintf( stderr, "wrapped\n" ); */
+		free(buffer);
 		goto again;
 	}
 

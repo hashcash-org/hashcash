@@ -576,10 +576,10 @@ int main( int argc, char* argv[] )
 						       LINEFEED );
 		if ( header_wrapped == NULL ) { 
 		    /* don't expect this but for security fail closed */
-		    fprintf(stderr,"out of memory\n");
+		    fprintf(stderr, "out of memory\n");
 		    exit( EXIT_FAILURE );
 		}
-		fprintf( stdout, header_wrapped );
+		fprintf( stdout, "%s", header_wrapped );
 		free( header_wrapped );
 	    } else { 
 		fprintf( stdout, "%s%s\n", 
@@ -1196,6 +1196,8 @@ int db_purge( DB* db, ARRAY* purge_resource, int purge_all,
 	VPRINTF( stderr, "purging database: ..." );
 	ret = sdb_updateiterate( db, sdb_cb_token_matcher, (void*)&arg, err );
 	VPRINTF( stderr, ret ? "done\n" : "failed\n" ); 
+    } else {
+	ret = 1;
     }
     return ret;
 }

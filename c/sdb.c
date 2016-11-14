@@ -249,7 +249,7 @@ int hashcash_db_in( DB* db, char* token, char *period, int* err ) {
     *err = 0;
 
     in_db = sdb_lookup( db, token, period, MAX_UTC, err ); 
-    if ( err ) { return 0; }
+    if ( *err ) { return 0; }
     return in_db;
 }
 

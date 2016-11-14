@@ -1,3 +1,17 @@
+hashcash-1.17 - 30-Mar-2005 - Adam Back <adam@cypherspace.org>
+
+	* fix for bug Steve Crook reported with purging and checking
+	  at same time.
+
+	* fix for bug Steve Crook reported in double spend checking.
+          (Was bug in new hashcash_db_in higher level db function).
+
+	* apply patch from Jonathan Morton which fixes bug triggered
+          when minting large stamps (over 31-bits).
+
+	* fix printf vulnerability reported by Tavis Ormandy
+          <taviso@gentoo.org>
+
 hashcash-1.16 - 15-Jan-2005 - Adam Back <adam@cypherspace.org>
 
 	* fixed bug with -Z2 (and removed workaround mentioned in 1.15
