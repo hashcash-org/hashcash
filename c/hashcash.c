@@ -1232,7 +1232,7 @@ void db_add( DB* db, char* token, char *period ) {
 
 void db_close( DB* db ) {
     int err = 0;
-    if (!hashcash_db_close( db, &err ) ) {
+    if ( !hashcash_db_close( db, &err ) ) {
 	die( err );
     }
 }
@@ -1253,7 +1253,7 @@ void array_push( ARRAY* array, const char *str, int type, int case_flag,
 		 int over ) 
 {
     if ( array->num >= array->max ) {
-	array->elt = realloc( array->elt, array->max * 2 );
+	array->elt = realloc( array->elt, sizeof( ELEMENT) * array->max * 2 );
 	if ( array->elt == NULL ) { die_msg( "out of memory" ); }
 	array->max *= 2;
     }

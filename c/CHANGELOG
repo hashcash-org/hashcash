@@ -1,3 +1,8 @@
+hashcash-1.21 - 24-Mar-2005 - Adam Back <adam@cypherspace.org>
+
+	* fix potential heap overflow bug reported by 
+	  Andreas Seltenreich <uwi7@rz.uni-karlsruhe.de>
+
 hashcash-1.20 - 20-Dec-2005 - Adam Back <adam@cypherspace.org>
 
 	* fix bug that -w reports using version 0 semantics even with
