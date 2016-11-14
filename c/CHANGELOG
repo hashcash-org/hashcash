@@ -1,3 +1,11 @@
+hashcash-0.23 - 15-Mar-2003 - Adam Back <adam@cypherspace.org>
+
+	* fix error in libhc would always fail in hashcash_check
+	  reported by Alan Barclay; note this bug does not affect the
+	  hashcash command line tool as it does not use this API
+
+	* minor Makefile changes
+
 hashcash-0.22 - 16-Aug-2002 - Adam Back <adam@cypherspace.org>
 
 	* fix uninitialized counter string in hashcash_per_sec, bug

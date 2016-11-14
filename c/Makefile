@@ -15,6 +15,7 @@ POD2MAN = pod2man
 POD2HTML = pod2html
 POD2TEXT = pod2text
 DELETE = /bin/rm -f
+ETAGS = etags
 OBJS = hashcash.o libsha1.o libhc.o timer.o sdb.o utct.o random.o
 DIST = ../dist.csh
 
@@ -55,7 +56,10 @@ clean:
 	$(DELETE) *.o *~
 
 distclean:
-	$(DELETE) *.o *~ $(EXES) *.db *.bak
+	$(DELETE) *.o *~ $(EXES) *.db *.bak TAGS
+
+tags:
+	$(ETAGS) *.c *.h
 
 dist:	
 	$(DIST)

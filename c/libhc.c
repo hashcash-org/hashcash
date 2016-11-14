@@ -417,7 +417,7 @@ int hashcash_check( const char* token, const char* resource, time_t now_time,
     {
 	return HASHCASH_WRONG_RESOURCE;
     }
-    bits = hashcash_count( token, token_resource );
+    bits = hashcash_count( token_resource, token );
     if ( bits < required_bits )
     {
 	return HASHCASH_INSUFFICIENT_BITS;
