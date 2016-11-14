@@ -12,7 +12,7 @@
 #if defined( THINK_C )
     #include <console.h>
     #include <unix.h>
-#elif defined( unix ) || defined( VMS )
+#elif defined( unix ) || defined( VMS ) || defined( __APPLE__ )
     #include <unistd.h>
 #elif defined ( WIN32 )
     #include <io.h>
@@ -97,7 +97,6 @@ int main( int argc, char* argv[] )
     int found;
     int err;
     int non_opt_argc = 0;
-    int opt_argc = 0;
     int anon_flag = 0;
     long anon_period = 0;
     long anon_random;
@@ -141,7 +140,6 @@ int main( int argc, char* argv[] )
 
     char token_utime[ MAX_UTC+1 ];	/* time token created */
     time_t token_time;
-    time_t local_time;
     time_t real_time = time(0); /* now, in UTCTIME */
     time_t now_time = real_time;
     int time_width_flag = 0;	/* -z option, default 6 YYMMDD */

@@ -1,6 +1,7 @@
-HC_VERS = 0.28
+HC_VERS = 0.29
 INSTALL_PATH = /usr/local/bin
 MAN_INSTALL_PATH = /usr/share/man/man1
+DOC_INSTALL_PATH = /usr/share/doc/hashcash-$(HC_VERS)
 MAKEDEPEND = makedepend
 COPT = -O3
 LDFLAGS = $(CARCH)
@@ -28,7 +29,8 @@ sha1test:	sha1test.o libsha1.o timer.o
 
 all:	$(EXES)
 
-docs:	hashcash.1 hashcash.html hashcash.txt sha1.1 sha1.html sha1.txt
+docs:	hashcash.1 hashcash.html hashcash.txt sha1-hashcash.1 \
+sha1-hashcash.html sha1-hashcash.txt
 
 hashcash.1:	hashcash.pod
 	$(POD2MAN) -s 1 -c hashcash -r $(HC_VERS) $? > $@
@@ -40,26 +42,30 @@ hashcash.html:	hashcash.pod
 hashcash.txt: hashcash.pod
 	$(POD2TEXT) $? > $@
 
-sha1.1:	sha1.pod
+sha1-hashcash.1:	sha1-hashcash.pod
 	$(POD2MAN) -s 1 -c sha1 -r $(HC_VERS) $? > $@
 
-sha1.html:	sha1.pod
+sha1-hashcash.html:	sha1-hashcash.pod
 	$(POD2HTML) --title sha1 $? > $@
 	$(DELETE) pod2htm*
 
-sha1.txt: sha1.pod
+sha1-hashcash.txt: sha1-hashcash.pod
 	$(POD2TEXT) $? > $@
 
-install:	hashcash sha1 hashcash.1 sha1.1
+install:	hashcash sha1 hashcash.1 sha1-hashcash.1
+	$(INSTALL) -d $(INSTALL_PATH)
 	$(INSTALL) hashcash sha1 $(INSTALL_PATH)
-	$(INSTALL) hashcash.1 sha1.1 $(MAN_INSTALL_PATH)
+	$(INSTALL) -d $(MAN_INSTALL_PATH)
+	$(INSTALL) -m 644 hashcash.1 sha1-hashcash.1 $(MAN_INSTALL_PATH)
+	$(INSTALL) -d $(DOC_INSTALL_PATH)
+	$(INSTALL) -m 644 README LICENSE CHANGELOG $(DOC_INSTALL_PATH)
 
 depend:
 	$(MAKEDEPEND) -- -Y *.c *.h
 
 docclean:
 	$(DELETE) hashcash.txt hashcash.1 hashcash.html pod2htm*
-	$(DELETE) sha1.txt sha1.1 sha1.html
+	$(DELETE) sha1-hashcash.txt sha1-hashcash.1 sha1-hashcash.html
 
 clean:
 	$(DELETE) *.o *~

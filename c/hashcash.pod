@@ -759,4 +759,4 @@ Written by Adam Back E<lt>adam@cypherspace.orgE<gt>
 
 =head1 SEE ALSO
 
-sha1(1), http://www.hashcash.org/
+sha1-hashcash(1), sha1(1), sha1sum(1), http://www.hashcash.org/

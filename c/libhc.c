@@ -403,7 +403,7 @@ long hashcash_valid_for( time_t token_time, time_t validity_period,
 }
 
 int hashcash_check( const char* token, const char* resource, time_t now_time, 
-		    time_t validity_period, time_t grace_period, 
+		    time_t validity_period, long grace_period, 
 		    int required_bits ) {
     time_t token_time;
     char token_utime[ MAX_UTC+1 ];

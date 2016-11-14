@@ -17,6 +17,12 @@ DESCRIPTION
     becomes possible for the master md5sum with work factor of about 2^64,
     which is a fairly high cost but not infeasible.)
 
+OTHER IMPLEMENTATIONS
+    This program is fairly compatible with openssl sha1 (sha1(1)) and
+    sha1sum (sha1sum(1)) installed on some unix systems and included with
+    hashcash package so that a sha1 implementation is available for testing
+    and scripting if those packages are missing.
+
 USAGE NOTES
     The sha1 program will hash the files given on the command line, or if no
     files are given it will hash the input fed to it on standard input. The
@@ -51,15 +57,17 @@ Verifying Hashcash
     the hashcash command line tool, or just to verify visually. Say you
     received the following email:
 
-    From: Someone <test@test.invalid> To: Adam Back <adam@cypherspace.org>
-    Subject: test hashcash Date: Thu, 15 Aug 2002 11:12:02 +0000 X-Hashcash:
-    0:030626:adam@cypherspace.org:6470e06d773e05a8
-
-    Then the following commane would show visually the size of the
+     From: Someone <test@test.invalid>
+     To: Adam Back <adam@cypherspace.org>
+     Subject: test hashcash
+     Date: Thu, 15 Aug 2002 11:12:02 +0000
+     X-Hashcash: 0:030626:adam@cypherspace.org:6470e06d773e05a8
+ 
+    Then the following command would show visually the size of the
     collision:
 
     "echo -n 0:030626:adam@cypherspace.org:6470e06d773e05a8 | sha1"
-    "00000000c70db7389f241b8f441fcf068aead3f0"
+         00000000c70db7389f241b8f441fcf068aead3f0
 
     and you can see the leading hex 0s.
 
@@ -80,6 +88,6 @@ AUTHOR
     Written by Adam Back <adam@cypherspace.org>
 
 SEE ALSO
-    md5sum(1), hashcash(1), http://www.hashcash.org/,
+    md5sum(1), sha1(1), sha1sum(1), hashcash(1), http://www.hashcash.org/,
     http://www.itl.nist.gov/fipspubs/fip180-1.htm
 

@@ -63,10 +63,16 @@ const char* strtime( time_t* timep, int utc )
 time_t mk_utctime( struct tm* tms ) {
     char* tz = getenv( "TZ" );
     time_t res;
+    char *set_tz;
 
-    setenv( "TZ", "UTC+0", 1 );
+    putenv( "TZ=UTC+0" );
     res = mktime( tms );
-    if ( tz ) { setenv( "TZ", tz, 1 ); } else { unsetenv( "TZ" ); }
+    if ( tz ) { 
+        set_tz = malloc( strlen( tz ) + 3 + 1 );
+        sprintf( set_tz, "TZ=%s", tz );
+	putenv( set_tz );
+	free( set_tz );
+    } else { putenv( "TZ" ); }
     return res;
 }
 

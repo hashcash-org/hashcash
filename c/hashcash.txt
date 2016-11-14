@@ -620,5 +620,5 @@ AUTHOR
     Written by Adam Back <adam@cypherspace.org>
 
 SEE ALSO
-    sha1(1), http://www.hashcash.org/
+    sha1-hashcash(1), sha1(1), sha1sum(1), http://www.hashcash.org/
 

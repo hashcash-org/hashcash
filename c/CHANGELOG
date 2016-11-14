@@ -1,3 +1,28 @@
+hashcash-0.29 pre-release - 04-Mar-2004 - Adam Back <adam@cypherspace.org>
+
+	* fix prototype mismatch of function hashcash_check in
+	  hashcash.h vs libhc.c which caused compile failure on
+	  openBSD and freeBSD
+
+	* change to make it compile on MAC OSX (need to recognize OSX
+	  and treat as unix like for headers to include)
+
+	* change to make it compile on solaris 9 (and POSIX / SVR
+          systems in general).  Turns out putenv(3) is more portable
+	  than setenv(3) / unsetenv(3)
+
+	* update sha1 man page to name it sha1-hashcash to avoid collision
+	  with openssl sha1(1).  By default with openssl there is not
+	  actually any program named sha1, rather sha1 is a subprogram of
+	  openssl invoked "openssl sha1".  However I think it may still be
+	  possible to compile that as a separate program or symlink sha1 to
+	  openssl to get that.
+
+	* update sha1 man pages to refer to the other common sha1
+	  implementations.
+
+	* update LICENSE request
+
 hashcash-0.28 - 18-Sep-2003 - Adam Back <adam@cypherspace.org>
 
 	* fix bug with timezone handling reported by Joris Bontje

@@ -14,7 +14,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 0.28
+#define HASHCASH_VERSION 0.29
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
 #define HASHCASH_VERSION_STRING stringify(HASHCASH_VERSION)

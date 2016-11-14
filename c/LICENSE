@@ -142,3 +142,9 @@ Hashcash CPL License Requests
   thoughts in this area.  See also the hashcash home page
   http://www.hashcash.org and paper there as I update with links to deployed
   systems which it might be useful for you to interoperate with.
+
+- If you don't like the CPL and want to distribute under a different license
+  I find BSD more liberal than GPL, as GPL effectively precludes some
+  commerical uses.  As the aim of hashcash is to help defend against spam,
+  and some potential users are using non open source MUAs, this license
+  probably helps the deployment of hashcash better than GPL license.

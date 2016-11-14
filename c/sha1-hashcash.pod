@@ -21,6 +21,13 @@ files into your distribution as then a birthday attack becomes possible for
 the master md5sum with work factor of about 2^64, which is a fairly high
 cost but not infeasible.)
 
+=head1 OTHER IMPLEMENTATIONS
+
+This program is fairly compatible with B<openssl sha1> (sha1(1)) and
+B<sha1sum> (sha1sum(1)) installed on some unix systems and included with
+hashcash package so that a sha1 implementation is available for testing and
+scripting if those packages are missing.
+
 =head1 USAGE NOTES
 
 The sha1 program will hash the files given on the command line, or if no
@@ -66,20 +73,20 @@ utility to write shell scripts to verify hashcash tokens without using
 the hashcash command line tool, or just to verify visually.  Say you
 received the following email:
 
-From: Someone E<lt>test@test.invalidE<gt>
-To: Adam Back E<lt>adam@cypherspace.orgE<gt>
-Subject: test hashcash
-Date: Thu, 15 Aug 2002 11:12:02 +0000
-X-Hashcash: 0:030626:adam@cypherspace.org:6470e06d773e05a8
+ From: Someone <test@test.invalid>
+ To: Adam Back <adam@cypherspace.org>
+ Subject: test hashcash
+ Date: Thu, 15 Aug 2002 11:12:02 +0000
+ X-Hashcash: 0:030626:adam@cypherspace.org:6470e06d773e05a8
  
-Then the following commane would show visually the size of the
+Then the following command would show visually the size of the
 collision:
 
 =over 4
 
 =item C<echo -n 0:030626:adam@cypherspace.org:6470e06d773e05a8 | sha1>
 
-=item C<00000000c70db7389f241b8f441fcf068aead3f0>
+ 00000000c70db7389f241b8f441fcf068aead3f0
 
 =back
 
@@ -106,5 +113,5 @@ Written by Adam Back E<lt>adam@cypherspace.orgE<gt>
 
 =head1 SEE ALSO
 
-md5sum(1), hashcash(1), http://www.hashcash.org/,
+md5sum(1), sha1(1), sha1sum(1), hashcash(1), http://www.hashcash.org/,
 http://www.itl.nist.gov/fipspubs/fip180-1.htm
