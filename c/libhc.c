@@ -141,6 +141,18 @@ int email_match( const char* email, const char* pattern )
 
 const char* hashcash_version( void ) { return HASHCASH_VERSION_STRING; }
 
+char* hashcash_simple_mint( const char* resource, unsigned bits, 
+			    long anon_period, char* ext, int compress ) {
+    time_t now_time = time( 0 );
+    char* stamp = NULL;
+    int ret = hashcash_mint( now_time, 6, resource, bits, anon_period,
+			     &stamp, NULL, NULL, ext, compress, NULL, NULL );
+    if ( ret != HASHCASH_OK ) {
+	return NULL;
+    }
+    return stamp;
+}
+
 int hashcash_mint( time_t now_time, int time_width, const char* resource, 
 		   unsigned bits, long anon_period, char** new_token, 
 		   long* anon_random, double* tries_taken, char* ext,

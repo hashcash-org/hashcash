@@ -26,7 +26,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.17
+#define HASHCASH_VERSION 1.18
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -144,6 +144,12 @@ int hashcash_mint( time_t now_time, int time_width, const char* resource,
 		   unsigned bits, long anon_period, char** stamp, 
 		   long* anon_random, double* tries_taken, char* ext,
 		   int compress, hashcash_callback cb, void* user_arg );
+
+/* simpler API for minting  */
+
+HCEXPORT
+char* hashcash_simple_mint( const char* resource, unsigned bits, 
+			    long anon_period, char* ext, int compress );
 
 /* convert a stamp into a X-Hashcash: header wrapping lines at line_len
  * chars.  If line_len = 0, does not wrap, just prepends header.

@@ -1,8 +1,3 @@
-hashfork.c and hashfork.py are contributed code by Hubert Chan
-<hubert@uhoreg.ca> and is useful for getting faster minting
-performance from multi-processor machines.  They are wrappers (in C
-and python respectively) around the hashcash executable.
-
-Known limitations: they make assumptions about location of hashcash
-executable, and the arguments you would like to pass.  Look at the
-source for details.
+hashfork.py is contributed code by Hubert Chan <hubert@uhoreg.ca> and is useful
+for getting faster minting performance from multi-processor machines.  It is a
+wrapper in Python around the hashcash executable.

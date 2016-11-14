@@ -17,19 +17,20 @@ EXPORTS
     hashcash_parse @16
     hashcash_per_sec @17
     hashcash_resource_match @18
-    hashcash_to_utctimestr @19
-    hashcash_use_core @20
-    hashcash_valid_for @21
-    hashcash_validity_to_width @22
-    hashcash_version @23
-    sdb_add @24
-    sdb_callbacklookup @25
-    sdb_callbacklookupnext @26
-    sdb_close @27
-    sdb_del @28
-    sdb_findfirst @29
-    sdb_findnext @30
-    sdb_lookup @31
-    sdb_lookupnext @32
-    sdb_open @33
-    sdb_updateiterate @34
+    hashcash_simple_mint @19
+    hashcash_to_utctimestr @20
+    hashcash_use_core @21
+    hashcash_valid_for @22
+    hashcash_validity_to_width @23
+    hashcash_version @24
+    sdb_add @25
+    sdb_callbacklookup @26
+    sdb_callbacklookupnext @27
+    sdb_close @28
+    sdb_del @29
+    sdb_findfirst @30
+    sdb_findnext @31
+    sdb_lookup @32
+    sdb_lookupnext @33
+    sdb_open @34
+    sdb_updateiterate @35

@@ -1,3 +1,8 @@
+hashcash-1.18 - 05-Jul-2005 - Adam Back <adam@cypherspace.org>
+
+	* add a simpler minting API to make it easier to mint stamps
+	  from VB scripting
+
 hashcash-1.17 - 30-Mar-2005 - Adam Back <adam@cypherspace.org>
 
 	* fix for bug Steve Crook reported with purging and checking

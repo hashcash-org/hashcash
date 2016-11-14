@@ -1,4 +1,4 @@
-HC_VERS = 1.17
+HC_VERS = 1.18
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -14,6 +14,7 @@ MSLIB = mslib
 # 	REGEXP = -DREGEXP_BSD
 # if no POSIX or BSD, disable, still have builtin basic wildcard support
 # 	REGEXP = 
+REGEXP=-DREGEXP_POSIX
 COPT_DEBUG = -g
 COPT_GENERIC = -O3
 COPT_GNU = -O3 -funroll-loops
@@ -24,7 +25,6 @@ COPT_MINGW = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
 COPT_G3_OSX = -O3 -funroll-loops -fno-inline -mcpu=750 -faltivec
 COPT_PPC_LINUX = -O3 -funroll-loops -fno-inline -mcpu=604e -maltivec \
 	-mabi=altivec
-REGEXP=-DREGEXP_POSIX
 LIB=.a
 EXES = hashcash$(EXE) sha1$(EXE) sha1test$(EXE)
 INSTALL = install
