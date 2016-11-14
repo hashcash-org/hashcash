@@ -94,6 +94,7 @@ typedef struct {
     char* str;
     void* regexp;		/* compiled regexp */
     int type;
+    int case_flag;
     long validity;
     long grace;
     long anon;
@@ -116,8 +117,9 @@ void db_add( DB* db, char* token, char *token_utime );
 void db_close( DB* db ) ;
 
 void array_alloc( ARRAY* array, int num );
-void array_push( ARRAY* array, char *str, int type, long validity, 
-		 long grace, long anon, int width, int bits, int over );
+void array_push( ARRAY* array, char *str, int type, int case_flag, 
+		 long validity, long grace, long anon, int width, int bits, 
+		 int over );
 #define array_num( a ) ( (a)->num )
 int bit_cmp( const void* ap, const void* bp );
 void array_sort( ARRAY* array, int(*cmp)(const void*, const void*) );
@@ -255,7 +257,8 @@ int main( int argc, char* argv[] )
 	case 'i': ignore_boundary_flag = 1; break;
 	case 'j': 
 	    just_flag = 1;
-	    array_push( &purge_resource, optarg, str_type, 0, 0, 0, 0, 0, 0 );
+	    array_push( &purge_resource, optarg, str_type, case_flag, 
+			0, 0, 0, 0, 0, 0 );
 	    over_flag = 0;
 	    break;
 	case 'k': purge_all = 1; break;
@@ -293,16 +296,17 @@ int main( int argc, char* argv[] )
 		inferred_time_width = time_width;
 	    }
 
-	    array_push( &args, optarg, str_type, validity_period, 
+	    array_push( &args, optarg, str_type, case_flag, validity_period, 
 			grace_period, anon_period, time_width, bits, 0 );
 
 	    if ( opt == 'r' ) {
-		array_push( &resource, optarg, str_type, validity_period, 
-			    grace_period, anon_period, time_width, bits, 
-			    over_flag );
+		array_push( &resource, optarg, str_type, case_flag,
+			    validity_period, grace_period, anon_period, 
+			    time_width, bits, over_flag );
 	    } else if ( opt == 1 ) {
-		array_push( &tokens, optarg, str_type, validity_period, 
-			    grace_period, anon_period, time_width, bits, 0 );
+		array_push( &tokens, optarg, str_type, case_flag, 
+			    validity_period, grace_period, anon_period, 
+			    time_width, bits, 0 );
 	    }
 	    over_flag = 0;
 
@@ -413,12 +417,6 @@ int main( int argc, char* argv[] )
 	db_open( &db, db_filename );
 	db_opened = 1;
 
-	if ( !case_flag ) {
-	    for ( i = 0; i < array_num( &purge_resource ); i++ ) {
-		stolower( purge_resource.elt[i].str );
-	    }
-	}
-
 	db_purge( &db, &purge_resource, purge_all, purge_period, 
 		  now_time, real_time );
 
@@ -444,18 +442,19 @@ int main( int argc, char* argv[] )
 		    chomplf( line );
 		    trimspace( line );
 		    if ( line[0] != '\0' ) {
-			array_push( &args, line, 0,validity_period, 
+			array_push( &args, line, 0, 0, validity_period, 
 				    grace_period, anon_period, time_width, 
 				    bits, 0 );
 		    }
 		}
 	    }
+	}
 
-	    if ( !case_flag ) { 
-		for ( i = 0; i < array_num( &args ); i++ ) {
-		    stolower( args.elt[i].str );
-		}
-	    }
+	/* integrate the bench test */
+
+	if ( verbose_flag && speed_flag && !mint_flag ) {
+	    hashcash_benchtest( 3 );
+	    exit( EXIT_SUCCESS ); /* don't actually calculate it */
 	}
 
 	if ( !verbose_flag && speed_flag && mint_flag ) {
@@ -565,7 +564,7 @@ int main( int argc, char* argv[] )
 	/* resource name if resource given is NULL */
 
 	if ( array_num( &resource ) == 0 ) {
-	    array_push( &resource, NULL, str_type, validity_period, 
+	    array_push( &resource, NULL, str_type, case_flag, validity_period, 
 			grace_period, anon_period, time_width, bits, 0 );
 	}
 
@@ -640,8 +639,9 @@ int main( int argc, char* argv[] )
 
 		    over = 0;
 
-		    if ( !case_flag ) { stolower( ent->str ); }
-		    valid_for = hashcash_check( token, ent->str, 
+		    if ( !ent->case_flag ) { stolower( ent->str ); }
+		    valid_for = hashcash_check( token, ent->case_flag, 
+						ent->str, 
 						&(ent->regexp), &re_err,
 						ent->type, now_time, 
 						ent->validity, ent->grace, 
@@ -999,11 +999,11 @@ static int sdb_cb_token_matcher( const char* key, char* val,
 				 void* argp, int* err ) {
     db_arg* arg = (db_arg*)argp;
     char token_utime[ MAX_UTC+1 ];
-    char token_res[ MAX_RES+1 ], *res;
+    char token_res[ MAX_RES+1 ], lower_token_res[ MAX_RES+1 ], *res;
     time_t expires;
     time_t expiry_period;
     time_t created;
-    int vers, i, bits, matched, type;
+    int vers, i, bits, matched, type, case_flag, lowered = 0;
     void** compile;
     char* re_err = NULL;
 
@@ -1028,8 +1028,16 @@ static int sdb_cb_token_matcher( const char* key, char* val,
 	for ( i = 0; !matched && i < array_num( arg->resource ); i++ ) {
 	    res = arg->resource->elt[i].str;
 	    type = arg->resource->elt[i].type;
+	    case_flag = arg->resource->elt[i].case_flag;
 	    compile = &(arg->resource->elt[i].regexp);
-	    matched = resource_match( type, token_res, res, compile, &re_err );
+	    if ( !case_flag && !lowered ) {
+		strncpy( lower_token_res, token_res, MAX_RES );
+		stolower( lower_token_res );
+		lowered = 1;
+	    }
+	    matched = resource_match( type, case_flag ? 
+				      token_res : lower_token_res, 
+				      res, compile, &re_err );
 	    if ( re_err != NULL ) { 
 		fprintf( stderr, "regexp error: " ); 
 		die_msg( re_err ); 
@@ -1135,8 +1143,9 @@ void array_alloc( ARRAY* array, int num ) {
 
 /* auto-grow array */
 
-void array_push( ARRAY* array, char *str, int type, long validity, 
-		 long grace, long anon, int width, int bits, int over ) 
+void array_push( ARRAY* array, char *str, int type, int case_flag, 
+		 long validity, long grace, long anon, int width, int bits, 
+		 int over ) 
 {
     if ( array->num >= array->max ) {
 	array->elt = realloc( array->elt, array->max * 2 );
@@ -1145,6 +1154,7 @@ void array_push( ARRAY* array, char *str, int type, long validity,
     }
     array->elt[array->num].regexp = NULL; /* compiled regexp */
     array->elt[array->num].type = type;
+    array->elt[array->num].case_flag = case_flag;
     array->elt[array->num].validity = validity;
     array->elt[array->num].grace = grace;
     array->elt[array->num].anon = anon;

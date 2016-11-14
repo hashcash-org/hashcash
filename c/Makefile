@@ -1,6 +1,13 @@
-HC_VERS = 1.03
-CHANGEME = 1 # put PACKAGER = EBUILD|RPM etc here
+HC_VERS = 1.04
+CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
+CHANGEME2 = 2
+CHANGEME3 = 3
 ifdef CFLAGS
+ifndef PACKAGER
+PACKAGER = MANUAL
+endif
+endif
+ifdef COPT
 ifndef PACKAGER
 PACKAGER = MANUAL
 endif
@@ -16,13 +23,13 @@ MAKEDEPEND = makedepend
 # 	CFLAGS = -DREGEXP_BSD
 # if no POSIX or BSD, disable, still have builtin basic wildcard support
 # 	CFLAGS = 
-CFLAGS = -DREGEXP_POSIX -O3 -funroll-loops
-CFLAGS_X86 = -DREGEXP_POSIX -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx
-CFLAGS_G3_OSX = -DREGEXP_POSIX -O3 -funroll-loops -fno-inline -mcpu=750 \
-	-faltivec
-CFLAGS_PPC_LINUX = -DREGEXP_POSIX -O3 -funroll-loops -fno-inline -mcpu=604e \
-	-maltivec -mabi=altivec
-EXES = hashcash sha1 sha1test fastmint_benchtest
+COPT_GENERIC = -O3 -funroll-loops
+COPT_X86 = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx
+COPT_G3_OSX = -O3 -funroll-loops -fno-inline -mcpu=750 -faltivec
+COPT_PPC_LINUX = -O3 -funroll-loops -fno-inline -mcpu=604e -maltivec \
+	-mabi=altivec
+CFLAGS = -DREGEXP_POSIX
+EXES = hashcash sha1 sha1test
 INSTALL = /usr/bin/install
 POD2MAN = pod2man
 POD2HTML = pod2html
@@ -36,7 +43,6 @@ FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
 	fastmint_altivec_compact_2.o fastmint_ansi_ultracompact_1.o
 OBJS = hashcash.o libsha1.o libhc.o sdb.o utct.o random.o lock.o sstring.o \
 	getopt.o $(FASTLIBS)
-FASTOBJS = fastmint_benchtest.o libsha1.o random.o $(FASTLIBS)
 
 DIST = ../dist.csh
 
@@ -47,18 +53,18 @@ help:
 endif
 
 generic:
-	$(MAKE) "CFLAGS=$(CFLAGS)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_GENERIC) $(COPT)" build
 
 x86: 
-	$(MAKE) "CFLAGS=$(CFLAGS_X86)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_X86) $(COPT)" build
 
 g3-osx:
-	$(MAKE) "CFLAGS=$(CFLAGS_G3_OSX)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_G3_OSX) $(COPT)" build
 
 ppc-linux:
-	$(MAKE) "CFLAGS=$(CFLAGS_PPC_LINUX)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_PPC_LINUX) $(COPT)" build
 
-build:	hashcash sha1 fastmint_benchtest
+build:	hashcash sha1
 
 hashcash:	$(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
@@ -68,9 +74,6 @@ sha1:	sha1.o libsha1.o
 
 sha1test:	sha1test.o libsha1.o 
 	$(CC) $(LDFLAGS) sha1test.o libsha1.o -o $@
-
-fastmint_benchtest: $(FASTOBJS)
-	$(CC) $(LDFLAGS) $(FASTOBJS) -o $@
 
 all:	$(EXES)
 
@@ -134,7 +137,6 @@ fastmint_ansi_compact_2.o: libfastmint.h
 fastmint_ansi_standard_1.o: libfastmint.h
 fastmint_ansi_standard_2.o: libfastmint.h
 fastmint_ansi_ultracompact_1.o: libfastmint.h
-fastmint_benchtest.o: libfastmint.h
 fastmint_mmx_compact_1.o: libfastmint.h
 fastmint_mmx_standard_1.o: libfastmint.h
 getopt.o: getopt.h

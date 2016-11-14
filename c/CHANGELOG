@@ -1,3 +1,15 @@
+hashcash-1.04 - 07-Sep-2004 - Adam Back <adam@cypherspace.org>
+
+	* fixed issue with case comparisons -- presumed resources were
+	  in lower case at minting -- better to just ignore case
+	  during comparison.  Then will accept stamps containing upper
+	  case or mixed-case resource names.
+
+	* integrate fastmint_benchtest as -sv option to hashcash.
+
+	* introduce COPT as well as CFLAGS as optimization subset of
+	  flags passed with CFLAGS to nested make -- suits RPM
+
 hashcash-1.03 - 07-Sep-2004 - Adam Back <adam@cypherspace.org>
 
 	* remove TARGET_ARCH again, let's keep things simple.  Just

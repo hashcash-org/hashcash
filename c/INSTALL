@@ -24,10 +24,6 @@ MAN_INSTALL_PATH in the Makefile.
 
 For usage information see the man page.
 
-To override the CFLAGS argument without editing the Makefile do:
+To override the COPT argument without editing the Makefile do:
 
-	make "CFLAGS=-DREGEXP_POSIX -O3 -myflags"
-
-(choose appropriate REGEXP approach for your system, default
-REGEXP_POSIX, alternative REGEXP_BSD, or fall back to neither
-defined if your system doesn't have REGEXP.)
+	make "COPT=-O3 -my-optimization-flags"

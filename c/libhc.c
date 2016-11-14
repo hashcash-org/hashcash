@@ -483,8 +483,8 @@ int resource_match( int type, const char* token_res, const char* res,
     return 1;
 }
 
-int hashcash_check( const char* token, const char* resource, void **compile,
-		    char** re_err, int type, time_t now_time, 
+int hashcash_check( const char* token, int case_flag, const char* resource, 
+		    void **compile, char** re_err, int type, time_t now_time, 
 		    time_t validity_period, long grace_period, 
 		    int required_bits, time_t* token_time ) {
     time_t token_t;
@@ -507,6 +507,11 @@ int hashcash_check( const char* token, const char* resource, void **compile,
     if ( *token_time == -1 ) {
 	return HASHCASH_INVALID;
     }
+
+    if ( !case_flag ) {
+	stolower( token_res );
+    }
+
     if ( resource && 
 	 !resource_match( type, token_res, resource, compile, re_err ) ) {
 	if ( *re_err != NULL ) { 
