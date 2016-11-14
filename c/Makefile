@@ -1,4 +1,4 @@
-HC_VERS = 1.09
+HC_VERS = 1.10
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -17,6 +17,8 @@ COPT_GENERIC = -O3
 COPT_GNU = -O3 -funroll-loops
 COPT_X86 = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
 	-D_REENTRANT -D_THREAD_SAFE -fPIC
+COPT_MINGW = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
+	-D_REENTRANT -D_THREAD_SAFE
 COPT_G3_OSX = -O3 -funroll-loops -fno-inline -mcpu=750 -faltivec
 COPT_PPC_LINUX = -O3 -funroll-loops -fno-inline -mcpu=604e -maltivec \
 	-mabi=altivec
@@ -58,7 +60,7 @@ x86:
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_X86) $(COPT)" build
 
 mingw-x86: 
-	$(MAKE) "CC=gcc" "CFLAGS=$(COPT_X86) $(COPT)" build
+	$(MAKE) "CC=gcc" "CFLAGS=$(COPT_MINGW) $(COPT)" build
 
 g3-osx:
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_G3_OSX) $(COPT)" build

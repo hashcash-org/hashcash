@@ -40,6 +40,21 @@ void stolower( char* str ) ;
 
 long per_sec = 0;		/* cache calculation */
 
+void trimspace( char* token ) {
+    int tok_len = strlen(token);
+    int tok_begin = 0;
+    while ( tok_begin < tok_len && isspace(token[tok_begin]) ) {
+	tok_begin++;
+    }
+    if ( tok_begin > 0 ) {
+	tok_len -= tok_begin;
+	memmove( token, token+tok_begin, strlen(token+tok_begin)+1 );
+    }
+    while ( tok_len > 0 && isspace(token[tok_len-1]) ) {
+	token[--tok_len] = '\0';
+    }
+}
+
 char *strrstr(char *s1,char *s2) 
 {
     char *sc2 = NULL , *psc1 = NULL , *ps1 = NULL ;
@@ -191,6 +206,7 @@ int hashcash_mint( time_t now_time, int time_width,
     while((begin = clock()) == end) {}
     
     hashcash_fastmint( bits, token, new_token );
+    trimspace( *new_token );
     end = clock();
 
     if ( end < begin ) { tmp = end; end = begin; begin = tmp; }

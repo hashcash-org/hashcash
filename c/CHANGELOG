@@ -1,3 +1,8 @@
+hashcash-1.10 - 01-Oct-2004 - Adam Back <adam@cypherspace.org>
+
+	* remove trailing ascii(32) (spaces) which padding somehow
+	  leaves
+
 hashcash-1.09 - 17-Sep-2004 - Adam Back <adam@cypherspace.org>
 
 	* fix missing space between resource name and width with -cv
