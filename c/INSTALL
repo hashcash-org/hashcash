@@ -7,9 +7,11 @@ Then to install type:
 
 make install
 
-which will install the binaries sha1 and hashcash in /usr/local/bin.
+which will install the binaries sha1 and hashcash in /usr/local/bin,
+and the man page hashcash.1 in /usr/local/man/man1.
 
-To change the installation location change the INSTALL_PATH in the
-makefile.
+To change the binary installation location change the INSTALL_PATH in
+the Makefile.  To change the man page installation location change the
+MAN_INSTALL_PATH in the Makefile.
 
-For usage information see the readme.txt file.
+For usage information see the man page.

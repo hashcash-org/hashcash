@@ -1,6 +1,7 @@
 /* -*- Mode: C; c-file-style: "bsd" -*- */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "hashcash.h"
 #include "sha1.h"
@@ -323,7 +324,6 @@ unsigned hashcash_count( const char* resource, const char* token )
     char* first_colon;
     char* second_colon;
     int ver_len;
-    int utct_len;
     int i;
     int last;
     int collision_bits;
