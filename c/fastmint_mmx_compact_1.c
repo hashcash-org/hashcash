@@ -20,13 +20,12 @@ typedef int mmx_q_t __attribute__ ((mode(DI)));
 #define sighandler_t __p_sig_fn_t
 #endif
 
-static volatile int gIsMMXPresent = -1;
 static sigjmp_buf gEnv;
 
 static void sig_ill_handler(int sig)
 {
 	gIsMMXPresent = 0;
-	siglongjmp(gEnv,0);
+	siglongjmp(gEnv,1);
 }
 #endif
 

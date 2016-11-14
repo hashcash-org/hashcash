@@ -20,6 +20,8 @@ const char *encodeAlphabets[] = {
 	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/"
 };
 
+volatile int gIsMMXPresent = -1;
+
 /* SHA-1 magic gunge */
 #define H0 0x67452301
 #define H1 0xEFCDAB89

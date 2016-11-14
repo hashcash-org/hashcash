@@ -1,9 +1,31 @@
+hashcash-1.08 - 12-Sep-2004 - Adam Back <adam@cypherspace.org>
+
+	* fix bug reported by Panta Admin <admin@panta-rhei.dyndns.org>
+	  must have introduced in recent version where with pipe
+	  prints stamp twice.
+
+	* attempt to work around MINGW problem with signals -- somehow
+	  it is changing it's mind about whether the MMX core can run
+	  from the first call to the 2nd call.  But the test result
+          is cached so it is hard to see how this happens.  Not clear
+	  if this work-around will work as don't have a 486 to test
+	  on.  (Work around is make single gIsMMXpresent shared
+	  between the two mmx cores, should at least result in signal
+	  call being used fewer times (max 1 time).  Also pass 1 to
+	  longjmp.)
+
+	* give up entirely on conditional make.  One Makefile, no
+	  funky stuff.  Prints info about what you need to do to
+	  compile on your platform and goes ahead and compiles with
+	  generic anyway.  Make new gnu (generic) target for gcc, and
+	  normal generic with no gcc specific flags.
+
 hashcash-1.07 - 11-Sep-2004 - Adam Back <adam@cypherspace.org>
 
 	* patch from J H Wilson <jhw@ieee.org> to initialize a bunch
 	  of variables (actually I had to back some of these out to
 	  get to compile on non gnu compilers -- some of those
-	  structure initializations are gnu extensions I think.
+	  structure initializations are gnu extensions I think.)
 
 	* also J H Wilson one of patch changes was to avoid mmx
 	  assembler code clobbering ebx register which is needed for

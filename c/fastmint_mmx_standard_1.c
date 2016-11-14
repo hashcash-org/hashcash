@@ -21,14 +21,12 @@ typedef int mmx_q_t __attribute__ ((mode(DI)));
 #define sighandler_t __p_sig_fn_t
 #endif
 
-static volatile int gIsMMXPresent = -1;
-
-static sigjmp_buf gEnv;
+static sigjmp_buf gEnv2;
 
 static void sig_ill_handler(int sig)
 {
 	gIsMMXPresent = 0;
-	siglongjmp(gEnv,0);
+	siglongjmp(gEnv2,1);
 }
 #endif
 
@@ -58,7 +56,7 @@ int minter_mmx_standard_1_test(void)
 		sa_new.sa_flags = 0;
 		sigaction(SIGILL, &sa_new, &sa_old);
 #endif		
-		if(!sigsetjmp(gEnv, 0)) {
+		if(!sigsetjmp(gEnv2, 0)) {
 		  asm volatile (
 			"movl $1, %%eax\n\t"
 			"cpuid\n\t"

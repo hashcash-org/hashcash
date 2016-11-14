@@ -1,4 +1,4 @@
-HC_VERS = 1.07
+HC_VERS = 1.08
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -14,6 +14,7 @@ MAKEDEPEND = makedepend
 # if no POSIX or BSD, disable, still have builtin basic wildcard support
 # 	CFLAGS = 
 COPT_GENERIC = -O3
+COPT_GNU = -O3 -funroll-loops
 COPT_X86 = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
 	-D_REENTRANT -D_THREAD_SAFE -fPIC
 COPT_G3_OSX = -O3 -funroll-loops -fno-inline -mcpu=750 -faltivec
@@ -40,7 +41,8 @@ DIST = ../dist.csh
 default:	help generic
 
 help:
-	@echo "make <platform> where platform is x86, mingw-x86, g3-osx, ppc-linux, generic"
+	@echo "make <platform> where platform is:"
+	@echo "    x86, mingw-x86, g3-osx, ppc-linux, gnu, generic"
 	@echo "other make targets are docs, install, clean, distclean, docclean"
 	@echo ""
 	@echo "(doing make generic by default)"
@@ -48,6 +50,9 @@ help:
 
 generic:
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_GENERIC) $(COPT)" build
+
+gnu:
+	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_GNU) $(COPT)" "CC=gcc" build
 
 x86: 
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_X86) $(COPT)" build
@@ -137,10 +142,10 @@ fastmint_ansi_ultracompact_1.o: libfastmint.h
 fastmint_mmx_compact_1.o: libfastmint.h
 fastmint_mmx_standard_1.o: libfastmint.h
 getopt.o: getopt.h
-hashcash.o: sdb.h utct.h random.h hashcash.h types.h libfastmint.h sstring.h
-hashcash.o: getopt.h sha1.h
+hashcash.o: sdb.h utct.h random.h hashcash.h types.h sstring.h getopt.h
+hashcash.o: sha1.h
 libfastmint.o: libfastmint.h random.h sha1.h types.h
-libhc.o: hashcash.h utct.h types.h libfastmint.h sha1.h random.h sstring.h
+libhc.o: hashcash.h utct.h types.h sha1.h random.h sstring.h
 libsha1.o: sha1.h types.h
 lock.o: lock.h
 random.o: random.h sha1.h types.h

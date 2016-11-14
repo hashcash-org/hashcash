@@ -543,16 +543,14 @@ int main( int argc, char* argv[] )
 	    if ( end < start ) { tmp = end; end = start; start = tmp; }
 	    taken = (end-start)/(double)CLOCKS_PER_SEC;
 	    VPRINTF( stderr, "time: %.0f seconds\n", taken );
+	    
 	    if ( hdr_flag ) { 
-		QQ { printwrap( stdout, header, new_token, '\t', 
-				HDR_LINE_LEN ); }
+		printwrap( stdout, header, new_token, '\t', HDR_LINE_LEN ); 
+	    } else { 
+		fprintf( stdout, "%s%s\n", 
+			 ((quiet_flag||!out_is_tty)? "" : "hashcash token: "),
+			 new_token );
 	    }
-	    else { QPRINTF( stdout, "hashcash token: %s\n", new_token ); }
-	    if ( hdr_flag ) { 
-		PP { printwrap( stdout, header, new_token, '\t',
-				HDR_LINE_LEN ); }
-	    }
-	    else { PPRINTF( stdout, "%s\n", new_token ); }
 	    free( new_token );
 	}
 	exit( EXIT_SUCCESS );

@@ -17,6 +17,8 @@ typedef struct {
 	HC_Mint_Capable_Routine test;
 } HC_Minter;
 
+extern volatile int gIsMMXPresent;
+
 extern const char *encodeAlphabets[];
 
 extern void hashcash_select_minter();
