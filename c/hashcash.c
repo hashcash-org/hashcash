@@ -199,7 +199,7 @@ int main( int argc, char* argv[] )
     array_alloc( &args, 32 );
 
     while ( (opt=getopt(argc, argv, 
-			"-a:b:cde:Ef:g:hij:klmnop:qr:sSt:uvwx:yz:CVWX")) >0 ) {
+			"-a:b:cde:Ef:g:hij:klmnop:qr:sSt:uvwx:yz:CMVX")) >0 ) {
 	switch ( opt ) {
 	case 'a': anon_flag = 1; 
 	    if ( !parse_period( optarg, &anon_period ) ) {
@@ -330,9 +330,9 @@ int main( int argc, char* argv[] )
 	case 'v': verbose_flag = 1; break;
         case 'V': version_flag = 1; break;
 	case 'w': width_flag = 1; break;
-	case 'W': 
+	case 'M':
 	    wild_flag = 1;
-	    str_type = TYPE_WILD; 
+	    str_type = TYPE_WILD;
 	    break;
 	case 'x':
 	    ext_flag = 1;
@@ -487,6 +487,8 @@ int main( int argc, char* argv[] )
 
 	    tries_expected = report_speed( ent->bits, NULL, 
 					   verbose_flag||speed_flag );
+
+	    if ( !ent->case_flag ) { stolower( ent->str ); }
 
 	    err = hashcash_mint( now_time, ent->width, ent->str, ent->bits, 
 				 ent->anon, &new_token, MAX_TOK, &anon_random, 

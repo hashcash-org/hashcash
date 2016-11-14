@@ -1,3 +1,15 @@
+hashcash-1.05 - 08-Sep-2004 - Adam Back <adam@cypherspace.org>
+
+	* and another issue (last I promise!) with case comparison.
+	  1.04 change was good; however flaw in 1.02 means 1.04 minted
+	  stamps (resource not canonicalized to lowercase) can falsely
+	  fail to verify with 1.02 - 1.00 as those versions presume
+	  canonicalized stamp.  So we go back to making -C have effect
+	  on minting also.  With no -C canonicalize to lowercase, with
+	  -C use resource as-is.
+
+	* get rid of -W flag reserved for posix, use -M in it's place.
+
 hashcash-1.04 - 07-Sep-2004 - Adam Back <adam@cypherspace.org>
 
 	* fixed issue with case comparisons -- presumed resources were

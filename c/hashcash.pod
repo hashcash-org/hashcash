@@ -374,7 +374,7 @@ purge all expired stamps.  If the resource name is the empty string,
 all stamps are matched (this is equivalent to omitting the I<-j>
 option).
 
-Note the I<-E>, I<-W> and I<-S> type of match flags also apply to
+Note the I<-E>, I<-M> and I<-S> type of match flags also apply to
 resources given with the I<-j resource> flag.
 
 =item I<-s>
@@ -395,6 +395,10 @@ Print short usage information.
 Print more verbose informational output about the stamp minting or
 verification.  (If -v is the only argument, prints the tool version
 number.)
+
+=item I<-V>
+
+Prints tool version number.
 
 =item I<-q>
 
@@ -492,17 +496,17 @@ Use with I<-c> where not all of I<-d>, I<-r> are specified to get
 success exit code on valid but partially checked stamp.  Similarly can
 use with I<-n>, I<-l>, I<-w> with same effect.
 
-=item I<-W>
+=item I<-M>
 
-When checking stamps, allow wildcards I<*> in the resource name to
-make it simpler to specify multiple email addresses and to allow
-matching catch-all addresses and addresses including subdomains.  This
-is the default.  See also I<-S>, I<-E> and I<-C>
+When checking stamps, allow wildcard I<*> matching in the resource
+name to make it simpler to specify multiple email addresses and to
+allow matching catch-all addresses and addresses including subdomains.
+This is the default.  See also I<-S>, I<-E> and I<-C>
 
 =item I<-S>
 
 When checking stamps use simple text compare to compare resource names
-to those in stamps.  See also I<-W>, I<-E> and I<-C>.
+to those in stamps.  See also I<-M>, I<-E> and I<-C>.
 
 =item I<-E>
 
@@ -523,9 +527,9 @@ ranges {}.)
 
 =item I<-C>
 
-By default resources are converted to lower case on minting and on
+By default resources are canonicalized to lower case on minting and on
 checking.  The I<-C> flag overrides this so that resources are treated
-as case sensitive.
+as case sensitive on checking, and not canonizalized on minting.
 
 =back
 
@@ -539,6 +543,11 @@ as case sensitive.
 
 Print timing information about how many collisions the machine can try
 per second.
+
+=item C<hashcash -sv>
+
+More accurate but quite slow benchmarking of different processor
+specific minting cores.
 
 =item C<hashcash -s -b default>
 

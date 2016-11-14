@@ -332,7 +332,7 @@ OPTIONS
         all stamps are matched (this is equivalent to omitting the *-j*
         option).
 
-        Note the *-E*, *-W* and *-S* type of match flags also apply to
+        Note the *-E*, *-M* and *-S* type of match flags also apply to
         resources given with the *-j resource* flag.
 
     *-s*
@@ -350,6 +350,9 @@ OPTIONS
         Print more verbose informational output about the stamp minting or
         verification. (If -v is the only argument, prints the tool version
         number.)
+
+    *-V*
+        Prints tool version number.
 
     *-q*
         Batch mode. Prints no information other than output. This option
@@ -438,15 +441,15 @@ OPTIONS
         get success exit code on valid but partially checked stamp.
         Similarly can use with *-n*, *-l*, *-w* with same effect.
 
-    *-W*
-        When checking stamps, allow wildcards *** in the resource name to
-        make it simpler to specify multiple email addresses and to allow
-        matching catch-all addresses and addresses including subdomains.
-        This is the default. See also *-S*, *-E* and *-C*
+    *-M*
+        When checking stamps, allow wildcard *** matching in the resource
+        name to make it simpler to specify multiple email addresses and to
+        allow matching catch-all addresses and addresses including
+        subdomains. This is the default. See also *-S*, *-E* and *-C*
 
     *-S*
         When checking stamps use simple text compare to compare resource
-        names to those in stamps. See also *-W*, *-E* and *-C*.
+        names to those in stamps. See also *-M*, *-E* and *-C*.
 
     *-E*
         When checking stamps use regular expressions to specify resource
@@ -465,15 +468,20 @@ OPTIONS
         ranges {}.)
 
     *-C*
-        By default resources are converted to lower case on minting and on
-        checking. The *-C* flag overrides this so that resources are treated
-        as case sensitive.
+        By default resources are canonicalized to lower case on minting and
+        on checking. The *-C* flag overrides this so that resources are
+        treated as case sensitive on checking, and not canonizalized on
+        minting.
 
 EXAMPLES
   Creating stamps
     "hashcash -s"
         Print timing information about how many collisions the machine can
         try per second.
+
+    "hashcash -sv"
+        More accurate but quite slow benchmarking of different processor
+        specific minting cores.
 
     "hashcash -s -b default"
         Print how long it would take the machine to compute a default sized
