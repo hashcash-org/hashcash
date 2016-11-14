@@ -1,6 +1,6 @@
 =head1 NAME
 
-hashcash - hashcash minting and verification command line tool
+hashcash - hashcash anti-spam / denial of service counter-measure tool
 
 =head1 SYNOPSIS
 
@@ -34,35 +34,52 @@ B<hashcash> I<-l> [ I<options> ] I<-e period> [ I<token> ]
 
 =head1 DESCRIPTION
 
-Hashcash is a DoS counter-measure tool.  This tool allows you to mint
-(create) and verify hashcash tokens.  A hashcash token constitutes a
-proof-of-work which takes a parameterizable amount of work to compute
-for the sender.  The recipient can verify received tokens efficiently.
+Hashcash is a denial-of-service counter measure tool.  It's main
+current use is to help hashcash users avoid losing email due to
+content based and blacklist based anti-spam systems.
 
-The proof-of-work function is to compute partial hash collisions (in
-this version the SHA1 hash function is used).  By choosing the number
+The hashcash tool allows you to create hashcash tokens to attach to
+emails you send, and to verify hashcash tokens attached to emails you
+receive.  Email senders attach hashcash tokens with the X-Hashcash:
+header.  Vendors and authors of anti-spam tools are encouraged to
+exempt mail sent with hashcash from their blacklists and content based
+filtering rules.
+
+A hashcash token constitutes a proof-of-work which takes a
+parameterizable amount of work to compute for the sender.  The
+recipient can verify received tokens efficiently. This package also
+includes a sha1 implementation which behaves somewhat like md5sum, but
+with SHA1.
+
+The hashcash proof-of-work function is to compute partial hash
+collisions (the SHA1 hash function is used).  By choosing the number
 of bits of collision, the work required to compute a collision can be
 made arbitrarily expensive -- from fractions of a second to minutes or
 hours.  The verification is efficient requiring the same small cost
 whatever the collision size.
 
-For more detailed discussion of potential applications for hashcash
-see http://www.cypherspace.org/hashcash/.
+For more detailed discussion of other applications hashcash has been
+used for see http://www.hashcash.org/
 
 =head1 USAGE NOTES
+
+In this man page a resource name is the name of the service or address
+the token is created for.  In the case of email, the resource name is
+the recipient's email address in the form user@domain.com.
 
 =head2 Minting tokens
 
 If neither the I<-c> or I<-s> option are given, it is assumed that you
 want to mint a token.
 
-The resource name to mint the token against can be passed as an
-argument, or if omitted is read from stdin.  If stdin is a tty the
-user is prompted, if stdin is a pipe the resource name is just
-silently read.  The desired collision size can be specified with the
--b option.  If no collision size is specified, the default is 20 bits.
-As a convenience, if stdin is a tty and no collision size is given
-with the I<-b> flag, the user is prompted for a collision size.
+The resource name (recipient's email address) to mint the token
+against can be passed as an argument, or if omitted is read from
+stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
+resource name is just silently read.  The desired collision size can
+be specified with the -b option.  If no collision size is specified,
+the default is 20 bits.  As a convenience, if stdin is a tty and no
+collision size is given with the I<-b> flag, the user is prompted for
+a collision size.
 
 =head2 Checking tokens
 
@@ -70,9 +87,10 @@ The I<-c> flag must be given to check tokens.  The token to check can
 be given as an argument to C<hashcash>.  If no token is given the
 token is read from stdin.  If stdin is a tty the user will be
 prompted, if stdin is a pipe the token is just silently read.  A
-resource name can be given with the I<-r> option.  If a resource name
-is given the resource name is compared to the name in the token, if
-they do not match, the token is rejected.
+resource name (the recipient's email address) can be given with the
+I<-r> option.  If a resource name is given the resource name is
+compared to the resource name in the token, if they do not match, the
+token is rejected.
 
 Note: if no resource name is given the token is anyway checked to see
 if it is otherwise valid, but it could be minted for a different
@@ -95,21 +113,22 @@ If the token is double spent the token is rejected.  Double spending
 protection is discussed in more detail below in 
 L<Double Spending Protection>.  If double spending protection is not
 enabled, the token could be double spent, so hashcash will return
-unchecked exit code on exit.
+unchecked exit code (exit code 2) on exit.
 
 The I<-w> flag can be used to request that the number of bits of the
-collision are counted and displayed; exit code unchecked is returned
-on exit.  The I<-n> flag can be used to request that the resource name
-in the token is parsed out and displayed; exit code unchecked is
-returned on exit.  The I<-l> flag can be used to request the number of
-seconds until expiry of the token is output; exit code unchecked is
-returned on exit.
+collision are counted and displayed; exit code unchecked (exit code 2)
+is returned on exit.  The I<-n> flag can be used to request that the
+resource name in the token is parsed out and displayed; exit code
+unchecked (exit code 2) is returned on exit.  The I<-l> flag can be
+used to request the number of seconds until expiry of the token is
+output; exit code unchecked (exit code 2) is returned on exit.
 
 The program will only return exit codes valid or invalid if the I<-c>
 flag is used, and all of the options I<-b bits>, I<-d>, I<-r resource>
-are used.  These are the minimum set of options necessary to check the
-validty of a token.  If these criteria are not met, the program will
-return exit code unchecked on exit.
+are used.  These are the minimum set of options necessary to fully
+check the validty of a token.  If these criteria are not met, the
+program will return exit code unchecked (exit code 2) on exit.  (See
+also the I<-y> flag.)
 
 =head2 Double Spending Protection
 
@@ -144,9 +163,9 @@ affecting the validity of old tokens.
 
 To purge old tokens periodically while checking tokens use the I<-p
 period> option to purge no sooner than the given time period since the
-last purge.  Purging can be used with the I<-k> to purge unexpired
-tokens also, and with the I<-r resource> flag to purge only tokens for
-the given resource.
+last purge.  Purging can be used with the I<-k> option to purge
+unexpired tokens also, and with the I<-r resource> flag to purge only
+tokens for the given resource.
 
 There are circumstances where it may be inconvenient to purge tokens
 on the next access, for example if there is a large double spend
@@ -162,8 +181,9 @@ low.
 The I<-s> flag requests measurement of how many collisions can be
 tested per second.  No token is minted, or verified.
 
-If the I<-b> flag is used this option, instead an estimate of how many
-seconds it would take to mint a token of that size is computed.
+If the I<-b> flag is used with this option, instead an estimate of how
+many seconds it would take to mint a token of the given size in bits
+is computed.
 
 =head2 Notes
 
@@ -172,9 +192,9 @@ results of token verification and timing are printed on stdout.  The
 quiet flag I<-q> suppresses all informational output.  The I<-v> flag
 requests more informational output.  The requested output, which is
 the only information that is output in quiet mode (when I<-q> is
-specified) is printed on standard output.  If stdout is a pipe the
-output is printed without description (ie just bits, just seconds,
-just resource).
+specified) is printed on standard output.  If stdout is a pipe, or
+when quiet mode is in effect the output is printed without description
+(ie just bits, just seconds, just resource).
 
 =head1 OPTIONS
 
@@ -197,15 +217,16 @@ many bits, otherwise reject it.
 
 =item I<-r resource>
 
-When minting tokens, the resource name to mint the token against can
-be given either with I<-r resource> or as an argument to C<hashcash>.
+When minting tokens, the resource name (recipient's email address) to
+mint the token against can be given either with I<-r resource> or as
+an argument to C<hashcash>.
 
-When checking tokens, the resource name can be given with the I<-r>
-option.  If the resource name is given it is checked against the
-resource name in the token, and if they do not match the token is
-rejected.  Note if the resource name is not given, tokens for other
-resources would be accepted, and therefore hashcash returns exit code
-unchecked on exit.
+When checking tokens, the resource name (your own email address) can
+be given with the I<-r> option.  If the resource name is given it is
+checked against the resource name in the token, and if they do not
+match the token is rejected.  Note if the resource name is not given,
+tokens for other resources would be accepted, and therefore hashcash
+returns exit code unchecked (exit code 2) on exit.
 
 =item I<-e time>
 
@@ -222,7 +243,7 @@ If used with the I<-d> option, the spent token and it's expiry period
 is recorded in the database.  See the I<-p> option for description of
 how to purge tokens from the database.
 
-While minting tokens, if the I<-e> flag can have an effect on the
+While minting tokens, the I<-e> flag can have an effect on the
 resolution of time created in the token.  Without the I<-e> option,
 the default resolution is days (time format: YYMMDD).  Alternate
 formats based on range of expiry period are as follows:
@@ -251,7 +272,7 @@ seconds.
 
 Note the rounding down is based on UTC time, not local time.  This can
 lead to initially suprising results when rounding down to eg days in
-time zones other than GMT (GMT = UTC).  It may be clearer to
+time zones other than GMT (UTC = GMT).  It may be clearer to
 understand if you use the I<-u> option.
 
 =item I<-d>
@@ -260,7 +281,7 @@ Store tokens in a double spend database.  If token has been seen
 before it will be rejected even if it is otherwise valid.  The default
 database file is F<database.db> in the current directory.
 
-It is recommended that if you use the I<-e> option with the database
+It is recommended that you use the I<-e> option with the database
 option, to prevent the database growing indefinately over time.  A
 suggested value is I<-e 28d>, 28 days.
 
@@ -297,10 +318,10 @@ option).
 
 =item I<-s>
 
-Print timing information only don't find collision.  If combined with
-I<-b> flag print estimate of how long the requested collision size
-would take to compute, if I<-s> given by itself, just prints speed of
-collision finder.
+Print timing information only, and don't proceed to create a token.
+If combined with I<-b> flag print estimate of how long the requested
+collision size would take to compute, if I<-s> given by itself, just
+prints speed of the collision finder.
 
 =item I<-h>
 
@@ -309,32 +330,38 @@ Print short usage information.
 =item I<-v>
 
 Print more verbose informational output about the token minting or
-verification.
+verification.  (If -v is the only argument, prints the tool version
+number.)
 
 =item I<-q>
 
 Batch mode.  Prints no information other than output.  This option
 overrides the I<-v> option.
 
-=item I<-x string>
+=item I<-X>
 
-When minting, prints the string before the token.  An example might be
-I<-x 'X-Hashcash: '>, to insert as a mail header.  Without this option
-just the bare token is printed.
+When minting, prints the hashcash email X-header 'X-Hashcash: ' before
+the token.  Without this option just the bare token is printed.  
 
 When checking, if no token is given as an argument, scans stdin for a
-line starting with the given string, and use the rest of the matching
-as the token.  Only the lines up to and ending at the first blank line
-are scanned.  A blank line is the separator used to separate the
-headers from the body of a mail message or USENET article.  This is
-meant to make it convenient to pipe a mail message or USENET article
-to hashcash on stdin.
+line starting with the string 'X-Hashcash:', and uses the rest of the
+matching line as the token.  Only the lines up to and ending at the
+first blank line are scanned.  A blank line is the separator used to
+separate the headers from the body of a mail message or USENET
+article.  This is meant to make it convenient to pipe a mail message
+or USENET article to hashcash on stdin.
+
+=item I<-x string>
+
+Similar effect to I<-X> for minting and checking except you get to
+choose your own header string.  For example I<-x 'X-Hashcash: '> has
+the same effect as I<-X>.
 
 =item I<-i>
 
-When checking and using the I<-x> flag, ignore the blank line boundary
-between headers and body of the message, and check for collision in
-the body too if one is not found in the headers.
+When checking and using the I<-X> or I<-x> flag, ignore the blank line
+boundary between headers and body of the message, and check for
+collision in the body too if one is not found in the headers.
 
 =item I<-t time>
 
@@ -692,4 +719,4 @@ Written by Adam Back E<lt>adam@cypherspace.orgE<gt>
 
 =head1 SEE ALSO
 
-sha1(1), http://www.cypherspace.org/hashcash/
+sha1(1), http://www.hashcash.org/

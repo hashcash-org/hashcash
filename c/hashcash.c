@@ -5,7 +5,7 @@
  *  hash cash is payment in burnt CPU cycles by calculating n-bit
  *  partial hash collisions
  *
- *  see:         http://www.cypherspace.org/hashcash/
+ *  see:         http://www.hashcash.org/
  *
  */
 
@@ -63,7 +63,7 @@
  */
 
 #define QPRINTF if (!quiet_flag) fprintf
-#define PPRINTF if (!out_is_tty) fprintf
+#define PPRINTF if (!out_is_tty||quiet_flag) fprintf
 #define VPRINTF if (verbose_flag) fprintf
 
 #define QPUTS(f,str) if (!quiet_flag) { fputs(str,f); }
@@ -71,6 +71,7 @@
 #define VPUTS(f,str) if (verbose_flag) { fputs(str,f); }
 
 void chomplf( char* token );
+void trimspace( char* token );
 void die( int err );
 void die_msg( const char* );
 void usage( const char* );
@@ -93,6 +94,7 @@ int main( int argc, char* argv[] )
     int found;
     int err;
     int non_opt_argc = 0;
+    int opt_argc = 0;
     int anon_flag = 0;
     long anon_period = 0;
     long anon_random;
@@ -113,6 +115,8 @@ int main( int argc, char* argv[] )
     int ignore_boundary_flag = 0;
     int name_flag = 0;
     int res_flag = 0;
+    int auto_version = 0;
+    int version_flag = 0;
     int checked = 0;
     int comma = 0;
     int in_db;
@@ -168,7 +172,7 @@ int main( int argc, char* argv[] )
     opterr = 0;
 
     while ( ( opt = getopt( argc, argv, 
-			    "a:b:cde:f:hij:klmnp:qr:st:uvwx:y" ) ) > 0 )
+			    "a:b:cde:f:hij:klmnp:qr:st:uvwx:yVX" ) ) > 0 )
     {
 	switch ( opt )
 	{
@@ -193,7 +197,7 @@ int main( int argc, char* argv[] )
 		usage( "error: -e invalid validity period\n\n" ); 
 	    }
 	    break;
-	case 'f': db_filename = optarg; break;
+	case 'f': db_filename = strdup( optarg ); break;
 	case 'h': usage( "" ); break;
 	case 'i': ignore_boundary_flag = 1; break;
 	case 'j': 
@@ -239,11 +243,16 @@ int main( int argc, char* argv[] )
 	    }
 	    break;
 	case 'u': utc_flag = 1; break;
-	case 'v': verbose_flag = 1;	break;
+	case 'v': verbose_flag = 1; break;
+        case 'V': version_flag = 1; break;
 	case 'w': width_flag = 1; break;
 	case 'x':
 	    hdr_flag = 1;
 	    sstrncpy( header, optarg, MAX_HDR );
+	    break;
+	case 'X':
+	    hdr_flag = 1;
+	    sstrncpy( header, "X-Hashcash:", MAX_HDR );
 	    break;
 	case 'y': yes_flag = 1; break;
 	case '?': 
@@ -260,14 +269,42 @@ int main( int argc, char* argv[] )
 	}
     }
 
+    non_opt_argc = argc - optind; /* how many args */
+
+    if ( non_opt_argc == 0 && verbose_flag && 
+	 name_flag + left_flag + width_flag + check_flag +
+	 mint_flag + purge_flag + speed_flag < 1 )
+    {
+	auto_version = 1;
+        version_flag = 1; verbose_flag = 0;
+    }
+
+    if ( version_flag ) 
+    {
+        QPRINTF( stderr, "Version: hashcash-%s\n", 
+		 HASHCASH_VERSION_STRING );
+	PPRINTF( stdout, "%s\n", HASHCASH_VERSION_STRING );
+	if ( auto_version ) { exit(EXIT_FAILURE); }
+    }
+
     if ( name_flag + left_flag + width_flag + check_flag > 1 )
     {
 	usage( "can only specify one of -n, -l, -w and -c\n\n" );
     }
 
-    if ( check_flag & mint_flag )
+    if ( check_flag && mint_flag )
     {
-	usage( "can only specify one of -c -r -m\n\n" );
+	usage( "can only specify one of -c -m\n\n" );
+    }
+
+    if ( name_flag + left_flag + width_flag + check_flag +
+	mint_flag + version_flag + purge_flag + speed_flag < 1 ) {
+	usage( "must specify at least one of -m, -c, -n, -l, -w, -V\n\n" );
+    }
+
+    if ( name_flag + left_flag + width_flag + check_flag +
+	 mint_flag + purge_flag < 1 && !version_flag ) {
+	mint_flag = 1;		/* auto mint unless version asked for */
     }
 
     db_exists = file_exists( db_filename, &err );
@@ -314,8 +351,6 @@ int main( int argc, char* argv[] )
 	exit( EXIT_SUCCESS );
     }
 
-    non_opt_argc = argc - optind; /* how many args */
-
     if ( quiet_flag ) {	verbose_flag = 0; } /* quiet overrides verbose */
 
     if ( name_flag && !check_flag ) { check_flag = 1; }
@@ -329,7 +364,7 @@ int main( int argc, char* argv[] )
     if ( res_flag && name_flag ) { 
 	usage( "error: only one of -r and -n can be used\n\n" );
     }
-    if ( !check_flag ) /* mint token */
+    if ( mint_flag ) /* mint token */
     {
 	if ( non_opt_argc > 1 ) 
 	{ 
@@ -376,6 +411,9 @@ int main( int argc, char* argv[] )
 	    }
 	}
 
+	trimspace( token );
+	trimspace( resource );
+
 	if ( bits_flag && bits > SHA1_DIGEST_BYTES * 8 ) 
 	{
 	    usage( "error: maximum collision with sha1 is 160 bits\n\n" );
@@ -388,7 +426,7 @@ int main( int argc, char* argv[] )
 		     per_sec );
 	    if ( speed_flag && !bits_flag )
 	    {
-		PPRINTF( stdout, "%ld\n", per_sec ); fflush( stdout );
+		PPRINTF( stdout, "%ld\n", per_sec );
 	    }
 	}
 
@@ -467,7 +505,7 @@ int main( int argc, char* argv[] )
 	    }
 	    if ( speed_flag )
 	    {
-		PPRINTF( stdout, "%.0f", time_estimated ); fflush( stdout );
+		PPRINTF( stdout, "%.0f", time_estimated ); 
 		exit( EXIT_SUCCESS ); /* don't actually calculate it */
 	    }
 	}
@@ -521,10 +559,10 @@ int main( int argc, char* argv[] )
 	if ( hdr_flag ) { QPRINTF( stderr, "%s%s\n", header, token ); }
 	else { QPRINTF( stderr, "hashcash token: %s\n", token ); }
 	if ( hdr_flag ) { PPUTS( stdout, header ); } 
-	PPRINTF( stdout, "%s\n", token ); fflush( stdout );
+	PPRINTF( stdout, "%s\n", token );
 	exit( EXIT_SUCCESS );
     }
-    else /* if check_flag -- check token is valid */
+    else if ( check_flag )	/* check token is valid */
     {
 	if ( non_opt_argc > 0 ) 
 	{
@@ -534,6 +572,7 @@ int main( int argc, char* argv[] )
 	{
 	    if ( hdr_flag )
 	    {
+		trimspace(header); /* be forgiving about missing space */
 		for ( found = 0, boundary = 0, header_len = strlen( header );
 		      !found && !boundary && !feof( stdin ) && 
 			  fgets( line, MAX_LINE, stdin ); )
@@ -571,6 +610,8 @@ int main( int argc, char* argv[] )
 	    if ( hdr_flag ) { VPRINTF( stderr, "token: %s\n", token ); }
 	}
 
+	trimspace( token );
+
 	if ( !hashcash_parse( token, &vers, token_utime, MAX_UTC,
 			      token_resource, MAX_RES ) ) 
 	{ 
@@ -578,6 +619,7 @@ int main( int argc, char* argv[] )
 	    valid_for = HASHCASH_INVALID;
 	    goto leave;
 	}
+	trimspace( token_resource );
 
 	if ( vers != 0 ) 
 	{
@@ -588,6 +630,7 @@ int main( int argc, char* argv[] )
 
 	if ( res_flag ) 
 	{
+	    trimspace( resource );
 	    if ( strcmp( resource, token_resource ) != 0 ) 
 	    {
 		VPRINTF( stderr, "required resource name: %s\n", 
@@ -639,12 +682,11 @@ int main( int argc, char* argv[] )
 		    QPRINTF( stderr, "%ld seconds remaining\n", 
 			     (long)valid_for );
 		    PPRINTF( stdout, "%ld\n", (long)valid_for ); 
-		    fflush( stdout );
 		} 
 		else
 		{
 		    QPUTS( stderr, "forever\n" );
-		    PPUTS( stdout, "-1\n" ); fflush( stdout );
+		    PPUTS( stdout, "-1\n" );
 		}
 	    }
 	    break;
@@ -713,7 +755,7 @@ int main( int argc, char* argv[] )
 	if ( name_flag || verbose_flag )
 	{
 	    QPRINTF( stderr, "token resource name: %s\n", token_resource );
-	    PPRINTF( stdout, "%s\n", token_resource ); fflush( stdout );
+	    PPRINTF( stdout, "%s\n", token_resource );
 	}
 
 	VPRINTF( stderr, "required: %d bits\n", bits );
@@ -721,7 +763,7 @@ int main( int argc, char* argv[] )
 	if ( width_flag || verbose_flag ) 
 	{
 	    QPRINTF( stderr, "token value: %d bits\n", collision_bits );
-	    PPRINTF( stdout, "%d\n", collision_bits ); fflush( stdout );
+	    PPRINTF( stdout, "%d\n", collision_bits );
 	}
 	
     leave:
@@ -759,7 +801,7 @@ int main( int argc, char* argv[] )
 	exit( checked ? EXIT_SUCCESS : 
 	      ( yes_flag ? EXIT_SUCCESS : EXIT_UNCHECKED ) );
     }
-    exit( EXIT_ERROR );		/* shouldn't get here */
+    exit( EXIT_ERROR );		/* get here if no functional flags */
     return 0;
 }
 
@@ -831,13 +873,14 @@ void usage( const char* msg )
     fprintf( stderr, "\t-j resource\twith -p delete just tokens matching the given resource\n" );
     fprintf( stderr, "\t-k\t\twith -p delete all not just expired\n" );
     fprintf( stderr, "\t-x string\tprepend token output to string (or input match string)\n" );
-    fprintf( stderr, "\t-i\t\twith -x and -c, check msg body as well\n" );
+    fprintf( stderr, "\t-X\t\tshorthand for -x 'X-Hashcash:'\n" );
+    fprintf( stderr, "\t-i\t\twith -x/-X and -c, check msg body as well\n" );
     fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -b20 foo                               # mint 20 bit collision\n" );
-    fprintf( stderr, "\thashcash -cdb20 -r foo 0:020814:foo:55f4316f29cd98f2    # check collision\n" );
+    fprintf( stderr, "\thashcash -cdb20 -r foo 0:020814:foo:55f4316f29cd98f2  # check collision\n" );
     fprintf( stderr, "\n" );
-    fprintf( stderr, "see man page or http://www.cypherspace.org/hashcash/ for more details.\n" );
+    fprintf( stderr, "see hashcash (1) man page or http://www.hashcash.org/ for more details.\n" );
     exit( EXIT_ERROR );
 }
 
@@ -960,4 +1003,23 @@ void chomplf( char* token )
     if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
     if ( token[tok_len-1] == '\r' ) { token[--tok_len] = '\0'; }
     if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
+}
+
+void trimspace( char* token )
+{
+    int tok_len = strlen(token);
+    int tok_begin = 0;
+    while ( tok_begin < tok_len && isspace(token[tok_begin]) ) 
+    {
+	tok_begin++;
+    }
+    if ( tok_begin > 0 ) 
+    {
+	tok_len -= tok_begin;
+	strcpy( token, token+tok_begin );
+    }
+    while ( tok_len > 0 && isspace(token[tok_len-1]) )
+    {
+	token[--tok_len] = '\0';
+    }
 }

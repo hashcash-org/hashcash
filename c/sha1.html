@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>sha1</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<ul>
+
+		<li><a href="#hash_files_">hash files:</a></li>
+	</ul>
+
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#usage_notes">USAGE NOTES</a></li>
+	<li><a href="#examples">EXAMPLES</a></li>
+	<ul>
+
+		<li><a href="#hashing_files">Hashing files</a></li>
+	</ul>
+
+	<li><a href="#verifying_hashcash">Verifying Hashcash</a></li>
+	<li><a href="#limitations">LIMITATIONS</a></li>
+	<li><a href="#exit_status">EXIT STATUS</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>sha1 - Secure Hash Algorithm (version 1) hash function</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>
+</p>
+<h2><a name="hash_files_">hash files:</a></h2>
+<p><strong>sha1</strong> [ <em>files</em> ]</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This is an implementation of the Secure Hash Algorithm version 1 as
+defined in US Federal Information Processing Standard ``FIPS 180-1''.</p>
+<p>This was shipped for convenience with the hashcash tool, but also functions
+similarly to the widely distributed md5sum utility but using SHA1 instead of
+MD5 so you may find other uses for it.  (Some have argued that MD5 is too
+small a hash to use for checking files if the attacker can insert chosen
+files into your distribution as then a birthday attack becomes possible for
+the master md5sum with work factor of about 2^64, which is a fairly high
+cost but not infeasible.)</p>
+<p>
+</p>
+<hr />
+<h1><a name="usage_notes">USAGE NOTES</a></h1>
+<p>The sha1 program will hash the files given on the command line, or if no
+files are given it will hash the input fed to it on standard input.  The
+output format is a list of SHA1 hashes in hex followed by the corresponding
+filenames, one per line.</p>
+<p>
+</p>
+<hr />
+<h1><a name="examples">EXAMPLES</a></h1>
+<p>
+</p>
+<h2><a name="hashing_files">Hashing files</a></h2>
+<dl>
+<dt><strong><a name="item_sha1_file1_file2__5b_2e_2e_2e_5d"><code>sha1 file1 file2 [...]</code></a></strong><br />
+</dt>
+<dd>
+Hashes the files listed on the command line and outputs their SHA1
+message digests as 40 hexadecimal digits, followed by the filename,
+one per line.
+</dd>
+<p></p>
+<dt><strong><a name="item_echo__2dn_abc__7c_sha1"><code>echo -n abc | sha1</code></a></strong><br />
+</dt>
+<dd>
+When no files are given, hashes from standard in.  The example command
+hashes the string ``abc'' from standard input.  This string is
+coincidentally one of the test vectors specified in FIPS 180-1 and
+should output: <em>a9993e364706816aba3e25717850c26c9cd0d89d</em>.
+</dd>
+<p></p>
+<dt><strong><a name="item_echo__2dn_abc__7c_sha1__2d"><code>echo -n abc | sha1 -</code></a></strong><br />
+</dt>
+<dd>
+Equivalent to above.  The filename of <em>-</em> means read from standard input.
+</dd>
+<p></p>
+<dt><strong><a name="item_echo__2dn_abc__7c_sha1_test_2etxt__2d"><code>echo -n abc | sha1 test.txt -</code></a></strong><br />
+</dt>
+<dd>
+You can also mix filenames and reading from standard input with the <em>-</em>
+pseudo file.  The above command first hashes file <code>test.txt</code> then reads the
+string abc from standard in.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="verifying_hashcash">Verifying Hashcash</a></h1>
+<p>The SHA1 hash function is used by hashcash.  You can use this sha1
+utility to write shell scripts to verify hashcash tokens without using
+the hashcash command line tool, or just to verify visually.  Say you
+received the following email:</p>
+<p>From: Someone &lt;<a href="mailto:test@test.invalid">test@test.invalid</a>&gt;
+To: Adam Back &lt;<a href="mailto:adam@cypherspace.org">adam@cypherspace.org</a>&gt;
+Subject: test hashcash
+Date: Thu, 15 Aug 2002 11:12:02 +0000
+X-Hashcash: <a href="mailto:0:030626:adam@cypherspace.org:6470e06d773e05a8">0:030626:adam@cypherspace.org:6470e06d773e05a8</a>
+</p>
+<pre>
+
+Then the following commane would show visually the size of the
+collision:</pre>
+<dl>
+<dt><strong><a name="item_echo__2dn_0_3a030626_3aadam_40cypherspace_2eorg_3a"><code>echo -n 0:030626:adam@cypherspace.org:6470e06d773e05a8 | sha1</code></a></strong><br />
+</dt>
+<li><strong><a name="item_c70db7389f241b8f441fcf068aead3f0"><code>00000000c70db7389f241b8f441fcf068aead3f0</code></a></strong><br />
+</li>
+</dl>
+<p>and you can see the leading hex 0s.</p>
+<p>
+</p>
+<hr />
+<h1><a name="limitations">LIMITATIONS</a></h1>
+<p>Doesn't have the check option that md5sum has.  Perhaps I'll add that in a
+future version.  Also doesn't have the binary / text distinction that md5sum
+introduced for DOS/Windows benefit, nor the output convention signifying
+text (* after hash).  Can't say I've ever seen anyone use that feature
+though.</p>
+<p>
+</p>
+<hr />
+<h1><a name="exit_status">EXIT STATUS</a></h1>
+<p><code>sha1</code> returns success (exit code 0) normally.</p>
+<p>If it can't read any of the files you give it on the comamnd line, it
+instead returns failure (exit code 1).</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Written by Adam Back &lt;<a href="mailto:adam@cypherspace.org">adam@cypherspace.org</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p>md5sum(1), hashcash(1), <a href="http://www.hashcash.org/,">http://www.hashcash.org/,</a>
+<a href="http://www.itl.nist.gov/fipspubs/fip180-1.htm">http://www.itl.nist.gov/fipspubs/fip180-1.htm</a>
+</p>
+
+</body>
+
+</html>

@@ -1,0 +1,110 @@
+=head1 NAME
+
+sha1 - Secure Hash Algorithm (version 1) hash function
+
+=head1 SYNOPSIS
+
+=head2 hash files:
+
+B<sha1> [ I<files> ]
+
+=head1 DESCRIPTION
+
+This is an implementation of the Secure Hash Algorithm version 1 as
+defined in US Federal Information Processing Standard "FIPS 180-1".
+
+This was shipped for convenience with the hashcash tool, but also functions
+similarly to the widely distributed md5sum utility but using SHA1 instead of
+MD5 so you may find other uses for it.  (Some have argued that MD5 is too
+small a hash to use for checking files if the attacker can insert chosen
+files into your distribution as then a birthday attack becomes possible for
+the master md5sum with work factor of about 2^64, which is a fairly high
+cost but not infeasible.)
+
+=head1 USAGE NOTES
+
+The sha1 program will hash the files given on the command line, or if no
+files are given it will hash the input fed to it on standard input.  The
+output format is a list of SHA1 hashes in hex followed by the corresponding
+filenames, one per line.
+
+=head1 EXAMPLES
+
+=head2 Hashing files
+
+=over 4
+
+=item C<sha1 file1 file2 [...]>
+
+Hashes the files listed on the command line and outputs their SHA1
+message digests as 40 hexadecimal digits, followed by the filename,
+one per line.
+
+=item C<echo -n abc | sha1>
+
+When no files are given, hashes from standard in.  The example command
+hashes the string "abc" from standard input.  This string is
+coincidentally one of the test vectors specified in FIPS 180-1 and
+should output: I<a9993e364706816aba3e25717850c26c9cd0d89d>.
+
+=item C<echo -n abc | sha1 ->
+
+Equivalent to above.  The filename of I<-> means read from standard input.
+
+=item C<echo -n abc | sha1 test.txt ->
+
+You can also mix filenames and reading from standard input with the I<->
+pseudo file.  The above command first hashes file C<test.txt> then reads the
+string abc from standard in.
+
+=back
+
+=head1 Verifying Hashcash
+
+The SHA1 hash function is used by hashcash.  You can use this sha1
+utility to write shell scripts to verify hashcash tokens without using
+the hashcash command line tool, or just to verify visually.  Say you
+received the following email:
+
+From: Someone E<lt>test@test.invalidE<gt>
+To: Adam Back E<lt>adam@cypherspace.orgE<gt>
+Subject: test hashcash
+Date: Thu, 15 Aug 2002 11:12:02 +0000
+X-Hashcash: 0:030626:adam@cypherspace.org:6470e06d773e05a8
+ 
+Then the following commane would show visually the size of the
+collision:
+
+=over 4
+
+=item C<echo -n 0:030626:adam@cypherspace.org:6470e06d773e05a8 | sha1>
+
+=item C<00000000c70db7389f241b8f441fcf068aead3f0>
+
+=back
+
+and you can see the leading hex 0s.  
+
+=head1 LIMITATIONS
+
+Doesn't have the check option that md5sum has.  Perhaps I'll add that in a
+future version.  Also doesn't have the binary / text distinction that md5sum
+introduced for DOS/Windows benefit, nor the output convention signifying
+text (* after hash).  Can't say I've ever seen anyone use that feature
+though.
+
+=head1 EXIT STATUS
+
+C<sha1> returns success (exit code 0) normally.
+
+If it can't read any of the files you give it on the comamnd line, it
+instead returns failure (exit code 1).
+
+=head1 AUTHOR
+
+Written by Adam Back E<lt>adam@cypherspace.orgE<gt>
+
+=head1 SEE ALSO
+
+md5sum(1), hashcash(1), http://www.hashcash.org/,
+http://www.itl.nist.gov/fipspubs/fip180-1.htm

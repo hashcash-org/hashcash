@@ -1,3 +1,28 @@
+hashcash-0.26 - 26-Jun-2003 - Adam Back <adam@cypherspace.org>
+
+	* accidentally folded in some non-standard VERBOSE output I was
+	  playing with.  This change makes it really standard output
+	  comparable to FIPS 180-1 appendices.
+
+	* added a version number -- use -V to display it.  Also -v
+	  (lowercase) by itself with no other arguments displays the
+	  version umber also.
+
+	* bug fix for quiet output (when not going to a pipe, still
+	  need to see output!)
+
+	* update everything to point at http://www.hashcash.org now we
+	  have the domain courtesy of it's previous owner Ashish
+	  Gulhati <agul@cpan.org> (at no charge -- he declined my
+	  offer to pay for it and instead gave it to me!)
+
+	* made a man page for sha1 utility also.
+
+	* add -X option which is a shorthand version of -x 'X-Hashcash:'
+
+	* remove leading and trailing blanks from hashcash tokens to
+	  make them more robustly survive email transit.
+
 hashcash-0.25 - 15-May-2003 - Adam Back <adam@cypherspace.org>
 
 	* fix VERBOSE trace output of sha1 implementation to match FIPS

@@ -160,16 +160,16 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
 #define Wfly( t ) ( (t) < 16 ? Wc( (t) ) : Wf( (t) ) )
 
 #if defined( VERBOSE )
-#define REPORT( t ) \
-    fprintf( stderr, "t = %2d: %08x   %08x   %08x   %08x   %08x\n",\
+#define REPORT( t, A, B, C, D, E ) \
+    fprintf( stderr, "t = %2d: %08X   %08X   %08X   %08X   %08X\n",\
 	     t, A, B, C, D, E );
 #else
-#define REPORT( t )
+#define REPORT( t, A, B, C, D, E )
 #endif
 
 #define ROUND( t, A, B, C, D, E, Func, K ) \
     E += S( 5, A ) + Func( B, C, D ) + Wfly( t ) + K;\
-    B = S( 30, B ); REPORT( t )
+    B = S( 30, B ); REPORT( t, E, A, B, C, D )
 
 /* Remove rotatation E' = D; D' = C; C' = B; B' = A; A' = E; by
    completely unrolling and rotating the arguments to the macro ROUND

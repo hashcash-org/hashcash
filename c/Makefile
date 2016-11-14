@@ -1,12 +1,8 @@
-HC_VERS = 0.14
+HC_VERS = 0.26
 INSTALL_PATH = /usr/local/bin
-MAN_INSTALL_PATH = /usr/local/man/man1
+MAN_INSTALL_PATH = /usr/share/man/man1
 MAKEDEPEND = makedepend
-#CWARN = -Wall -pedantic # gcc warnings
-#CARCH = -64   # MIPS 64 bit integers
-#CWARN = -pedantic
-#COPT = -g # unix debug
-COPT = -O
+COPT = -O3
 LDFLAGS = $(CARCH)
 CFLAGS = $(COPT) $(CWARN) $(CARCH)
 EXES = hashcash sha1 sha1test
@@ -19,6 +15,8 @@ ETAGS = etags
 OBJS = hashcash.o libsha1.o libhc.o timer.o sdb.o utct.o random.o
 DIST = ../dist.csh
 
+build:	hashcash sha1
+
 hashcash:	$(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
 
@@ -30,7 +28,7 @@ sha1test:	sha1test.o libsha1.o timer.o
 
 all:	$(EXES)
 
-docs:	hashcash.1 hashcash.html hashcash.txt 
+docs:	hashcash.1 hashcash.html hashcash.txt sha1.1 sha1.html sha1.txt
 
 hashcash.1:	hashcash.pod
 	$(POD2MAN) -s 1 -c hashcash -r $(HC_VERS) $? > $@
@@ -42,21 +40,32 @@ hashcash.html:	hashcash.pod
 hashcash.txt: hashcash.pod
 	$(POD2TEXT) $? > $@
 
-install:	hashcash sha1 hashcash.1
+sha1.1:	sha1.pod
+	$(POD2MAN) -s 1 -c sha1 -r $(HC_VERS) $? > $@
+
+sha1.html:	sha1.pod
+	$(POD2HTML) --title sha1 $? > $@
+	$(DELETE) pod2htm*
+
+sha1.txt: sha1.pod
+	$(POD2TEXT) $? > $@
+
+install:	hashcash sha1 hashcash.1 sha1.1
 	$(INSTALL) hashcash sha1 $(INSTALL_PATH)
-	$(INSTALL) hashcash.1 $(MAN_INSTALL_PATH)
+	$(INSTALL) hashcash.1 sha1.1 $(MAN_INSTALL_PATH)
 
 depend:
 	$(MAKEDEPEND) -- -Y *.c *.h
 
 docclean:
 	$(DELETE) hashcash.txt hashcash.1 hashcash.html pod2htm*
+	$(DELETE) sha1.txt sha1.1 sha1.html
 
 clean:
 	$(DELETE) *.o *~
 
 distclean:
-	$(DELETE) *.o *~ $(EXES) *.db *.bak TAGS
+	$(DELETE) *.o *~ $(EXES) *.db *.bak TAGS core* *.bak
 
 tags:
 	$(ETAGS) *.c *.h
@@ -67,15 +76,15 @@ dist:
 # DO NOT DELETE
 
 getopt.o: getopt.h
-hashcash.o: sdb.h utct.h random.h timer.h types.h hashcash.h
-libhc.o: hashcash.h utct.h types.h sha1.h
+hashcash.o: sdb.h utct.h random.h timer.h types.h hashcash.h sha1.h
+libhc.o: hashcash.h utct.h types.h sha1.h random.h timer.h
 libsha1.o: sha1.h types.h
-random.o: random.h timer.h types.h
+random.o: random.h timer.h types.h sha1.h
 sdb.o: sdb.h types.h utct.h
 sha1.o: sha1.h types.h
 sha1test.o: sha1.h types.h timer.h
 timer.o: timer.h types.h
 utct.o: utct.h
-hashcash.o: utct.h
+hashcash.o: utct.h types.h
 sha1.o: types.h
 timer.o: types.h

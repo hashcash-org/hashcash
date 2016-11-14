@@ -14,6 +14,11 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
+#define HASHCASH_VERSION 0.26
+#define stringify( x ) stringify2( x )
+#define stringify2( x ) #x
+#define HASHCASH_VERSION_STRING stringify(HASHCASH_VERSION)
+
 #define MAX_UTC 13
 #define MAX_CTR 64
 #define MAX_RES 256
