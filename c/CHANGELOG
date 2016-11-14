@@ -1,3 +1,10 @@
+hashcash-0.27 - 11-Sep-2003 - Adam Back <adam@cypherspace.org>
+
+	* add space char after 'X-Hashcash:' header that you get with
+	  -X option
+
+	* add LICENSE file
+
 hashcash-0.26 - 26-Jun-2003 - Adam Back <adam@cypherspace.org>
 
 	* accidentally folded in some non-standard VERBOSE output I was

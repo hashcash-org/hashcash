@@ -1,0 +1,144 @@
+You can obtain a current copy of this license from:
+
+	http://www.hashcash.org/LICENSE
+
+The Cypherpunks anti-License template if you wish to use it for your own
+works can be found here:
+
+	http://www.cypherspace.org/CPL
+
+======================================================================
+
+                           Cypherpunks anti-License
+
+Intent
+
+   The  intent  of  the Cypherpunks anti-License (CPL) is to inform users
+   that  they  are free to use and redistribute the indicated work or any
+   derived  or modified work in any manner they choose. Works distributed
+   under the CPL are in the Public Domain.
+
+Licensing
+
+   The CPL is not a license, it does not require the user to do or not do
+   anything;  the  user does not agree to any terms, because there are no
+   terms,  and  the  user  does  not  need  to  do  anything  to indicate
+   acceptance or rejection of the CPL.
+
+Non Litigation
+
+   The CPL serves to pledge to the user that the distributors will behave
+   in a manner consistent with the non-existance of Intellectual Property
+   (IP)  laws  as  far as they are able. The distributors will not use or
+   participate  as  far  as  they are able to government legal systems to
+   attempt  to  enforce  requests  restricting the use, modifications, or
+   redistribution  of the work for perpetuity. The distributor may prefer
+   to  be anonymous to preclude attempts to coerce them into enforcing IP
+   laws relating to this work against their will.
+
+Requests
+
+   The work may be distributed with some distributor requests in addition
+   to the CPL. The distributor pledges similarly to not attempt to use IP
+   laws to enforce these requests.
+
+Redistribution
+
+   Users choosing to redistribute this work may change anything about the
+   work,  including distributing it under a different license, and adding
+   or removing previous distributors requests.
+
+Interpretation
+
+   The  CPL is completely liberal. Here are some examples of implications
+   of   this  which  are  not  true  for  many  licenses.  The  user  can
+   redistribute the work or a derived or modified work
+     * under a different license of their choosing
+     * with or without source code as they choose
+     * without acknowledging the distributors or authors
+     * with false or innaccurate claims about authorship of the work
+     * advertise without acknowledging the authors
+
+   Requests  can be arbitrary, but are requests only. Example of requests
+   that the distributor may choose to make:
+     * that  improvements  to  the  work  be  drawn  to  the distributors
+       attention
+     * that  improvements to the work be released back to the distributor
+       under the CPL
+     * that  the distributors name not be used to advertise derived works
+       without the distributors approval
+
+   Note: the above requests are examples only; the requests that apply to
+   this work are attached at the bottom of this license.
+
+Legacy Considerations
+
+   The distributor may choose to inform the user of his opinion of the IP
+   status  of  the work, for example by identifying any IP law restricted
+   aspects  such  as  the  copyright holders of parts or the whole of the
+   work,  trademark  owners  of  trademarks used in the work, potentially
+   applicable  patents  on algorithms or ideas contained in the work, but
+   the  distributor  is  not obliged to do so and takes no responsibility
+   for the accuracy of such information.
+
+Background
+
+   The  CPL  is  written from a mindset which derides the very concept of
+   Intellectual  Property  restrictions as being incompatible with a free
+   society.
+
+   Cryptographically  assured  anonymity  and  anonymous  use of Internet
+   resources  mean  that  denizens  of  cypherspace can ignore copyright,
+   licenses  attempting  to  control  use  and distribution of works, and
+   patents  on  ideas.  It is not possible to enforce IP laws by calls to
+   government legal systems when the flaunter is strongly anonymous.
+
+   The  enforcement  of  IP  law and anonymity are in direct conflict. To
+   fully enforce IP laws, anonymity would have to be outlawed.  Cypherpunks
+   believe this would be a bad thing, because control of information imparts
+   power, and anonymity gives individuals control over disclosure of
+   information about themselves and their actions.
+
+Hashcash Author
+
+- The author is Adam Back.  I may be contacted at:
+
+	Adam Back <adam@hashcash.org>
+  or    Adam Back <adam@cypherspace.org>
+
+- two files getopt.c and getopt.h are GPL source.  They are not used on unix
+  systems where the system getopt library is used.  However on windows to
+  build the command line tool they are used.  These files are not however
+  used by the hashcash library.  Conclusion: if you can't work with GPL, and
+  you want the command line tool on systems which don't have a getopt system
+  call, you will either have to reimplement that, or find a non GPL source.
+
+  (If you find a more liberally licensed getopt that is compatible let me
+  know and I will replace the current GPL one with it).
+
+- The rest of the files I wrote and are covered solely by this license. 
+  There were small changes contributed back but as far as I recall these
+  were released back to me.
+  
+Hashcash CPL License Requests
+
+- If you have to make changes to make this library work for your system or
+  application it would be useful if you could tell me what you had to do,
+  and optionally send me the source changes so I can include them or update
+  the library.  The aim is to make a practically useful library.
+
+- It would be useful if you could inform me if you use or distribute
+  hashcash.  The intent here is to give me feedback and insight into the
+  areas of application which people find useful in practice.
+
+- If you are unclear on how to use hashcash there is a FAQ here:
+  http://www.hashcash.org/faq.html.  If that doesn't answer your question or
+  doesn't apply to your usage, feel free to discuss in email.
+
+- It may help the deployment of hashcash as an anti-spam system if different
+  systems based on hashcash were interoperable as far as that makes sense
+  for your system.  To this end the FAQ http://www.hashcash.org/faq.html and
+  Internet-Draft http://www.hashcash.org/draft-hashcash.txt document my
+  thoughts in this area.  See also the hashcash home page
+  http://www.hashcash.org and paper there as I update with links to deployed
+  systems which it might be useful for you to interoperate with.

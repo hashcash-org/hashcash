@@ -1,4 +1,4 @@
-HC_VERS = 0.26
+HC_VERS = 0.27
 INSTALL_PATH = /usr/local/bin
 MAN_INSTALL_PATH = /usr/share/man/man1
 MAKEDEPEND = makedepend

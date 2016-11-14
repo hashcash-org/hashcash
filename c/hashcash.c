@@ -252,7 +252,7 @@ int main( int argc, char* argv[] )
 	    break;
 	case 'X':
 	    hdr_flag = 1;
-	    sstrncpy( header, "X-Hashcash:", MAX_HDR );
+	    sstrncpy( header, "X-Hashcash: ", MAX_HDR );
 	    break;
 	case 'y': yes_flag = 1; break;
 	case '?': 
@@ -873,7 +873,7 @@ void usage( const char* msg )
     fprintf( stderr, "\t-j resource\twith -p delete just tokens matching the given resource\n" );
     fprintf( stderr, "\t-k\t\twith -p delete all not just expired\n" );
     fprintf( stderr, "\t-x string\tprepend token output to string (or input match string)\n" );
-    fprintf( stderr, "\t-X\t\tshorthand for -x 'X-Hashcash:'\n" );
+    fprintf( stderr, "\t-X\t\tshorthand for -x 'X-Hashcash: '\n" );
     fprintf( stderr, "\t-i\t\twith -x/-X and -c, check msg body as well\n" );
     fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
     fprintf( stderr, "examples:\n" );
