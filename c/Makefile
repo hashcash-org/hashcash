@@ -1,9 +1,11 @@
-HC_VERS = 0.33
+HC_VERS = 1.00
 INSTALL_PATH = /usr/bin
 MAN_INSTALL_PATH = /usr/share/man/man1
 DOC_INSTALL_PATH = /usr/share/doc/hashcash-$(HC_VERS)
 MAKEDEPEND = makedepend
-COPT = -O 
+# add -DCHROMATIX for libfastmint integration
+EXTRA_COPT = -O3 -funroll-loops
+COPT = -O $(EXTRA_COPT)
 OPT = -DREGEXP_POSIX
 # if no POSIX regexp support, try BSD
 # OPT = -DREGEXP_BSD
@@ -11,17 +13,25 @@ OPT = -DREGEXP_POSIX
 # OPT = -O
 LDFLAGS = $(CARCH)
 CFLAGS = $(COPT) $(OPT) $(CWARN) $(CARCH)
-EXES = hashcash sha1 sha1test
+EXES = hashcash sha1 sha1test fastmint_benchtest
 INSTALL = /usr/bin/install
 POD2MAN = pod2man
 POD2HTML = pod2html
 POD2TEXT = pod2text
 DELETE = /bin/rm -f
 ETAGS = etags
-OBJS = hashcash.o libsha1.o libhc.o timer.o sdb.o utct.o random.o lock.o
+# FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
+#	fastmint_ansi_compact_1.o fastmint_ansi_standard_1.o \
+#	fastmint_ansi_compact_2.o fastmint_ansi_standard_2.o \
+#	fastmint_altivec_standard_1.o fastmint_altivec_standard_2.o \
+#	fastmint_altivec_compact_2.o fastmint_ansi_ultracompact_1.o
+OBJS = hashcash.o libsha1.o libhc.o sdb.o utct.o random.o lock.o sstring.o
+# $(FASTLIBS)
+# FASTOBJS = fastmint_benchtest.o libsha1.o random.o $(FASTLIBS)
+
 DIST = ../dist.csh
 
-build:	hashcash sha1
+build:	hashcash sha1 #fastmint_benchtest
 
 hashcash:	$(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
@@ -29,8 +39,11 @@ hashcash:	$(OBJS)
 sha1:	sha1.o libsha1.o
 	$(CC) $(LDFLAGS) sha1.o libsha1.o -o $@
 
-sha1test:	sha1test.o libsha1.o timer.o
-	$(CC) $(LDFLAGS) sha1test.o libsha1.o timer.o -o $@
+sha1test:	sha1test.o libsha1.o 
+	$(CC) $(LDFLAGS) sha1test.o libsha1.o -o $@
+
+# fastmint_benchtest: $(FASTOBJS)
+# 	$(CC) $(LDFLAGS) $(FASTOBJS) -o $@
 
 all:	$(EXES)
 
@@ -86,17 +99,28 @@ dist:
 
 # DO NOT DELETE
 
+fastmint_altivec_compact_2.o: libfastmint.h
+fastmint_altivec_standard_1.o: libfastmint.h
+fastmint_altivec_standard_2.o: libfastmint.h
+fastmint_ansi_compact_1.o: libfastmint.h
+fastmint_ansi_compact_2.o: libfastmint.h
+fastmint_ansi_standard_1.o: libfastmint.h
+fastmint_ansi_standard_2.o: libfastmint.h
+fastmint_benchtest.o: libfastmint.h
+fastmint_mmx_compact_1.o: libfastmint.h
+fastmint_mmx_standard_1.o: libfastmint.h
 getopt.o: getopt.h
-hashcash.o: sdb.h utct.h random.h timer.h types.h hashcash.h sha1.h
-libhc.o: hashcash.h utct.h types.h sha1.h random.h timer.h
+gmp.o: gmp.h
+hashcash.o: sdb.h utct.h random.h types.h hashcash.h sstring.h sha1.h
+libfastmint.o: libfastmint.h random.h sha1.h types.h
+libhc.o: hashcash.h utct.h types.h sha1.h random.h sstring.h
 libsha1.o: sha1.h types.h
 lock.o: lock.h
-random.o: random.h timer.h types.h sha1.h
+random.o: random.h types.h sha1.h
 sdb.o: sdb.h types.h utct.h lock.h
 sha1.o: sha1.h types.h
-sha1test.o: sha1.h types.h timer.h
-timer.o: timer.h types.h
-utct.o: utct.h
+sha1test.o: sha1.h types.h
+sstring.o: sstring.h
+utct.o: utct.h sstring.h
 hashcash.o: utct.h types.h
 sha1.o: types.h
-timer.o: types.h

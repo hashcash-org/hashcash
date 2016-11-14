@@ -4,7 +4,6 @@
 #include <time.h>
 #include <string.h>
 #include "sha1.h"
-#include "timer.h"
 
 byte b;
 
@@ -13,8 +12,10 @@ byte b;
 int main( int argc, char* argv[] )
 {
     SHA1_ctx ctx;
-    int i;
+    int i,j;
     byte digest[ SHA1_DIGEST_BYTES ];
+    clock_t start, end, tmp;
+    double elapsed;
 
 /* test 1 data */
     const char* test1 = "abc";
@@ -84,17 +85,23 @@ int main( int argc, char* argv[] )
     
 /* we'll time test3 to see how many Mb/s we can do */
     
-    timer_start();
-    
-    SHA1_Init( &ctx );
-    memset( test3 , 'a', 200 );	/* fill test3 with "a"s */
-    for( i = 0; i < 5000; i++ )	{ /* digest 5000 times */
-	SHA1_Update( &ctx, test3, 200 );
+    end = clock();
+    do { start = clock(); } while ( start == end );
+
+    printf( "start = %ld\n", start );
+
+    for ( j = 0; j < 10; j++ ) {
+	SHA1_Init( &ctx );
+	memset( test3 , 'a', 200 );	/* fill test3 with "a"s */
+	for( i = 0; i < 5000; i++ )	{ /* digest 5000 times */
+	    SHA1_Update( &ctx, test3, 200 );
+	}
+	SHA1_Final( &ctx, digest );
     }
-    SHA1_Final( &ctx, digest );
-    
-    timer_stop();
-    
+    end = clock();
+
+    if ( end < start ) { tmp = end; end = start; start = tmp; }
+    elapsed = ((end-start)/(double)CLOCKS_PER_SEC);
     printf( "SHA1(\"a\" x 1,000,000) = \n\t" );
     
     for ( i = 0; i < SHA1_DIGEST_BYTES ; i++ ) {
@@ -110,7 +117,7 @@ int main( int argc, char* argv[] )
     
 /* report timing information */
     
-    printf( "speed: %.2f Mb/s\n", 1 / ( timer_time() / 1000000.0 ) );
+    printf( "speed: %.2f Mb/s\n", 10.0 / elapsed );
     
     return 0;
 }

@@ -1,18 +1,61 @@
-hashcash-0.33 - 13-Apr-2004 - Adam Back <adam@cypherspace.org>
+PRE-RELEASE hashcash-1.00pr5 - 28-Aug-2004 - Adam Back <adam@cypherspace.org>
 
-	* allow wild card without @ sign if there is no @ sign in
-	  pattern
+	* increment version number, 1.x to reflect move to version 1
+	  stamp format
 
-	* fix bug reported by Ken Takusagawa <kenta@mit.edu> where for
-	  collisions taking > 2^31 bits of work it reported -ve number of
-	  tries
+	* explicit bits field in token (helps people who want to
+	  prevalidate header and parse, and who want to know what the
+	  intended bits were vs how lucky the sender got); new stamp
+	  size definition is min( counted_bits, explicit bits field )
+
+	* no : in resource field to make easier to parse eg with cut,
+	  awk etc
+
+	* new extension field
+
+	* reclaimed -x to use for passing eXtension data (old -x no longer
+	  available, use -X, which has string fixed to X-Hashcash)
 
 	* put /dev/urandom macro for MAC from
 	  Jonathan Morton <chromi@chromatix.demon.co.uk> so we use
 	  /dev/urandom on MAC
 
-	* TODO: check logic in find_collision see if it really does tries
-	  work (rather than tries-1)
+	* copy in and adjust Makefile for Jonathan Morton's optimized
+	  minter (need to integrate)
+
+	* copy in Jonathan Morton's COMPACT option (method B vs method A
+	  from fips-180-1, uses less registers) for libsha1.c
+
+	* copy in next rev of minter breaks 4megahashes/sec barrier on
+	  3.06Ghz P4 -- disabled at present until some stuff gets
+	  fixed and we figure out rpm/deb package portability
+
+	* added back v0 read support (but still only generates v1)
+
+	* pr5: first attempt at integrating libfastmint (some bug in
+	  my integration code, broken so far)
+
+	* (pr6: libfastmint integ still not working)
+
+	* pr6: made X-Hashcash header accepatance case insensitive
+
+	* pr7: also reject tokens with count_bits < claimed_bits
+	  (as previous logic of setting bits = min( count_bits, claimed_bits)
+	  necessary to avoid people getting lucky
+
+	* use clock() instead of wall time
+
+	* expand max stamp size out to cope with 10KB extension fields
+
+	* update man page and usage with v1 stuff
+
+	* and release as 1.00 ready for Hubert Chan <hubert@uhoreg.ca>
+	  to package for the imminent debian release
+
+hashcash-0.33 - 13-Apr-2004 - Adam Back <adam@cypherspace.org>
+
+	* allow wild card without @ sign if there is no @ sign in
+	  pattern
 
 hashcash-0.32 - 09-Apr-2004 - Adam Back <adam@cypherspace.org>
 

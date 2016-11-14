@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include "utct.h"
+#include "sstring.h"
 
 #if defined( _WIN32 )
 #include <windows.h>

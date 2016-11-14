@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #if defined( REGEXP_BSD )
     #define _REGEX_RE_COMP
@@ -17,23 +18,26 @@
 #include "hashcash.h"
 #include "sha1.h"
 #include "random.h"
-#include "timer.h"
+#include "sstring.h"
 
 time_t round_off( time_t now_time, int digits );
 
-#define GROUP_SIZE 0xFFFFFFFFU
-#define GROUP_DIGITS 8
-#define GFORMAT "%08x"
-
-#if 0
+#if DEBUG
 /* smaller base for debugging */
 #define GROUP_SIZE 255
 #define GROUP_DIGITS 2
+#define GFFORMAT "%x"
 #define GFORMAT "%02x"
+#else
+#define GROUP_SIZE 0xFFFFFFFFU
+#define GROUP_DIGITS 8
+#define GFFORMAT "%x"
+#define GFORMAT "%08x"
 #endif
 
 word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource, 
-		       int bits, char* token, word32 tries, char* counter );
+		       int bits, char* token, word32 tries, char* rnd_str,
+		       char* counter, char* ext );
 
 char *strrstr(char *s1,char *s2) 
 {
@@ -90,24 +94,23 @@ int wild_match( char* pat, char* str )
 
 int email_match( const char* email, const char* pattern )
 {
-    char pat[ MAX_RES+1 ], *pat_user, *pat_dom;
-    char em[ MAX_RES+1 ], *em_user, *em_dom;
-    char *pat_sub, *em_sub, *pat_next, *em_next;
+    int len, ret = 0;
+    char *pat_user = NULL, *pat_dom = NULL;
+    char *em_user = NULL, *em_dom = NULL;
+    char *pat_sub, *em_sub, *pat_next, *em_next, *state;
     
-    sstrncpy( pat, pattern, MAX_RES );
-    pat_user = strtok( pat, "@" );
-    pat_dom = strtok( NULL, "@" );
+    sstrtok( pattern, "@", &pat_user, 0, &len, &state );
+    sstrtok( NULL, "@", &pat_dom, 0, &len, &state );
 
-    sstrncpy( em, email, MAX_RES );
-    em_user = strtok( em, "@" );
-    em_dom = strtok( NULL, "@" );
+    sstrtok( email, "@", &em_user, 0, &len, &state );
+    sstrtok( NULL, "@", &em_dom, 0, &len, &state );
 
     /* if @ in pattern, must have @ sign in email too */
-    if ( pat_dom && em_dom == NULL ) { return 0; } 
+    if ( pat_dom && em_dom == NULL ) { goto done; } 
 
-    if ( !wild_match( pat_user, em_user ) ) { return 0; }
+    if ( !wild_match( pat_user, em_user ) ) { goto done; }
 
-    if ( !pat_dom && !em_dom ) { return 1; } /* no @ in either, ok */
+    if ( !pat_dom && !em_dom ) { ret = 1; goto done; } /* no @ in either, ok */
 
     pat_next = pat_dom; em_next = em_dom;
     do {
@@ -117,32 +120,44 @@ int email_match( const char* email, const char* pattern )
 	em_next = strchr( em_next, '.' ); 
 	if ( em_next ) { *em_next = '\0'; em_next++; }
 
-	if ( !wild_match( pat_sub, em_sub ) ) { return 0; }
+	if ( !wild_match( pat_sub, em_sub ) ) { goto done; }
 	
     } while ( pat_next && em_next );
 
     /* different numbers of subdomains, fail */
     if ( ( pat_next == NULL && em_next != NULL ) ||
-	 ( pat_next != NULL && em_next == NULL ) ) { return 0; }
+	 ( pat_next != NULL && em_next == NULL ) ) { goto done; }
     
-    return 1;
+    ret = 1;
+ done:
+    if ( pat_user ) { free( pat_user ); }
+    if ( pat_dom ) { free( pat_dom ); }
+    if ( em_user ) { free( em_user ); }
+    if ( em_dom ) { free( em_dom ); }
+    return ret;
 }
 
 int hashcash_mint( time_t now_time, int time_width, 
 		   const char* resource, unsigned bits, 
-		   long anon_period, char* token, int tok_len, 
-		   long* anon_random, double* tries_taken )
+		   long anon_period, char** new_token, int tok_len, 
+		   long* anon_random, double* tries_taken, char* ext )
 {
-    word32 i0, i1;
+    word32 i0 = 0, i1 = 0;
     int i0f, i1f;
-    word32 ran0, ran1, ran2;
+    word32 ran0, ran1;
     char counter[ MAX_CTR+1 ];
     word32 found = 0;
     long rnd;
     char now_utime[ MAX_UTCTIME+1 ]; /* current time */
+    char rnd_str[GROUP_DIGITS*2+1];
     double tries;
+    char* token = 0;
+#if defined( CHROMATIX )
+    volatile clock_t begin, end;
+    double elapsed = 0;
+#endif
 
-    if ( resource == NULL || token == NULL ) {
+    if ( resource == NULL ) {
 	return HASHCASH_INTERNAL_ERROR;
     }
 
@@ -158,11 +173,12 @@ int hashcash_mint( time_t now_time, int time_width,
     if ( time_width == 0 ) { time_width = 6; } /* default YYMMDD */
 
     if ( !random_getbytes( &ran0, sizeof( word32 ) ) ||
-	 !random_getbytes( &ran1, sizeof( word32 ) ) ||
-	 !random_getbytes( &ran2, sizeof( word32 ) ) ) {
+	 !random_getbytes( &ran1, sizeof( word32 ) ) ) {
 	return HASHCASH_RNG_FAILED;
     }
     
+    sprintf( rnd_str, "%08x%08x",ran0,ran1);
+
     if ( now_time < 0 ) {
 	return HASHCASH_INVALID_TIME;
     }
@@ -175,22 +191,66 @@ int hashcash_mint( time_t now_time, int time_width,
 
     now_time += *anon_random;
 
-    if ( time_width != 12 && time_width != 10 && time_width != 8 &&
-	 time_width != 6 && time_width != 4 && time_width != 2 ) {
+    if ( time_width != 12 && time_width != 10 && time_width != 6 ) {
 	return HASHCASH_INVALID_TIME_WIDTH;
     }
 
     now_time = round_off( now_time, 12-time_width );
     to_utctimestr( now_utime, time_width, now_time );
 
+#if defined( CHROMATIX )
+    if ( !ext ) { ext = ""; }
+    token = malloc( MAX_TOK+strlen(ext)+1 );
+    sprintf( token, "%d:%d:%s:%s:%s:", 
+	     HASHCASH_FORMAT_VERSION, bits, now_utime, resource, ext );
+
+    end = clock();
+    while((begin = clock()) == end) {}
+    
+    hashcash_fastmint( bits, token, new_token );
+    end = clock();
+    elapsed = (end-begin) / (double) CLOCKS_PER_SEC;
+
+    /* hashcash_fastmint does not track iterations, 
+       work backwards from time for now */
+    *tries_taken = elapsed * hashcash_per_sec();
+#else
+    *new_token = malloc( MAX_TOK+1 );
+    /* try 32 bit counter */
+
+#if defined( DEBUG )
+    fprintf( stderr, "try %d group\n", GROUP_DIGITS );
+#endif
+
+    found = find_collision( now_utime, resource, bits, *new_token,
+			    GROUP_SIZE, rnd_str, "", ext );
+    if ( found ) { goto done; }
+
+    /* if exceed that try 64 bit counter */    
+
+#if defined( DEBUG )
+    fprintf( stderr, "try %d group\n", GROUP_DIGITS*2 );
+#endif
+
+    for ( i1=0, i1f=1; i1f || i1!=0; i1f=0,i1=(i1+1) & GROUP_SIZE) {
+	sprintf( counter, GFFORMAT, i1 & GROUP_SIZE, 0 );
+	found = find_collision( now_utime, resource, bits, *new_token,
+				GROUP_SIZE, rnd_str, counter, ext );
+	if ( found ) { goto done; }
+    }
+
+    /* if exceed that try 96 bit counter */
+
+#if defined( DEBUG )
+    fprintf( stderr, "try %d group\n", GROUP_DIGITS*3 );
+#endif
+
     for ( i0=0, i0f=1; i0f || i0!=0; i0f=0,i0=(i0+1) & GROUP_SIZE) {
 	for ( i1=0, i1f=1; i1f || i1!=0; i1f=0,i1=(i1+1) & GROUP_SIZE) {
-	    sprintf( counter, GFORMAT GFORMAT GFORMAT, 
-		     ( i0 + ran0 ) & GROUP_SIZE,
-		     ( i1 + ran1 ) & GROUP_SIZE,
-		     ran2 & GROUP_SIZE );
-	    found = find_collision( now_utime, resource, bits, token,
-				    GROUP_SIZE, counter );
+	    sprintf( counter, GFFORMAT GFORMAT, 
+		     i0 & GROUP_SIZE, i1 & GROUP_SIZE );
+	    found = find_collision( now_utime, resource, bits, *new_token,
+				    GROUP_SIZE, rnd_str, counter, ext );
 	    if ( found ) { goto done; }
 	}
     }
@@ -204,12 +264,14 @@ int hashcash_mint( time_t now_time, int time_width,
     
     *tries_taken = (double)i0 * (double)ULONG_MAX * (double)ULONG_MAX +
 	(double)i1 * (double)ULONG_MAX + (double)found ;
-    
+#endif
+
     return HASHCASH_OK;
 }
 
 word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource, 
-		       int bits, char* token, word32 tries, char* counter )
+		       int bits, char* token, word32 tries, char* rnd_str,
+		       char* counter, char *ext )
 {
     char* hex = "0123456789abcdef";
     char ctry[ MAX_TOK+1 ];
@@ -221,8 +283,7 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
     word32 trial;
     word32 tries2;
     int counter_len;
-    int try_len;
-    int try_strlen;
+    int first, try_len, try_strlen;
     byte target_digest[ SHA1_DIGEST_BYTES ];
     byte try_digest[ SHA1_DIGEST_BYTES ];
     int partial_byte = bits & 7;
@@ -231,16 +292,8 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
     int partial_byte_mask = 0xFF; /* suppress dumb warning */
     char last_char;
    
-    ctry[0] = '0';		/* hardcode to version 0 */
-    ctry[1] = '\0';
-    strcat( ctry, ":" );
-    strncat( ctry, utct, MAX_TOK );
-    strcat( ctry, ":" );
-    strncat( ctry, resource, MAX_RES );
-
-    counter_len = (int)(strlen( counter ) - GROUP_DIGITS);
-    sscanf( counter + counter_len, "%08x", &trial );
-    trial -= trial % 16;		/* lop off last digit */
+    first = strlen( counter ) == 0 ? 1 : 0;
+    trial = 0;
 
     memset( target_digest, 0, SHA1_DIGEST_BYTES );
 
@@ -253,15 +306,16 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
 	check_bytes = bits / 8;
     }
 
-    strcat( ctry, ":" );
-    strncat( ctry, counter, counter_len );
+    if ( !ext ) { ext = ""; }
+    sprintf( ctry, "%d:%d:%s:%s:%s:%s:%s", 
+	     HASHCASH_FORMAT_VERSION, bits, utct, resource, ext, rnd_str, 
+	     counter );
+
     try_len = (int)strlen( ctry );
 
 /* length of try is fixed, GFORMAT is %08x, so move strlen outside loop */
 
     changing_part_of_try = ctry + try_len;
-    sprintf( changing_part_of_try, GFORMAT, 0 );
-    try_strlen = (int)strlen( ctry );
 
 /* part of the ctx context can be precomputed as not all of the
    message is changing
@@ -272,15 +326,14 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
 /* move precompute closer to the inner loop to precompute more */
 
 	SHA1_Init( &precomputed_ctx );
-
-	sprintf( changing_part_of_try, GFORMAT, trial );
-
+	sprintf( changing_part_of_try, first ? GFFORMAT : GFORMAT, trial );
+	try_strlen = try_len + (int)strlen( changing_part_of_try ); 
 	SHA1_Update( &precomputed_ctx, ctry, try_strlen - 1 );
 
-	for ( j = 0; j < 16; j++ ) {
 #if defined( DEBUG )
-	    fprintf( stderr, "try: %s\n", ctry );
+	fprintf( stderr, "try: %s\n", ctry );
 #endif
+	for ( j = 0; j < 16; j++ ) {
 	    memcpy( &ctx, &precomputed_ctx, sizeof( SHA1_ctx ) );
 	    last_char = hex[ j ];
 	    SHA1_Update( &ctx, &last_char, 1 );
@@ -295,7 +348,7 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
 		try_digest[ partial_byte_index ] &= partial_byte_mask;
 	    }
 	    if ( memcmp( target_digest, try_digest, check_bytes ) == 0 ) {
-		changing_part_of_try[ GROUP_DIGITS - 1 ] = hex[ j ];
+		ctry[ try_strlen-1 ] = hex[ j ];
 		sstrncpy( token, ctry, MAX_TOK );
 		return i * 16 + j + 1;
 	    }
@@ -340,56 +393,63 @@ int validity_to_width( time_t validity_period )
     return time_width;
 }
 
-/* all chars from ascii(32) to ascii(126) inclusive */
+/* all chars from ascii(33) to ascii(126) inclusive, minus : */
 
-#define VALID_STR_CHARS "!\"#$%&'()*+,-./0123456789:;<=>?@" \
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+/* limited v0 backwards compatibility: impose this valid random string
+ * alphabet limitation on v0 also retroactively even tho the internet
+ * draft did not require it.  All widely used clients generate hex /
+ * base64 anyway.
+ */
 
-int hashcash_parse( const char* token, int* vers, char* utct, int utct_max,
-		    char* token_resource, int res_max ) 
+#define VALID_STR_CHARS "/+0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"\
+			"abcdefghijklmnopqrstuvwxyz="
+
+int hashcash_parse( const char* token, int* vers, int* bits, char* utct, 
+		    int utct_max, char* token_resource, int res_max, 
+		    char** ext, int ext_max ) 
 {
-    char ver[MAX_VER+1];
-    char* first_colon;
-    char* second_colon;
-    char* last_colon;
-    char* str;
-    int ver_len;
-    int utct_len;
-    int res_len;
-
-    first_colon = strchr( token, ':' );
-
-    if ( first_colon == NULL ) { return 0; }
-    ver_len = (int)(first_colon - token);
-    if ( ver_len > MAX_VER ) { return 0; }
-    sstrncpy( ver, token, ver_len );
-    *vers = atoi( ver );
-    if ( *vers < 0 ) { return 0; }
-    second_colon = strchr( first_colon+1, ':' );
-    if ( second_colon == NULL ) { return 0; }
-    utct_len = (int)(second_colon - (first_colon+1));
-    if ( utct_len > utct_max ) { return 0; }
+    char ver_arr[MAX_VER+1];
+    char bits_arr[3+1];
+    char *bits_str = bits_arr, *ver = ver_arr;
+    char *rnd = NULL, *cnt = NULL;
+    char *str, *pstr, *state, *s;
+    int ver_len, utct_len, res_len, bit_len, rnd_len, cnt_len, len;
 
     /* parse out the resource name component 
-     * format:   ver:utctime:resource:counter
-     * where utctime is [YY[MM[DD[hh[mm[ss]]]]]] 
-     * note the resource may itself include :s if it is a URL
-     * for example
+     * v1 format:   ver:bits:utctime:resource:ext:rand:counter
+     * where utctime is [YYMMDD[hhmm[ss]]] 
      *
-     * the resource name is part between second colon and last colon */
+     * v0 format:   ver:utctime:resource:rand
+     *
+     * in v0 & v1 the resource may NOT include :s, if it needs to include
+     * :s some encoding such as URL encoding must be used
+     */
 
-    last_colon = strrchr( second_colon+1, ':' );
-    if ( last_colon == NULL ) { return 0; }
-    res_len = (int)(last_colon-1 - second_colon);
-    if ( res_len > res_max ) { return 0; }
-    memcpy( utct, first_colon+1, utct_len ); utct[utct_len] = '\0';
-    sstrncpy( token_resource, second_colon+1, res_len );
-
-    str = last_colon+1;
-    if ( strlen( str ) != strspn( str, VALID_STR_CHARS ) ) {
+    if ( ext != NULL ) { *ext = NULL; }
+    if ( !sstrtok( token, ":", &ver, MAX_VER, &ver_len, &state ) ) {
 	return 0;
     }
-
+    *vers = atoi( ver ); if ( *vers < 0 ) { return 0; }
+    if ( *vers == 0 ) {
+	*bits = -1;
+	if ( !sstrtok( NULL, ":", &utct, utct_max, &utct_len, &state ) ||
+	     !sstrtok( NULL, ":", &token_resource, res_max,&res_len,&state ) ||
+	     !sstrtok( NULL, ":", &rnd, 0, &rnd_len, &state ) ) {
+	    return 0;
+	}
+    } else if ( *vers == 1 ) {
+	if ( !sstrtok( NULL, ":", &bits_str, 3, &bit_len, &state ) ||
+	     !sstrtok( NULL, ":", &utct, utct_max, &utct_len, &state ) ||
+	     !sstrtok( NULL, ":", &token_resource, res_max,&res_len,&state ) ||
+	     !sstrtok( NULL, ":", ext, 0, &ext_max, &state ) ||
+	     !sstrtok( NULL, ":", &rnd, 0, &rnd_len, &state ) ||
+	     !sstrtok( NULL, ":", &cnt, 0, &cnt_len, &state ) ) {
+	    return 0; 
+	}
+	*bits = atoi( bits_str ); if ( *bits < 0 ) { return 0; }
+	if ( strspn( cnt, VALID_STR_CHARS ) != cnt_len ) { return 0; }
+    }
+    if ( strspn( rnd, VALID_STR_CHARS ) != rnd_len ) { return 0; }
     return 1;
 }
 
@@ -414,7 +474,7 @@ unsigned hashcash_count( const char* token )
     sstrncpy( ver, token, ver_len );
     vers = atoi( ver );
     if ( vers < 0 ) { return 0; }
-    if ( vers != 0 ) { return 0; } /* unsupported version number */
+    if ( vers != 1 ) { return 0; } /* unsupported version number */
     second_colon = strchr( first_colon+1, ':' );
     if ( second_colon == NULL ) { return 0; } /* should really fail */
 
@@ -580,17 +640,16 @@ int hashcash_check( const char* token, const char* resource, void **compile,
     time_t token_t;
     char token_utime[ MAX_UTC+1 ];
     char token_res[ MAX_RES+1 ];
-    int bits = 0;
-    int vers = 0;
+    int bits = 0, claimed_bits = 0, vers = 0;
     
     if ( token_time == NULL ) { token_time = &token_t; }
 
-    if ( !hashcash_parse( token, &vers, token_utime, 
-			  MAX_UTC, token_res, MAX_RES ) ) {
+    if ( !hashcash_parse( token, &vers, &claimed_bits, token_utime, 
+			  MAX_UTC, token_res, MAX_RES, NULL, 0 ) ) {
 	return HASHCASH_INVALID;
     }
 
-    if ( vers != 0 ) {
+    if ( vers < 0 || vers > 1 ) {
 	return HASHCASH_UNSUPPORTED_VERSION;
     }
 
@@ -607,6 +666,10 @@ int hashcash_check( const char* token, const char* resource, void **compile,
 	}
     }
     bits = hashcash_count( token );
+    if ( vers == 1 ) {
+	bits = ( bits < claimed_bits ) ? 0 : claimed_bits;
+    }
+
     if ( bits < required_bits ) {
 	return HASHCASH_INSUFFICIENT_BITS;
     }
@@ -616,36 +679,39 @@ int hashcash_check( const char* token, const char* resource, void **compile,
 
 long hashcash_per_sec( void )
 {
-    timer t1, t2;
+#if defined( CHROMATIX )
+    return (long)hashcash_benchtest( 0 );
+#else
+    clock_t t1, t2, t1c,t2c,tmp;
     double elapsed;
     unsigned long n_collisions = 0;
     char token[ MAX_TOK+1 ];
-    char counter[ MAX_CTR+1 ];
     word32 step = 100;
 
     /* wait for start of tick */
 
-    sprintf( counter, GFORMAT, 0 );
-
-    timer_read( &t2 );
+    t2 = clock();
     do {
-	timer_read( &t1 );
-    } while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
-	      timer_secs( &t1 ) == timer_secs( &t2 ) );
+	t1 = clock();
+    } while ( t1 == t2 );
+    t1c = t1;
 
     /* do computations for next tick */
 
     do {
 	n_collisions += step;
-	find_collision( "000101", "flame", 25, token, step, counter );
-	timer_read( &t2 );
-    } while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
-	      timer_secs( &t1 ) == timer_secs( &t2 ) );
+	find_collision( "000101", "flame", 25, token, step, "", "", "" );
+	t2c = t2 = clock();
+	if ( t2c < t1c ) { tmp = t2c; t2c = t1c; t1c = tmp; }	
+    } while ( (t2c - t1c) < CLOCKS_PER_SEC/10 );
+
+    if ( t2 < t1 ) { tmp = t2; t2 = t1; t1 = tmp; }
 
 /* see how many us the tick took */
-    elapsed = timer_interval( &t1, &t2 );
-    return (word32) ( 1000000.0 / elapsed * (double)n_collisions
+    elapsed = (double)(t2 - t1 )/CLOCKS_PER_SEC;
+    return (word32) ( 1.0 / elapsed * (double)n_collisions
 		      + 0.499999999 );
+#endif
 }
 
 double hashcash_estimate_time( int b )

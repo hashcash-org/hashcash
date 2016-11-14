@@ -126,38 +126,55 @@ void SHA1_Init_With_IV( SHA1_ctx* ctx,
 void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ], 
 		      const byte M[ SHA1_INPUT_BYTES ] )
 {
-#if defined( VERBOSE )
     int t;
-#endif
     word32 A = H[ 0 ];
     word32 B = H[ 1 ];
     word32 C = H[ 2 ];
     word32 D = H[ 3 ];
     word32 E = H[ 4 ];
+#if !defined( COMPACT )
     word32 W[ 16 ];
+#else
+    word32 W[ 80 ];
+#endif
 
     memcpy( W, M, SHA1_INPUT_BYTES );
 
 /* Use method B from FIPS-180 (see fip-180.txt) where the use of
    temporary array W of 80 word32s is avoided by working in a circular
-   buffer of size 16 word32s.  
+   buffer of size 16 word32s.
 
+   (Chromatix:  this is unreasonably slow on x86 due to register
+    pressure - going back to method A)
 */
 
 /********************* define some macros *********************/
 
 /* Wc = access W as 16 word circular buffer */
 
+#if !defined( COMPACT )
 #define Wc( t ) ( W[ (t) & 0x0F ] )
+#else
+#define Wc( t ) ( W[ (t) ] )
+#endif
 
 /* Calculate access to W array on the fly for entries 16 .. 79 */
 
+#if !defined( COMPACT )
 #define Wf( t ) \
     ( Wc( t ) = S( 1, Wc( t ) ^ Wc( t - 14 ) ^ Wc( t - 8 ) ^ Wc( t - 3 ) ) )
+#else
+#define Wf( t ) \
+    ( Wc( t ) = S( 1, Wc( t - 16 ) ^ Wc( t - 14 ) ^ Wc( t - 8 ) ^ Wc( t - 3 ) ) )
+#endif
 
 /* Calculate access to W virtual array calculating access to W on the fly */
 
+#if !defined( COMPACT )
 #define Wfly( t ) ( (t) < 16 ? Wc( (t) ) : Wf( (t) ) )
+#else
+#define Wfly( t ) ( Wc( (t) ) )
+#endif
 
 #if defined( VERBOSE )
 #define REPORT( t, A, B, C, D, E ) \
@@ -191,7 +208,7 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
 
 /********************* use the macros *********************/
 
-#if defined( VERBOSE )
+#if defined( VERBOSE ) && !defined( COMPACT )
     for ( t = 0; t < 16; t++ ) {
 	fprintf( stderr, "W[%2d] = %08x\n", t, W[ t ] );
     }
@@ -199,6 +216,12 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
 "            A           B           C           D           E\n\n" );
 #endif
 
+#if defined( COMPACT )
+/* initialise W buffer */
+    for ( t = 16; t < 80; t++ ) {
+        Wf( t );
+    }
+#endif
 
 /* rounds  0..19 */
 

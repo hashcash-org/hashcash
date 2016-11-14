@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2004-04-09" "0.32" "hashcash"
+.TH HASHCASH 1 "2004-08-07" "1.00" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
@@ -157,7 +157,7 @@ hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 \&\fBhashcash\fR \fI\-l\fR [ \fIoptions\fR ] \fI\-e period\fR [ \fIstamp\fR ... ]
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-Hashcash is a denial-of-service counter measure tool.  It's main
+Hashcash is a denial-of-service counter measure tool.  Its main
 current use is to help hashcash users avoid losing email due to
 content based and blacklist based anti-spam systems.
 .PP
@@ -369,7 +369,7 @@ argument of 0 means forever).  A single character suffix can be used to
 specify alternate units (m = minutes, h = hours, d = days, M = months, y = Y
 = years, and s = seconds).
 .Sp
-If used with the \fI\-d\fR option, the spent stamp and it's expiry period
+If used with the \fI\-d\fR option, the spent stamp and its expiry period
 is recorded in the database.  See the \fI\-p\fR option for description of
 how to purge stamps from the database.
 .Sp
@@ -412,10 +412,9 @@ understand if you use the \fI\-u\fR option.
 The \fI\-z\fR option is for use during minting and allows user choice of
 width of time width field.  See also the \fI\-e\fR option given in
 combination with \fI\-m\fR to specify an implicit time field width under
-the description of the \fI\-e\fR flag.  Valid widths are 2,4,6,8,10 or 12
-chars corresponding respectively to: \s-1YY\s0, \s-1YYMM\s0, \s-1YYMMDD\s0, YYMMDDhh,
-YYMMDDhhmm, and YYMMDDhhmmss rounded down to the nearest year, month,
-day, hour, minute respectively.
+the description of the \fI\-e\fR flag.  Valid widths are 6,10 or 12 chars
+corresponding respectively to: \s-1YYMMDD\s0, YYMMDDhhmm, and YYMMDDhhmmss
+rounded down to the nearest day, or minute respectively.
 .Sp
 Note the rounding down is based on \s-1UTC\s0 time, not local time.  This can
 lead to initially suprising results when rounding down to eg days in
@@ -440,7 +439,7 @@ d = days, M = months, y = Y = years, and s = seconds).
 .IX Item "-d"
 Store stamps in a double spend database.  If stamp has been seen
 before it will be rejected even if it is otherwise valid.  The default
-database file is \fIdatabase.db\fR in the current directory.  Only
+database file is \fIdatabase.sdb\fR in the current directory.  Only
 otherwise valid stamps will be stored in the database.  Only fully
 validated stamps will be stored in the database, unless the \fI\-y\fR
 option is given.
@@ -507,11 +506,15 @@ used to override this).  A blank line is the separator used to
 separate the headers from the body of a mail message or \s-1USENET\s0
 article.  This is meant to make it convenient to pipe a mail message
 or \s-1USENET\s0 article to hashcash on stdin.
-.IP "\fI\-x string\fR" 4
-.IX Item "-x string"
-Similar effect to \fI\-X\fR for minting and checking except you get to
-choose your own header string.  For example \fI\-x 'X\-Hashcash: '\fR has
-the same effect as \fI\-X\fR.
+.IP "\fI\-x extension\fR" 4
+.IX Item "-x extension"
+An extension string composed of name value sets.  The extension format
+is described below in the section on the hashcash stamp format.  This
+allows users to define their own stamp extensions which are hashed
+into the stamp, verified by recipients that support them, and ignored
+by recipients that don't support them.  Note the extension hook
+mechanism has not yet been implemented.  This will come in a
+subsequent release.
 .IP "\fI\-i\fR" 4
 .IX Item "-i"
 When checking and using the \fI\-X\fR or \fI\-x\fR flag, ignore the blank line
@@ -643,50 +646,48 @@ creation time.  This is the same fuzz factor used by mixmaster to
 reduce risk of timing\-correlations.
 .Sh "Examining Stamps"
 .IX Subsection "Examining Stamps"
-.ie n .IP """hashcash \-w 0:020814:foo:4333957e84db47f6""" 4
-.el .IP "\f(CWhashcash \-w 0:020814:foo:4333957e84db47f6\fR" 4
-.IX Item "hashcash -w 0:020814:foo:4333957e84db47f6"
+.ie n .IP """hashcash \-w 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-w 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -w 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Report the value of the stamp (how many bits of collision) there are.
-The example is a 33 bit collision, which would take on average 13
-hours to create on a 400 Mhz Pentium\-II.
+The example is a 24 bit collision, which takes on average 25 seconds
+to create on a 3Ghz P4.
 .ie n .IP """hashcash \-mq \-b 10 foo | hashcash \-w""" 4
 .el .IP "\f(CWhashcash \-mq \-b 10 foo | hashcash \-w\fR" 4
 .IX Item "hashcash -mq -b 10 foo | hashcash -w"
 Create a stamp in batch mode, pass to hashcash on stdin to verify,
-have it print how many bits there were.  Note: half of the time you
-get a stamp 1 bit larger; similarly with decreasing probability you
-can get even larger stamps.
-.ie n .IP """hashcash \-n 0:020814:foo:21c8cf3099cbf467""" 4
-.el .IP "\f(CWhashcash \-n 0:020814:foo:21c8cf3099cbf467\fR" 4
-.IX Item "hashcash -n 0:020814:foo:21c8cf3099cbf467"
+have it print how many bits there were.
+.ie n .IP """hashcash \-n 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-n 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -n 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Report the resource name from the stamp.  The resource name in the
 example is foo.
-.ie n .IP """hashcash \-l \-e 30y 0:020814:foo:21c8cf3099cbf467""" 4
-.el .IP "\f(CWhashcash \-l \-e 30y 0:020814:foo:21c8cf3099cbf467\fR" 4
-.IX Item "hashcash -l -e 30y 0:020814:foo:21c8cf3099cbf467"
+.ie n .IP """hashcash \-l \-e 30y 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-l \-e 30y 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -l -e 30y 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Report how long until the stamp expires if it expires in 30 years from
-it's creation date.  (Note dates too far into the future run into the
+its creation date.  (Note dates too far into the future run into the
 2038 end of Epoch, which is the unix time analog of the y2k bug).
 .Sh "Verifying Stamps"
 .IX Subsection "Verifying Stamps"
-.ie n .IP """hashcash \-c 0:020814:foo:21c8cf3099cbf467""" 4
-.el .IP "\f(CWhashcash \-c 0:020814:foo:21c8cf3099cbf467\fR" 4
-.IX Item "hashcash -c 0:020814:foo:21c8cf3099cbf467"
+.ie n .IP """hashcash \-c 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-c 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -c 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Check if the stamp is valid.  Note as we are not checking the stamp in
 a double spend database, and did not specify a resource name or
 required number of bits of collision and hashcash will consider the
 stamp not fully checked, and it will report it as valid but not fully
 unchecked, or as invalid if there is any problem with the stamp.
-.ie n .IP """hashcash \-c \-b24 0:020814:foo:21c8cf3099cbf467""" 4
-.el .IP "\f(CWhashcash \-c \-b24 0:020814:foo:21c8cf3099cbf467\fR" 4
-.IX Item "hashcash -c -b24 0:020814:foo:21c8cf3099cbf467"
+.ie n .IP """hashcash \-c \-b24 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-c \-b24 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -c -b24 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Check that the value of the stamp is greater or equal to 24 bits.
 This example has 24 bit value.  If you increase the requested number
 of bits or replace the stamp with one with less than 24 bit collision
 the stamp will be rejected.
-.ie n .IP """hashcash \-c \-b24 \-r foo 0:020814:foo:21c8cf3099cbf467""" 4
-.el .IP "\f(CWhashcash \-c \-b24 \-r foo 0:020814:foo:21c8cf3099cbf467\fR" 4
-.IX Item "hashcash -c -b24 -r foo 0:020814:foo:21c8cf3099cbf467"
+.ie n .IP """hashcash \-c \-b24 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-c \-b24 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -c -b24 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 As above check if the stamp has sufficient value, but in addition
 check that the resource name given matches the resource name in the
 stamp.
@@ -697,14 +698,14 @@ double spend database so that the same stamp will not be accepted
 twice.  Note a stamp will only be checked in and added to the database
 if it is otherwise valid and fully checked (a required number of bits
 of collision has been specified and a resource has been specified).
-.ie n .IP """hashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467""" 4
-.el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467\fR" 4
-.IX Item "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
+.ie n .IP """hashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Check the stamp and add to double spent database if it's valid (has
 correct resource name and sufficient value).
-.ie n .IP """hashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467""" 4
-.el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467\fR" 4
-.IX Item "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
+.ie n .IP """hashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Try to double spend the stamp.  It will be rejected as double spent.
 .Sh "Stamp Expiry"
 .IX Subsection "Stamp Expiry"
@@ -721,9 +722,9 @@ The default time format is \s-1YYMMDD\s0, time rounded down to the nearest
 day.  The default validity period is 28 days.
 .PP
 You can provide an alternative validity period with the \fI\-e\fR option.
-.ie n .IP """hashcash \-cd \-b 10 \-e 2d \-r foo 0:020811:foo:21dd87d4c9f5aae1""" 4
-.el .IP "\f(CWhashcash \-cd \-b 10 \-e 2d \-r foo 0:020811:foo:21dd87d4c9f5aae1\fR" 4
-.IX Item "hashcash -cd -b 10 -e 2d -r foo 0:020811:foo:21dd87d4c9f5aae1"
+.ie n .IP """hashcash \-cd \-b 10 \-e 2d \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-cd \-b 10 \-e 2d \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -cd -b 10 -e 2d -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Try verifying an old stamp, the above stamp was created 11 Aug 2002.
 .Sp
 We gave option \fI\-e 2d\fR so the stamps expiry date is 2 days after
@@ -738,9 +739,9 @@ appears to be considered invalid in under the specified expiry period
 in days relative to your relative view of what day it is, as the
 calculation is based on current time in \s-1UTC\s0, and the creation time of
 the stamp is expressed in \s-1UTC\s0 time.
-.ie n .IP """hashcash \-cd \-b 10 \-r foo 0:020811:foo:21dd87d4c9f5aae1""" 4
-.el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 0:020811:foo:21dd87d4c9f5aae1\fR" 4
-.IX Item "hashcash -cd -b 10 -r foo 0:020811:foo:21dd87d4c9f5aae1"
+.ie n .IP """hashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
+.el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
+.IX Item "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Test whether the stamp is otherwise valid, apart from having expired.
 Omitting the \fI\-e\fR tells hashcash that the stamp will never expire.
 An expiry period of forever can also be given explitly like this: \fI\-e
@@ -750,7 +751,7 @@ An expiry period of forever can also be given explitly like this: \fI\-e
 If the \fI\-c\fR, \fI\-d\fR options are used together, each time a stamp is
 checked, if it is valid and all of the mandatory aspects of the stamp
 are verified (collision bits check, resource name check) then the
-stamp and it's expiry period is written to the database file.  The
+stamp and its expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
 the \fI\-e\fR option is 28 days (ie stamps expire after 4 weeks).
 .PP
@@ -783,9 +784,9 @@ why it was not necessary to keep this stamp in the database.
 With the default database (the sdb format) the database contents are
 human readable, so you can view their contents by cating them to the
 terminal:
-.ie n .IP """cat hashcash.db""" 4
-.el .IP "\f(CWcat hashcash.db\fR" 4
-.IX Item "cat hashcash.db"
+.ie n .IP """cat hashcash.sdb""" 4
+.el .IP "\f(CWcat hashcash.sdb\fR" 4
+.IX Item "cat hashcash.sdb"
 to see that the stamp really is added and then after puring
 subsequently purged due to expiry.
 .Sh "Purging old stamps on Demand"
@@ -820,21 +821,50 @@ once per month.
 .el .IP "\f(CWhashcash \-p now \-k\fR" 4
 .IX Item "hashcash -p now -k"
 tells \f(CW\*(C`hashcash\*(C'\fR to purge all stamps (expired and unexpired) now.
-.SH "stamp format"
-.IX Header "stamp format"
-.IP "\fIver\fR:\fIdate\fR:\fIresource\fR:\fIcollision\fR" 4
-.IX Item "ver:date:resource:collision"
+.SH "stamp format (version 1)"
+.IX Header "stamp format (version 1)"
+The current stamp format is version 1.  This tool can verify hashcash
+version 0 stamps also, but version 0 stamps are no longer created as
+they are being phased out in favor of the more extensible v1 stamp
+format.
+.IP "\fIver\fR:\fIbits\fR:\fIdate\fR:\fIresource\fR:[\fIext\fR]:\fIrand\fR:\fIcounter\fR" 4
+.IX Item "ver:bits:date:resource:[ext]:rand:counter"
 .PP
 where 
-.IP "\fIver\fR = 0, this version of hashcash only supports version 0" 4
-.IX Item "ver = 0, this version of hashcash only supports version 0"
+.IP "\fIver\fR = 1" 4
+.IX Item "ver = 1"
 .PD 0
-.IP "\fIdate\fR = YYMMDD[hh[mm[ss]]]" 4
-.IX Item "date = YYMMDD[hh[mm[ss]]]"
+.IP "\fIbits\fR = how many bits of partial-collision the stamp has" 4
+.IX Item "bits = how many bits of partial-collision the stamp has"
+.IP "\fIdate\fR = YYMMDD[hhmm[ss]]" 4
+.IX Item "date = YYMMDD[hhmm[ss]]"
 .IP "\fIresource\fR = resource string (eg \s-1IP\s0 address, email address)" 4
 .IX Item "resource = resource string (eg IP address, email address)"
-.IP "\fIcollision\fR = printable string of random alpha-numeric chars" 4
-.IX Item "collision = printable string of random alpha-numeric chars"
+.IP "\fIext\fR = extension \*(-- ignored in the current version" 4
+.IX Item "ext = extension  ignored in the current version"
+.PD
+Format of extension:
+.RS 4
+.IP "[name1[=val1[,val2...]];[name2[=val1[,val2...]]...]]" 4
+.IX Item "[name1[=val1[,val2...]];[name2[=val1[,val2...]]...]]"
+Note the value can also contain =.  Example extension (not a real one):
+.Sp
+.Vb 1
+\&        name1=2,3;name2;name3=var1=2,var2=3,2,val
+.Ve
+.Sp
+Which would be extension name1 has values 2 and 3; extension name2 has
+no values; extension name3 has 3 values \*(L"var1=2\*(R", \*(L"var2=3\*(R", \*(L"2\*(R" and
+\&\*(L"val\*(R".  The hashcash extension may interpret the values as it sees fit
+eg \*(L"var1=2\*(R" could be the value of an option to the extension name3.
+.RE
+.RS 4
+.RE
+.IP "\fIrand\fR = string of random characters from alphabet a\-zA\-Z0\-9+/= to avoid collisions with other sender's stamps" 4
+.IX Item "rand = string of random characters from alphabet a-zA-Z0-9+/= to avoid collisions with other sender's stamps"
+.PD 0
+.IP "\fIcounter\fR = to find a stamp with the desired number of collision bits need to try lots of different strings this counter is incremented on each try. The Counter is also composed of characters from the alphabet a\-zA\-Z0\-9+/=.  (Note an implementation is not required to count sequentially)." 4
+.IX Item "counter = to find a stamp with the desired number of collision bits need to try lots of different strings this counter is incremented on each try. The Counter is also composed of characters from the alphabet a-zA-Z0-9+/=.  (Note an implementation is not required to count sequentially)."
 .PD
 .SH "FILES"
 .IX Header "FILES"

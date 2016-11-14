@@ -31,8 +31,8 @@
 #include "sdb.h"
 #include "utct.h"
 #include "random.h"
-#include "timer.h"
 #include "hashcash.h"
+#include "sstring.h"
 
 #if defined( OPENSSL )
 #include <openssl/sha.h>
@@ -53,7 +53,7 @@
 
 #define MAX_PERIOD 11		/* max time_t = 10 plus 's' */
 #define MAX_HDR 256
-#define MAX_LINE 1024
+#define MAX_LINE 1024+MAX_EXT+1
 
 /* WARNING: the *PRINTF macros assume a coding style which always uses
  * braces {} around conditional code -- unfortunately there is no
@@ -61,14 +61,23 @@
  * vararg functions
  */
 
-#define QPRINTF if (!quiet_flag) fprintf
-#define PPRINTF if (!out_is_tty||quiet_flag) fprintf
-#define VPRINTF if (verbose_flag) fprintf
+#define QQ if (!quiet_flag)
+#define PP if (!out_is_tty||quiet_flag) 
+#define VV if (verbose_flag) 
+#define QPRINTF QQ fprintf
+#define PPRINTF PP fprintf
+#define VPRINTF VV fprintf
 
-#define QPUTS(f,str) if (!quiet_flag) { fputs(str,f); }
-#define PPUTS(f,str) if (!out_is_tty||quiet_flag) { fputs(str,f); }
-#define VPUTS(f,str) if (verbose_flag) { fputs(str,f); }
+#define QPUTS(f,str) QQ { fputs(str,f); }
+#define PPUTS(f,str) PP { fputs(str,f); }
+#define VPUTS(f,str) VV { fputs(str,f); }
 
+#define HDR_LINE_LEN 70
+void printwrap( FILE* fp, const char* hdr, const char* str, char c, 
+		int line_len );
+char *read_header( FILE* f, char** s, int* slen, int* alloc, 
+		   char* a, int alen );
+int read_eof( FILE* fp, char* a );
 void chomplf( char* token );
 void trimspace( char* token );
 void die( int err );
@@ -132,17 +141,22 @@ int main( int argc, char* argv[] )
     int boundary, err, anon_flag = 0, over_flag = 0, grace_flag = 0;
     long anon_period = 0, anon_random;
     int default_bits = 20;	/* default 20 bits */
-    int count_bits, bits = 0;
+    int count_bits, claimed_bits = 0, bits = 0;
     int collision_bits, check_flag = 0, case_flag = 0, hdr_flag = 0;
-    int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0;
+    int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0, ext_flag;
     int bits_flag = 0, str_type = TYPE_WILD; /* default to wildcard match */
     int validity_flag = 0, db_flag = 0, yes_flag = 0, purge_flag = 0;
     int mint_flag = 0, ignore_boundary_flag = 0, name_flag = 0, res_flag = 0;
     int auto_version = 0, version_flag = 0, checked = 0, comma = 0;
     char header[ MAX_HDR+1 ];
     int header_len, token_found = 0, headers_found = 0;
-    char token[ MAX_TOK+1 ], line[ MAX_LINE+1 ], token_resource[ MAX_RES+1 ];
+    char token[ MAX_TOK+1 ], token_resource[ MAX_RES+1 ], *new_token = 0;
+    char line_arr[ MAX_LINE+1 ], *line = line_arr;
+    int line_max = MAX_LINE, line_alloc = 0;
+    char ahead[ MAX_LINE+1 ], *ext = NULL;
     ARRAY purge_resource, resource, tokens, args;
+
+    clock_t start, end, tmp;
 
     long purge_period = 0, valid_for = HASHCASH_INVALID, time_period;
     int purge_all = 0, just_flag = 0, re_flag = 0, wild_flag = 0;
@@ -158,7 +172,7 @@ int main( int argc, char* argv[] )
 
     double tries_taken, taken, tries_expected, time_est;
     int opt, vers, db_opened = 0, i, t, tty_info, in_headers, skip, over = 0;
-    char* re_err = NULL;
+    char *re_err = NULL;
     ELEMENT* ent;
     DB db;
 
@@ -315,8 +329,11 @@ int main( int argc, char* argv[] )
 	    str_type = TYPE_WILD; 
 	    break;
 	case 'x':
-	    hdr_flag = 1;
-	    sstrncpy( header, optarg, MAX_HDR );
+	    ext_flag = 1;
+	    ext = strdup( optarg ); 
+/* deprecate old -x flag */
+/*	    hdr_flag = 1; */
+/*	    sstrncpy( header, optarg, MAX_HDR ); */
 	    break;
 	case 'X':
 	    hdr_flag = 1;
@@ -456,7 +473,7 @@ int main( int argc, char* argv[] )
 
 	}
 
-	timer_start();
+	start = clock();
 
 	for ( i = 0; i < array_num( &args ); i++ ) {
 
@@ -465,8 +482,10 @@ int main( int argc, char* argv[] )
 	    tries_expected = report_speed( ent->bits, &time_est );
 
 	    err = hashcash_mint( now_time, ent->width, ent->str, ent->bits, 
-				 ent->anon, token, MAX_TOK, &anon_random, 
-				 &tries_taken );
+				 ent->anon, &new_token, MAX_TOK, &anon_random, 
+				 &tries_taken, ext );
+
+	    end = clock();
 
 	    switch ( err ) {
 	    case HASHCASH_INVALID_TOK_LEN:
@@ -501,13 +520,20 @@ int main( int argc, char* argv[] )
 	    VPRINTF( stderr, " %.2f x expected\n", 
 		     tries_taken / tries_expected );
 
-	    timer_stop();
-	    taken = timer_time() / 1000000.0;
+	    if ( end < start ) { tmp = end; end = start; start = tmp; }
+	    taken = (end-start)/(double)CLOCKS_PER_SEC;
 	    VPRINTF( stderr, "time: %.0f seconds\n", taken );
-	    if ( hdr_flag ) { QPRINTF( stderr, "%s%s\n", header, token ); }
-	    else { QPRINTF( stderr, "hashcash token: %s\n", token ); }
-	    if ( hdr_flag ) { PPUTS( stdout, header ); } 
-	    PPRINTF( stdout, "%s\n", token );
+	    if ( hdr_flag ) { 
+		QQ { printwrap( stderr, header, new_token, '\t', 
+				HDR_LINE_LEN ); }
+	    }
+	    else { QPRINTF( stderr, "hashcash token: %s\n", new_token ); }
+	    if ( hdr_flag ) { 
+		PP { printwrap( stdout, header, new_token, '\t',
+				HDR_LINE_LEN ); }
+	    }
+	    else { PPRINTF( stdout, "%s\n", new_token ); }
+	    free( new_token );
 	}
 	exit( EXIT_SUCCESS );
 
@@ -531,6 +557,7 @@ int main( int argc, char* argv[] )
 	tty_info = 0;
 	in_headers = 0;
 
+	ahead[0] = '\0';
 	for ( t = 0, token_found = 0, boundary = 0; !boundary; ) {
 	    /* read tokens from cmd line args 1st */
 	    if ( t < array_num( &tokens ) ) {
@@ -544,23 +571,29 @@ int main( int argc, char* argv[] )
 		if ( !in_headers ) { in_headers = 1; }
 		if ( in_is_tty && !tty_info ) {
 		    if ( hdr_flag ) {
-			QPRINTF( stderr, "enter email headers:\n" );
+			if ( ignore_boundary_flag ) {
+			    QPRINTF( stderr, "enter email headers followed by mail body:\n" );
+			} else {
+			    QPRINTF( stderr, "enter email headers:\n" );
+			}
 		    } else {
 			QPRINTF( stderr, 
 				 "enter stamps to check one per line:\n" );
 		    }
 		    tty_info = 1;
 		}
-		if ( feof( stdin ) ) { break; } 
-		line[0] = '\0';
-		fgets( line, MAX_LINE, stdin );
-		chomplf( line );
+		if ( read_eof( stdin, ahead ) ) { break; }
+		read_header( stdin, &line, &line_max, &line_alloc,
+			     ahead, MAX_LINE );
 		if ( line[0] == '\0' ) { continue; }
 		if ( hdr_flag )	{
-		    token_found = (strncmp( line, header, header_len ) == 0);
-		    sstrncpy( token, line+header_len, MAX_TOK );
-		    if ( token_found ) { headers_found = 1; }
-		} else { 
+		    token_found = (strncasecmp( line, header, 
+						header_len ) == 0);
+		    if ( token_found ) { 
+			sstrncpy( token, line+header_len, MAX_TOK );
+			headers_found = 1; 
+		    }
+		} else {
 		    token_found = 1; 
 		    sstrncpy( token, line, MAX_TOK );
 		}
@@ -717,8 +750,10 @@ int main( int argc, char* argv[] )
 		    QPRINTF( stderr, "matched token: %s\n", token );
 
 		    if ( name_flag || verbose_flag ) {
-			hashcash_parse( token, &vers, utcttime, MAX_UTC,
-					token_resource, MAX_RES );
+			if ( ext ) { free( ext ); ext = NULL; }
+			hashcash_parse( token, &vers, &claimed_bits,
+					utcttime, MAX_UTC,
+					token_resource, MAX_RES, &ext, 0 );
 			QPRINTF( stderr, "token resource name: %s\n", 
 				 token_resource );
 			PPRINTF( stdout, "%s", token_resource );
@@ -726,6 +761,10 @@ int main( int argc, char* argv[] )
 
 		    if ( width_flag || verbose_flag ) {
 			count_bits = hashcash_count( token );
+			if ( vers == 1 ) {
+			    count_bits = ( count_bits < claimed_bits ) ? 
+				0 : claimed_bits;
+			}
 			QPRINTF( stderr, "token value: %d\n", count_bits );
 			if ( name_flag ) { PPUTS( stdout, " " ); }
 			PPRINTF( stdout, "%d", count_bits );
@@ -909,18 +948,18 @@ void usage( const char* msg )
     fprintf( stderr, "\t-f dbfile\tuse filename dbfile for database\n" );
     fprintf( stderr, "\t-j resource\twith -p delete just tokens matching the given resource\n" );
     fprintf( stderr, "\t-k\t\twith -p delete all not just expired\n" );
-    fprintf( stderr, "\t-x string\tprepend token output to string (or input match string)\n" );
-    fprintf( stderr, "\t-X\t\tshorthand for -x 'X-Hashcash: '\n" );
-    fprintf( stderr, "\t-i\t\twith -x/-X and -c, check msg body as well\n" );
+    fprintf( stderr, "\t-x ext\t\tput in extension field\n" );
+    fprintf( stderr, "\t-X\t\toutput with header format 'X-Hashcash: '\n" );
+    fprintf( stderr, "\t-i\t\twith -X and -c, check msg body as well\n" );
     fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
-    fprintf( stderr, "\t-z width\twidth of time field 2,4,6,8,10 or 12 chars (default 6)\n" );
+    fprintf( stderr, "\t-z width\twidth of time field 6,10 or 12 chars (default 6)\n" );
     fprintf( stderr, "\t-C\t\tmatch resources as case sensitive (default insensitive)\n" );
     fprintf( stderr, "\t-S\t\tmatch following resources as text strings\n" );
     fprintf( stderr, "\t-W\t\tmatch following resources with wildcards (default)\n" );
     fprintf( stderr, "\t-E\t\tmatch following resources as regular expression\n" );
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit collision\n" );
-    fprintf( stderr, "\thashcash -cdb20 -r foo 0:020814:foo:55f4316f29cd98f2  # check collision\n" );
+    fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check collision\n" );
     fprintf( stderr, "\n" );
     fprintf( stderr, "see hashcash (1) man page or http://www.hashcash.org/ for more details.\n" );
     exit( EXIT_ERROR );
@@ -947,7 +986,7 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     time_t expires;
     time_t expiry_period;
     time_t created;
-    int vers, i, matched, type;
+    int vers, i, bits, matched, type;
     void** compile;
     char* re_err;
 
@@ -957,8 +996,8 @@ static int sdb_cb_token_matcher( const char* key, char* val,
 	return 1;		/* update purge time */
     }
 
-    if ( !hashcash_parse( key, &vers, token_utime, MAX_UTC, token_res, 
-			  MAX_RES ) ) {
+    if ( !hashcash_parse( key, &vers, &bits, token_utime, MAX_UTC, 
+			  token_res, MAX_RES, NULL, 0 ) ) {
 	*err = EINPUT;		/* corrupted token in DB */
 	return 0;
     }
@@ -1138,10 +1177,51 @@ void die( int err )
     exit( EXIT_ERROR );
 }
 
-void die_msg( const char* str ) {
+void die_msg( const char* str ) 
+{
     QPUTS( stderr, str );
     QPUTS( stderr, "\n" );
     exit( EXIT_ERROR );
+}
+
+void printwrap( FILE* fp, const char* hdr, const char* str, char c, 
+		int line_len )
+{
+    int str_len = strlen( str ), i, fstep, step;
+    char fformat[20], format[20];
+    char line_arr[MAX_LINE+1];
+    char* line = line_arr;
+    int line_alloc = 0;
+
+    if ( line_len > MAX_LINE ) { line = malloc(line_len+1); line_alloc = 1; }
+
+    if ( c == '\\' ) {
+	fstep = line_len - strlen(hdr) - 1;
+	step = line_len - 1;
+	sprintf( fformat, "%s%%-%ds\\\n", hdr, fstep );
+	sprintf( format, "%%%ds\\\n", step );
+    } else if ( c == '\t' ) {
+	fstep = line_len - strlen(hdr);
+	step = line_len - 8;
+	sprintf( fformat, "%s%%-%ds\n", hdr, fstep );
+	sprintf( format, "\t%%-%ds\n", step );
+    } else if ( c == 0 ) {
+	fstep = line_len - strlen(hdr);
+	step = line_len;
+	sprintf( fformat, "%s%%-%ds\n", hdr, fstep );
+	sprintf( format, "%%-%ds\n", step );
+    } else {
+	fstep = line_len - strlen(hdr);
+	step = line_len-1;
+	sprintf( fformat, "%s%%-%ds\n", hdr, fstep );
+	sprintf( format, "%c%%-%ds\n", c, step );
+    }
+    for ( i = 0; i < str_len; 
+	  str += i ? step : fstep, i += i ? step : fstep ) {
+	sstrncpy( line, str, i ? step : fstep );
+	fprintf( fp, i ? format : fformat, line );
+    }
+    if ( line_alloc ) { free( line ); }
 }
 
 /* remove unix, DOS and MAC linefeeds from line ending */
@@ -1161,7 +1241,7 @@ void trimspace( char* token ) {
     }
     if ( tok_begin > 0 ) {
 	tok_len -= tok_begin;
-	strcpy( token, token+tok_begin );
+	memmove( token, token+tok_begin, strlen(token+tok_begin)+1 );
     }
     while ( tok_len > 0 && isspace(token[tok_len-1]) ) {
 	token[--tok_len] = '\0';
@@ -1210,4 +1290,50 @@ double report_speed( int bits, double* time_est )
 	QPUTS( stderr, "\n" );
     }
     return tries_expected;
+}
+
+char *read_header( FILE* f, char** s, int* smax, int* alloc, 
+		   char* a, int amax )
+{
+    (*s)[0] = '\0';
+    if ( a[0] ) {
+	sstrncpy( *s, a, *smax );
+    } else {
+	fgets( *s, *smax, f );
+	chomplf( *s );
+    }
+
+    do {
+	a[0] = '\0';
+	fgets( a, amax, f );
+	chomplf( a );
+	if ( a[0] == '\t' ) {
+	    read_append( s, smax, alloc, a+1 );
+	}
+    } while ( a[0] == '\t' );
+
+    return *s;
+}
+
+int read_append( char** s, int* smax, int* alloc, char* append )
+{
+    int slen = strlen( *s );
+    int alen = strlen( append );
+
+    if ( slen + alen > *smax ) {
+	if ( *alloc ) {
+	    *s = realloc( *s, slen+alen+1 );
+	} else {
+	    *s = malloc( slen+alen+1 );
+	    *alloc = 1;
+	}
+	if ( *s == NULL ) { return 0; } /* out of memory */
+    }
+    sstrncpy( (*s)+slen, append, alen );
+    return 1;
+}
+
+int read_eof( FILE* fp, char* a )
+{
+    return feof(fp) && a[0] == '\0';
 }

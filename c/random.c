@@ -37,8 +37,11 @@ int random_getbytes( void* data, size_t len )
     #include <unistd.h>
 #elif defined( WIN32 )
     #include <process.h>
+#else
+    #include <stdlib.h>
+    #include <time.h>
 #endif
-#include "timer.h"
+#include <time.h>
 #if defined( OPENSSL )
     #include <openssl/sha.h>
     #define SHA1_ctx SHA_CTX
@@ -62,14 +65,19 @@ static void random_stir( const byte input[SHA1_DIGEST_BYTES],
 			 byte output[SHA1_DIGEST_BYTES] )
 {
     SHA1_ctx sha1;
+    #if defined(__UNIX__) || defined(WIN32)
     pid_t pid = getpid();
-    timer t;
+    #else
+    unsigned long pid = rand();
+    #endif
+    clock_t t = clock();
+    time_t t2 = time(0);
 
-    timer_read( &t );
     SHA1_Init( &sha1 );
     SHA1_Update( &sha1, input, SHA1_DIGEST_BYTES );
-    SHA1_Update( &sha1, &t, sizeof( timer ) );
-    SHA1_Update( &sha1, &pid, sizeof( pid_t ) );
+    SHA1_Update( &sha1, &t, sizeof( clock_t ) );
+    SHA1_Update( &sha1, &t2, sizeof( time_t ) );
+    SHA1_Update( &sha1, &pid, sizeof( pid ) );
     SHA1_Update( &sha1, &counter, sizeof( long ) );
     SHA1_Final( &sha1, output );
     counter++;
@@ -77,6 +85,9 @@ static void random_stir( const byte input[SHA1_DIGEST_BYTES],
 
 int random_init( void )
 {
+    #if !defined(__UNIX__) && !defined(WIN32)
+		srand(clock());
+		#endif
     random_stir( state, state );
     return 1;
 }

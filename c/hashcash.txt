@@ -24,7 +24,7 @@ SYNOPSIS
     hashcash *-l* [ *options* ] *-e period* [ *stamp* ... ]
 
 DESCRIPTION
-    Hashcash is a denial-of-service counter measure tool. It's main current
+    Hashcash is a denial-of-service counter measure tool. Its main current
     use is to help hashcash users avoid losing email due to content based
     and blacklist based anti-spam systems.
 
@@ -234,7 +234,7 @@ OPTIONS
         minutes, h = hours, d = days, M = months, y = Y = years, and s =
         seconds).
 
-        If used with the *-d* option, the spent stamp and it's expiry period
+        If used with the *-d* option, the spent stamp and its expiry period
         is recorded in the database. See the *-p* option for description of
         how to purge stamps from the database.
 
@@ -272,10 +272,9 @@ OPTIONS
         The *-z* option is for use during minting and allows user choice of
         width of time width field. See also the *-e* option given in
         combination with *-m* to specify an implicit time field width under
-        the description of the *-e* flag. Valid widths are 2,4,6,8,10 or 12
-        chars corresponding respectively to: YY, YYMM, YYMMDD, YYMMDDhh,
-        YYMMDDhhmm, and YYMMDDhhmmss rounded down to the nearest year,
-        month, day, hour, minute respectively.
+        the description of the *-e* flag. Valid widths are 6,10 or 12 chars
+        corresponding respectively to: YYMMDD, YYMMDDhhmm, and YYMMDDhhmmss
+        rounded down to the nearest day, or minute respectively.
 
         Note the rounding down is based on UTC time, not local time. This
         can lead to initially suprising results when rounding down to eg
@@ -300,7 +299,7 @@ OPTIONS
     *-d*
         Store stamps in a double spend database. If stamp has been seen
         before it will be rejected even if it is otherwise valid. The
-        default database file is database.db in the current directory. Only
+        default database file is database.sdb in the current directory. Only
         otherwise valid stamps will be stored in the database. Only fully
         validated stamps will be stored in the database, unless the *-y*
         option is given.
@@ -369,10 +368,14 @@ OPTIONS
         article. This is meant to make it convenient to pipe a mail message
         or USENET article to hashcash on stdin.
 
-    *-x string*
-        Similar effect to *-X* for minting and checking except you get to
-        choose your own header string. For example *-x 'X-Hashcash: '* has
-        the same effect as *-X*.
+    *-x extension*
+        An extension string composed of name value sets. The extension
+        format is described below in the section on the hashcash stamp
+        format. This allows users to define their own stamp extensions which
+        are hashed into the stamp, verified by recipients that support them,
+        and ignored by recipients that don't support them. Note the
+        extension hook mechanism has not yet been implemented. This will
+        come in a subsequent release.
 
     *-i*
         When checking and using the *-X* or *-x* flag, ignore the blank line
@@ -496,29 +499,27 @@ EXAMPLES
         reduce risk of timing-correlations.
 
   Examining Stamps
-    "hashcash -w 0:020814:foo:4333957e84db47f6"
+    "hashcash -w 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Report the value of the stamp (how many bits of collision) there
-        are. The example is a 33 bit collision, which would take on average
-        13 hours to create on a 400 Mhz Pentium-II.
+        are. The example is a 24 bit collision, which takes on average 25
+        seconds to create on a 3Ghz P4.
 
     "hashcash -mq -b 10 foo | hashcash -w"
         Create a stamp in batch mode, pass to hashcash on stdin to verify,
-        have it print how many bits there were. Note: half of the time you
-        get a stamp 1 bit larger; similarly with decreasing probability you
-        can get even larger stamps.
+        have it print how many bits there were.
 
-    "hashcash -n 0:020814:foo:21c8cf3099cbf467"
+    "hashcash -n 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Report the resource name from the stamp. The resource name in the
         example is foo.
 
-    "hashcash -l -e 30y 0:020814:foo:21c8cf3099cbf467"
+    "hashcash -l -e 30y 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Report how long until the stamp expires if it expires in 30 years
-        from it's creation date. (Note dates too far into the future run
-        into the 2038 end of Epoch, which is the unix time analog of the y2k
+        from its creation date. (Note dates too far into the future run into
+        the 2038 end of Epoch, which is the unix time analog of the y2k
         bug).
 
   Verifying Stamps
-    "hashcash -c 0:020814:foo:21c8cf3099cbf467"
+    "hashcash -c 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Check if the stamp is valid. Note as we are not checking the stamp
         in a double spend database, and did not specify a resource name or
         required number of bits of collision and hashcash will consider the
@@ -526,13 +527,13 @@ EXAMPLES
         fully unchecked, or as invalid if there is any problem with the
         stamp.
 
-    "hashcash -c -b24 0:020814:foo:21c8cf3099cbf467"
+    "hashcash -c -b24 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Check that the value of the stamp is greater or equal to 24 bits.
         This example has 24 bit value. If you increase the requested number
         of bits or replace the stamp with one with less than 24 bit
         collision the stamp will be rejected.
 
-    "hashcash -c -b24 -r foo 0:020814:foo:21c8cf3099cbf467"
+    "hashcash -c -b24 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         As above check if the stamp has sufficient value, but in addition
         check that the resource name given matches the resource name in the
         stamp.
@@ -544,11 +545,11 @@ EXAMPLES
     otherwise valid and fully checked (a required number of bits of
     collision has been specified and a resource has been specified).
 
-    "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
+    "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Check the stamp and add to double spent database if it's valid (has
         correct resource name and sufficient value).
 
-    "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
+    "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Try to double spend the stamp. It will be rejected as double spent.
 
   Stamp Expiry
@@ -566,7 +567,8 @@ EXAMPLES
 
     You can provide an alternative validity period with the *-e* option.
 
-    "hashcash -cd -b 10 -e 2d -r foo 0:020811:foo:21dd87d4c9f5aae1"
+    "hashcash -cd -b 10 -e 2d -r foo
+    1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Try verifying an old stamp, the above stamp was created 11 Aug 2002.
 
         We gave option *-e 2d* so the stamps expiry date is 2 days after
@@ -582,7 +584,7 @@ EXAMPLES
         is, as the calculation is based on current time in UTC, and the
         creation time of the stamp is expressed in UTC time.
 
-    "hashcash -cd -b 10 -r foo 0:020811:foo:21dd87d4c9f5aae1"
+    "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Test whether the stamp is otherwise valid, apart from having
         expired. Omitting the *-e* tells hashcash that the stamp will never
         expire. An expiry period of forever can also be given explitly like
@@ -592,7 +594,7 @@ EXAMPLES
     If the *-c*, *-d* options are used together, each time a stamp is
     checked, if it is valid and all of the mandatory aspects of the stamp
     are verified (collision bits check, resource name check) then the stamp
-    and it's expiry period is written to the database file. The default
+    and its expiry period is written to the database file. The default
     expiry period if an expiry period is not given explicitly with the *-e*
     option is 28 days (ie stamps expire after 4 weeks).
 
@@ -623,7 +625,7 @@ EXAMPLES
         human readable, so you can view their contents by cating them to the
         terminal:
 
-    "cat hashcash.db"
+    "cat hashcash.sdb"
         to see that the stamp really is added and then after puring
         subsequently purged due to expiry.
 
@@ -651,15 +653,42 @@ EXAMPLES
     "hashcash -p now -k"
         tells "hashcash" to purge all stamps (expired and unexpired) now.
 
-stamp format
-    *ver*:*date*:*resource*:*collision*
+stamp format (version 1)
+    The current stamp format is version 1. This tool can verify hashcash
+    version 0 stamps also, but version 0 stamps are no longer created as
+    they are being phased out in favor of the more extensible v1 stamp
+    format.
+
+    *ver*:*bits*:*date*:*resource*:[*ext*]:*rand*:*counter*
 
     where
 
-    *ver* = 0, this version of hashcash only supports version 0
-    *date* = YYMMDD[hh[mm[ss]]]
+    *ver* = 1
+    *bits* = how many bits of partial-collision the stamp has
+    *date* = YYMMDD[hhmm[ss]]
     *resource* = resource string (eg IP address, email address)
-    *collision* = printable string of random alpha-numeric chars
+    *ext* = extension -- ignored in the current version
+        Format of extension:
+
+        [name1[=val1[,val2...]];[name2[=val1[,val2...]]...]]
+            Note the value can also contain =. Example extension (not a real
+            one):
+
+                    name1=2,3;name2;name3=var1=2,var2=3,2,val
+
+            Which would be extension name1 has values 2 and 3; extension
+            name2 has no values; extension name3 has 3 values "var1=2",
+            "var2=3", "2" and "val". The hashcash extension may interpret
+            the values as it sees fit eg "var1=2" could be the value of an
+            option to the extension name3.
+
+    *rand* = string of random characters from alphabet a-zA-Z0-9+/= to avoid
+    collisions with other sender's stamps
+    *counter* = to find a stamp with the desired number of collision bits
+    need to try lots of different strings this counter is incremented on
+    each try. The Counter is also composed of characters from the alphabet
+    a-zA-Z0-9+/=. (Note an implementation is not required to count
+    sequentially).
 
 FILES
     hashcash.sdb

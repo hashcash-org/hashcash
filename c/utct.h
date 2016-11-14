@@ -31,8 +31,6 @@ time_t mk_utctime( struct tm* tms ); /* mktime like with utc struct tm */
 time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc );
 int to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t );
 
-#define sstrncpy(d,s,l) (d[l]='\0',strncpy(d,s,l))
-
 #if defined( __cplusplus )
 }
 #endif

@@ -20,7 +20,7 @@ typedef struct {
     long write_pos;
 } DB;
 
-#define MAX_KEY 1024
+#define MAX_KEY 10240+1024+1
 #define MAX_VAL 1024
 
 #define READ_MODE 0
