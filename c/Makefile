@@ -1,4 +1,4 @@
-HC_VERS = 0.31
+HC_VERS = 0.32
 INSTALL_PATH = /usr/bin
 MAN_INSTALL_PATH = /usr/share/man/man1
 DOC_INSTALL_PATH = /usr/share/doc/hashcash-$(HC_VERS)
@@ -76,7 +76,7 @@ clean:
 	$(DELETE) *.o *~
 
 distclean:
-	$(DELETE) *.o *~ $(EXES) *.db *.bak TAGS core* *.bak
+	$(DELETE) *.o *~ $(EXES) *.db *.bak TAGS core* *.bak test/*
 
 tags:
 	$(ETAGS) *.c *.h

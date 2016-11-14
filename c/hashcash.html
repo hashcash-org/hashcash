@@ -16,8 +16,8 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<ul>
 
-		<li><a href="#mint__create__tokens_">Mint (create) tokens:</a></li>
-		<li><a href="#check_tokens_">Check tokens:</a></li>
+		<li><a href="#mint__create__stamps_">Mint (create) stamps:</a></li>
+		<li><a href="#check_stamps_">Check stamps:</a></li>
 		<li><a href="#speed_estimates_">Speed estimates:</a></li>
 		<li><a href="#purge_database_">Purge database:</a></li>
 		<li><a href="#count_collision_bits_">Count collision bits:</a></li>
@@ -29,8 +29,8 @@
 	<li><a href="#usage_notes">USAGE NOTES</a></li>
 	<ul>
 
-		<li><a href="#minting_tokens">Minting tokens</a></li>
-		<li><a href="#checking_tokens">Checking tokens</a></li>
+		<li><a href="#minting_stamps">Minting stamps</a></li>
+		<li><a href="#checking_stamps">Checking stamps</a></li>
 		<li><a href="#double_spending_protection">Double Spending Protection</a></li>
 		<li><a href="#purging_periodically_vs_on_next_access">Purging Periodically vs on Next Access</a></li>
 		<li><a href="#speed_estimates">Speed Estimates</a></li>
@@ -41,16 +41,16 @@
 	<li><a href="#examples">EXAMPLES</a></li>
 	<ul>
 
-		<li><a href="#creating_tokens">Creating tokens</a></li>
-		<li><a href="#examining_tokens">Examining Tokens</a></li>
-		<li><a href="#verifying_tokens">Verifying Tokens</a></li>
+		<li><a href="#creating_stamps">Creating stamps</a></li>
+		<li><a href="#examining_stamps">Examining Stamps</a></li>
+		<li><a href="#verifying_stamps">Verifying Stamps</a></li>
 		<li><a href="#double_spending_prevention">Double Spending Prevention</a></li>
-		<li><a href="#token_expiry">Token Expiry</a></li>
-		<li><a href="#purging_old_tokens">Purging old tokens</a></li>
-		<li><a href="#purging_old_tokens_on_demand">Purging old tokens on Demand</a></li>
+		<li><a href="#stamp_expiry">Stamp Expiry</a></li>
+		<li><a href="#purging_old_stamps">Purging old stamps</a></li>
+		<li><a href="#purging_old_stamps_on_demand">Purging old stamps on Demand</a></li>
 	</ul>
 
-	<li><a href="#token_format">token format</a></li>
+	<li><a href="#stamp_format">stamp format</a></li>
 	<li><a href="#files">FILES</a></li>
 	<li><a href="#exit_status">EXIT STATUS</a></li>
 	<li><a href="#author">AUTHOR</a></li>
@@ -69,12 +69,12 @@
 <h1><a name="synopsis">SYNOPSIS</a></h1>
 <p>
 </p>
-<h2><a name="mint__create__tokens_">Mint (create) tokens:</a></h2>
+<h2><a name="mint__create__stamps_">Mint (create) stamps:</a></h2>
 <p><strong>hashcash</strong> <em>-m</em> [ [ <em>options</em> ] [ <em>resource</em> ... ] ... ]</p>
 <p>
 </p>
-<h2><a name="check_tokens_">Check tokens:</a></h2>
-<p><strong>hashcash</strong> <em>-c</em> [ [ <em>options</em> ] <em>-r resource</em> ... ] [ <em>token</em> ... ]</p>
+<h2><a name="check_stamps_">Check stamps:</a></h2>
+<p><strong>hashcash</strong> <em>-c</em> [ [ <em>options</em> ] <em>-r resource</em> ... ] [ <em>stamp</em> ... ]</p>
 <p>
 </p>
 <h2><a name="speed_estimates_">Speed estimates:</a></h2>
@@ -86,15 +86,15 @@
 <p>
 </p>
 <h2><a name="count_collision_bits_">Count collision bits:</a></h2>
-<p><strong>hashcash</strong> <em>-w</em> [ <em>options</em> ] [ <em>token</em> ... ]</p>
+<p><strong>hashcash</strong> <em>-w</em> [ <em>options</em> ] [ <em>stamp</em> ... ]</p>
 <p>
 </p>
 <h2><a name="get_resource_name_">Get resource name:</a></h2>
-<p><strong>hashcash</strong> <em>-n</em> [ <em>options</em> ] [ <em>token</em> ... ]</p>
+<p><strong>hashcash</strong> <em>-n</em> [ <em>options</em> ] [ <em>stamp</em> ... ]</p>
 <p>
 </p>
 <h2><a name="get_time_remaining_until_expiry">Get time remaining until expiry</a></h2>
-<p><strong>hashcash</strong> <em>-l</em> [ <em>options</em> ] <em>-e period</em> [ <em>token</em> ... ]</p>
+<p><strong>hashcash</strong> <em>-l</em> [ <em>options</em> ] <em>-e period</em> [ <em>stamp</em> ... ]</p>
 <p>
 </p>
 <hr />
@@ -102,15 +102,15 @@
 <p>Hashcash is a denial-of-service counter measure tool.  It's main
 current use is to help hashcash users avoid losing email due to
 content based and blacklist based anti-spam systems.</p>
-<p>The hashcash tool allows you to create hashcash tokens to attach to
-emails you send, and to verify hashcash tokens attached to emails you
-receive.  Email senders attach hashcash tokens with the X-Hashcash:
+<p>The hashcash tool allows you to create hashcash stamps to attach to
+emails you send, and to verify hashcash stamps attached to emails you
+receive.  Email senders attach hashcash stamps with the X-Hashcash:
 header.  Vendors and authors of anti-spam tools are encouraged to
 exempt mail sent with hashcash from their blacklists and content based
 filtering rules.</p>
-<p>A hashcash token constitutes a proof-of-work which takes a
+<p>A hashcash stamp constitutes a proof-of-work which takes a
 parameterizable amount of work to compute for the sender.  The
-recipient can verify received tokens efficiently. This package also
+recipient can verify received stamps efficiently. This package also
 includes a sha1 implementation which behaves somewhat like md5sum, but
 with SHA1.</p>
 <p>The hashcash proof-of-work function is to compute partial hash
@@ -126,94 +126,93 @@ used for see <a href="http://www.hashcash.org/">http://www.hashcash.org/</a></p>
 <hr />
 <h1><a name="usage_notes">USAGE NOTES</a></h1>
 <p>In this man page a resource name is the name of the service or address
-the token is created for.  In the case of email, the resource name is
+the stamp is created for.  In the case of email, the resource name is
 the recipient's email address in the form <a href="mailto:user@domain.com.">user@domain.com.</a></p>
 <p>
 </p>
-<h2><a name="minting_tokens">Minting tokens</a></h2>
-<p>The <em>-m</em> flag must be given to mint a token.</p>
-<p>The resource name (recipient's email address) to mint the token against can
-be passed as an argument, or if omitted is read from stdin.  If stdin is a
-tty the user is prompted, if stdin is a pipe the resource name is just
-silently read.  The desired collision size can be specified with the -b
-option.  If no collision size is specified, the default is 20 bits.  <em>-b
-default</em> can be used to get the default size.</p>
+<h2><a name="minting_stamps">Minting stamps</a></h2>
+<p>The <em>-m</em> flag must be given to mint a stamp.</p>
+<p>The resource name (recipient's email address) to mint the stamp
+against can be passed as an argument, or if omitted is read from
+stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
+resource name is just silently read.  The desired collision size can
+be specified with the -b option.  If no collision size is specified,
+the default is 20 bits.  See also the <em>-b default</em> option.</p>
 <p>
 </p>
-<h2><a name="checking_tokens">Checking tokens</a></h2>
-<p>The <em>-c</em> flag must be given to check tokens.  The token to check can
-be given as an argument to <code>hashcash</code>.  If no token is given the
-token is read from stdin.  If stdin is a tty the user will be
-prompted, if stdin is a pipe the token is just silently read.  A
+<h2><a name="checking_stamps">Checking stamps</a></h2>
+<p>The <em>-c</em> flag must be given to check a stamps expiry.  The stamp to
+check can be given as an argument to <code>hashcash</code>.  If no stamp is
+given the stamp is read from stdin.  If stdin is a tty the user will
+be prompted, if stdin is a pipe the stamp is just silently read.  A
 resource name (the recipient's email address) can be given with the
 <em>-r</em> option.  If a resource name is given the resource name is
-compared to the resource name in the token, if they do not match, the
-token is rejected.</p>
-<p>Note: if no resource name is given the token is anyway checked to see
+compared to the resource name in the stamp, if they do not match, the
+stamp is rejected.</p>
+<p>Note: if no resource name is given the stamp is anyway checked to see
 if it is otherwise valid, but it could be minted for a different
-resource, which would allow tokens to be reused across different
+resource, which would allow stamps to be reused across different
 resources, so hashcash will return unchecked exit code on exit.</p>
-<p>Tokens are by default considered to be valid forever.  The validity
+<p>Stamps are by default considered to be valid for 28 days.  The validity
 period can be changed using the <em>-e</em> flag.</p>
-<p>If the token has expired or has a date in the future the token is
+<p>If the stamp has expired or has a date in the future the stamp is
 rejected and the program exits immediately.</p>
-<p>If a required collision size is given with the <em>-b</em> flag, the tokens
-value is computed and compared, if the token has insufficent value it
-is rejected, and the program exits immediately.  If the <em>-b</em> flag is
-not given, the token could be of any size, so hashcash will return
+<p>If a required collision size is given with the <em>-b</em> flag, the stamps value
+is computed and compared, if the stamp has insufficent value it is rejected,
+and the program exits immediately.  If the <em>-b</em> flag is not given, the
+stamp is checked to see if it is otherwise valid, but hashcash will return
 unchecked exit code on exit.</p>
-<p>If the token is double spent the token is rejected.  Double spending
+<p>If the stamp is double spent the stamp is rejected.  Double spending
 protection is discussed in more detail below in 
 <a href="#double_spending_protection">Double Spending Protection</a>.  If double spending protection is not
-enabled, the token could be double spent, so hashcash will return
+enabled, the stamp could be double spent, so hashcash will return
 unchecked exit code (exit code 2) on exit.</p>
 <p>The <em>-w</em> flag can be used to request that the number of bits of the
-collision are counted and displayed; exit code unchecked (exit code 2)
-is returned on exit.  The <em>-n</em> flag can be used to request that the
-resource name in the token is parsed out and displayed; exit code
-unchecked (exit code 2) is returned on exit.  The <em>-l</em> flag can be
-used to request the number of seconds until expiry of the token is
-output; exit code unchecked (exit code 2) is returned on exit.</p>
-<p>The program will only return exit codes valid or invalid if the <em>-c</em> flag
-is used, and both of the options, <em>-d</em>, <em>-r resource</em> are used.  These are
-the minimum set of options necessary to fully check the validty of a token. 
-If these criteria are not met, the program will return exit code unchecked
-(exit code 2) on exit.  (See also the <em>-y</em> flag.)</p>
+collision are counted and displayed. The <em>-n</em> flag can be used to
+request that the resource name in the stamp is parsed out and
+displayed.  The <em>-l</em> flag can be used to request the number of
+seconds until expiry of the stamp is output.</p>
+<p>The program will only return exit codes valid or invalid if the <em>-c</em>
+flag is used, the <em>-b</em> flag is used, <em>-d</em>, <em>-r resource</em> are used.
+These are the minimum set of options necessary to fully check the
+validty of a stamp.  If these criteria are not met, the program will
+return exit code unchecked (exit code 2) on exit.  (See also the <em>-y</em>
+flag.)</p>
 <p>
 </p>
 <h2><a name="double_spending_protection">Double Spending Protection</a></h2>
-<p>If the <em>-d</em> flag is used with the <em>-c</em> flag a database of spent
-tokens is kept.</p>
-<p>By default tokens expire after 28 days, without expiry the database
+<p>If the <em>-d</em> flag is used when checking stamps, a database of spent
+stamps is kept.</p>
+<p>By default stamps expire after 28 days, without expiry the database
 would grow indefinately.  You can specify an alternate expiry period
 with the <em>-e</em> flag.  The recommended (and default) expiry period for
-email is 28 days.  After the expiry period amount of time, the token
+email is 28 days.  After the expiry period amount of time, the stamp
 is anyway considered expired and may be purged from the database to
 save space.  (See <a href="#purging_periodically_vs_on_next_access">Purging Periodically vs on Next Access</a> for how to
-purge tokens.)</p>
-<p>For efficiency reasons a token is verified before it is checked in the
+purge stamps.)</p>
+<p>For efficiency reasons a stamp is verified before it is checked in the
 database; if it is otherwise invalid no database activity will occur.</p>
-<p>Note: The decision about how long the token should be considered valid
+<p>Note: The decision about how long the stamp should be considered valid
 is up to the verifier.  If it is too short it is possible for some
-applications that the token will expire before arriving at the
+applications that the stamp will expire before arriving at the
 recipient (eg with email.)  The suggested value of 28 days should be
 safe for normal email delivery delays.  The choice is a trade-off
 between database size and risk of expiry prior to arrival, and depends
 on the application.</p>
-<p>Note: Different tokens in the same database can have different
-validity periods, so for example tokens for different resources with
+<p>Note: Different stamps in the same database can have different
+validity periods, so for example stamps for different resources with
 different validity periods can be stored in the same database, or the
-recipient may change the validity period for future tokens without
-affecting the validity of old tokens.</p>
+recipient may change the validity period for future stamps without
+affecting the validity of old stamps.</p>
 <p>
 </p>
 <h2><a name="purging_periodically_vs_on_next_access">Purging Periodically vs on Next Access</a></h2>
-<p>To purge old tokens periodically while checking tokens use the <em>-p
+<p>To purge old stamps periodically while checking stamps use the <em>-p
 period</em> option to purge no sooner than the given time period since the
 last purge.  Purging can be used with the <em>-k</em> option to purge
-unexpired tokens also, and with the <em>-j resource</em> flag to purge only
-tokens for the given resource.</p>
-<p>There are circumstances where it may be inconvenient to purge tokens
+unexpired stamps also, and with the <em>-j resource</em> flag to purge only
+stamps for the given resource.</p>
+<p>There are circumstances where it may be inconvenient to purge stamps
 on the next access, for example if there is a large double spend
 database which takes some time to purge, and the response time of the
 hashcash checker is important.  To avoid this problem, purging can be
@@ -225,16 +224,16 @@ low.</p>
 </p>
 <h2><a name="speed_estimates">Speed Estimates</a></h2>
 <p>The <em>-s</em> flag requests measurement of how many collisions can be
-tested per second.  No token is minted, or verified.</p>
+tested per second.  No stamp is minted, or verified.</p>
 <p>If the <em>-b</em> flag is used with this option, instead an estimate of how
-many seconds it would take to mint a token of the given size in bits
+many seconds it would take to mint a stamp of the given size in bits
 is computed.  To find out how much time it will take to mint a default
 sized stamp use <em>-s -b default</em>.</p>
 <p>
 </p>
 <h2><a name="notes">Notes</a></h2>
-<p>All informational output is printed on stderr.  Minted tokens, and
-results of token verification and timing are printed on stdout.  The
+<p>All informational output is printed on stderr.  Minted stamps, and
+results of stamp verification and timing are printed on stdout.  The
 quiet flag <em>-q</em> suppresses all informational output.  The <em>-v</em> flag
 requests more informational output.  The requested output, which is
 the only information that is output in quiet mode (when <em>-q</em> is
@@ -249,60 +248,91 @@ when quiet mode is in effect the output is printed without description
 <dt><strong><a name="item__2dc"><em>-c</em></a></strong><br />
 </dt>
 <dd>
-Check the tokens given as an argument or on stdin for validity.
+Check the expiry information of stamps given as an argument or on
+stdin.  (Use with <em>-b</em>, <em>-d</em> and <em>-r resource</em> to fully check
+stamps).
 </dd>
 <p></p>
 <dt><strong><a name="item__2dm"><em>-m</em></a></strong><br />
 </dt>
 <dd>
-Mint tokens with the resources given as arguments or on stdin.
+Mint stamps with the resources given as arguments or on stdin.
 </dd>
 <p></p>
 <dt><strong><a name="item__2db_bits"><em>-b bits</em></a></strong><br />
 </dt>
 <dd>
-When minting a token, request a collision of this many bits.  When
-verifying a token require that it have a collision of at minimum this
-many bits, otherwise reject it.  If omitted the default is used.  Can
-also specify the default with <em>-b default</em> which is useful for use
-with <em>-s</em>.
+When minting a stamp, create a collision of at least this many bits.
+When verifying a stamp require that it have a collision of at minimum
+this many bits, otherwise reject it.  If omitted the default is used.
+</dd>
+<dd>
+<p>When checking stamps, require that the stamps have this many bits.</p>
+</dd>
+<dd>
+<p>The default number of bits can be specified with <em>-b default</em>.  Bits
+relative to the default can also be specified with <em>-b +n</em> for n bits
+more than the default and <em>-b -n</em> for n bits less than the default.</p>
+</dd>
+<dd>
+<p><em>-b default</em>, <em>-b +0</em> and <em>-b -0</em> are all equivalent.</p>
+</dd>
+<dd>
+<p>When doing the speed test <em>-s</em>, can to measure speed of default
+token with <em>-s -b default</em>.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item__2dr_resource"><em>-r resource</em></a></strong><br />
 </dt>
 <dd>
-When minting tokens, the resource name (recipient's email address) to
-mint the token against can be given either with <em>-r resource</em> or as
+When minting stamps, the resource name (recipient's email address) to
+mint the stamp against can be given either with <em>-r resource</em> or as
 an argument to <code>hashcash</code>.
 </dd>
 <dd>
-<p>When checking tokens, the resource name (your own email address) is
+<p>When checking stamps, the resource name (your own email address) is
 given with the <em>-r</em> option.  If the resource name is given it is
-checked against the resource name in the token, and if they do not
-match the token is rejected.  Note if the resource name is not given,
-tokens for other resources would be accepted, and therefore hashcash
+checked against the resource name in the stamp, and if they do not
+match the stamp is rejected.  Note if the resource name is not given,
+stamps for other resources would be accepted, and therefore hashcash
 returns exit code unchecked (exit code 2) on exit.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__2do"><em>-o</em></a></strong><br />
+</dt>
+<dd>
+When verifying stamps multiple resources can be given.  By default the
+resources are just checked one by one until a matching valid resource is
+found.  However when you use wildcards or regular expressions (see <em>-E</em>),
+it is useful to be able to specify that one resource overrides another.  For
+example this: <em>-b15 -r <a href="mailto:adam@dev.null">adam@dev.null</a> -o -b10 *@dev.null</em> states that mail
+to address <em><a href="mailto:adam@dev.null">adam@dev.null</a></em> requires 15 bits, but mail to <em>*@dev.null</em>
+requires only 10 bits.  If we omitted the <em>-o</em> override relationship
+between the two resources, a stamp of 10 bits would be accepted for address
+<em><a href="mailto:adam@dev.null">adam@dev.null</a></em> because while it would be rejected as having insufficient
+bits under the first rule, it would be accepted under the 2nd rule.  The
+<em>-o</em> option allows you avoid this problem.
 </dd>
 <p></p>
 <dt><strong><a name="item__2de_time"><em>-e time</em></a></strong><br />
 </dt>
 <dd>
-Expiry period for spent tokens.  While checking tokens (using the <em>-c</em>
-flag), if the token was minted more than the specified amount of time ago,
-it is considered expired.  If this option is not used, by default tokens
+Expiry period for spent stamps.  While checking stamps (using the <em>-c</em>
+flag), if the stamp was minted more than the specified amount of time ago,
+it is considered expired.  If this option is not used, by default stamps
 expire after 28 days.  The expiry period is given in seconds by default (an
 argument of 0 means forever).  A single character suffix can be used to
 specify alternate units (m = minutes, h = hours, d = days, M = months, y = Y
 = years, and s = seconds).
 </dd>
 <dd>
-<p>If used with the <em>-d</em> option, the spent token and it's expiry period
+<p>If used with the <em>-d</em> option, the spent stamp and it's expiry period
 is recorded in the database.  See the <em>-p</em> option for description of
-how to purge tokens from the database.</p>
+how to purge stamps from the database.</p>
 </dd>
 <dd>
-<p>While minting tokens, the <em>-e</em> flag can have an effect on the
-resolution of time created in the token.  Without the <em>-e</em> option,
+<p>While minting stamps, the <em>-e</em> flag can have an effect on the
+resolution of time created in the stamp.  Without the <em>-e</em> option,
 the default resolution is days (time format: YYMMDD).  Alternate
 formats based on range of expiry period are as follows:</p>
 </dd>
@@ -379,11 +409,11 @@ d = days, M = months, y = Y = years, and s = seconds).</p>
 <dt><strong><a name="item__2dd"><em>-d</em></a></strong><br />
 </dt>
 <dd>
-Store tokens in a double spend database.  If token has been seen
+Store stamps in a double spend database.  If stamp has been seen
 before it will be rejected even if it is otherwise valid.  The default
 database file is <em>database.db</em> in the current directory.  Only
-otherwise valid tokens will be stored in the database.  Only fully
-validated tokens will be stored in the database, unless the <em>-y</em>
+otherwise valid stamps will be stored in the database.  Only fully
+validated stamps will be stored in the database, unless the <em>-y</em>
 option is given.
 </dd>
 <p></p>
@@ -396,17 +426,17 @@ Use <em>dbname</em> instead of default filename for double spend database.
 <dt><strong><a name="item__2dp_period"><em>-p period</em></a></strong><br />
 </dt>
 <dd>
-Purges the database of expired tokens if the given time period has
+Purges the database of expired stamps if the given time period has
 passed since the last time it was purged.  As a convenience <em>-p now</em>
 is equivalent to <em>-p 0</em> both of which mean purge now, regardless of
 when the database was last purged.
 </dd>
 <dd>
-<p>If used in combination with <em>-j resource</em> only the tokens minted for
+<p>If used in combination with <em>-j resource</em> only the stamps minted for
 the given resource are purged.</p>
 </dd>
 <dd>
-<p>If used in combination with <em>-k</em> all tokens even un-expired tokens
+<p>If used in combination with <em>-k</em> all stamps even un-expired stamps
 are purged.  Can be used in combination with <em>-t time</em> to expire as
 if the current time were the given time.</p>
 </dd>
@@ -414,17 +444,17 @@ if the current time were the given time.</p>
 <dt><strong><a name="item__2dk"><em>-k</em></a></strong><br />
 </dt>
 <dd>
-Use with option <em>-p</em> to request all tokens are purged rather than
+Use with option <em>-p</em> to request all stamps are purged rather than
 just expired ones.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dj_resource"><em>-j resource</em></a></strong><br />
 </dt>
 <dd>
-Use with option <em>-p</em> to request that just tokens matching the given
+Use with option <em>-p</em> to request that just stamps matching the given
 resource name are to be purged, rather than the default which is to
-purge all expired tokens.  If the resource name is the empty string,
-all tokens are matched (this is equivalent to omitting the <em>-j</em>
+purge all expired stamps.  If the resource name is the empty string,
+all stamps are matched (this is equivalent to omitting the <em>-j</em>
 option).
 </dd>
 <dd>
@@ -435,7 +465,7 @@ resources given with the <em>-j resource</em> flag.</p>
 <dt><strong><a name="item__2ds"><em>-s</em></a></strong><br />
 </dt>
 <dd>
-Print timing information only, and don't proceed to create a token.
+Print timing information only, and don't proceed to create a stamp.
 If combined with <em>-b bits</em> flag print estimate of how long the
 requested collision size would take to compute, if <em>-s</em> given by
 itself, just prints speed of the collision finder.  To print an
@@ -452,7 +482,7 @@ Print short usage information.
 <dt><strong><a name="item__2dv"><em>-v</em></a></strong><br />
 </dt>
 <dd>
-Print more verbose informational output about the token minting or
+Print more verbose informational output about the stamp minting or
 verification.  (If -v is the only argument, prints the tool version
 number.)
 </dd>
@@ -468,12 +498,12 @@ overrides the <em>-v</em> option.
 </dt>
 <dd>
 When minting, prints the hashcash email X-header 'X-Hashcash: ' before
-the token.  Without this option just the bare token is printed.
+the stamp.  Without this option just the bare stamp is printed.
 </dd>
 <dd>
-<p>When checking, after scanning tokens given as arguments, scans stdin
+<p>When checking, after scanning stamps given as arguments, scans stdin
 for lines starting with the string 'X-Hashcash:', and uses the rest of
-the matching line as the token.  Only the lines up to and ending at
+the matching line as the stamp.  Only the lines up to and ending at
 the first blank line are scanned (see also <em>-i</em> flag which can be
 used to override this).  A blank line is the separator used to
 separate the headers from the body of a mail message or USENET
@@ -501,7 +531,7 @@ collision in the body too if one is not found in the headers.
 </dt>
 <dd>
 Pretend the current time is the time given for purposes of minting
-tokens, verifying tokens and purging old tokens from the database.
+stamps, verifying stamps and purging old stamps from the database.
 Time is given in a format based on UTCTIME format
 YYMMDD[hh[mm[ss]]].
 </dd>
@@ -532,24 +562,24 @@ Input and output absolute times in UTC (GMT) instead of local time.
 </dt>
 <dd>
 Add (or subtract if number is negative) a random value from the
-current time before minting the token.  This hides the time the token
+current time before minting the stamp.  This hides the time the stamp
 was created, which may be useful for anonymous users.  Note adding
-(rather than subtracting) a random time may be risky if the token
+(rather than subtracting) a random time may be risky if the stamp
 takes less than the added time to arrive as the recipient will reject
-tokens with time stamps in the future.
+stamps with time stamps in the future.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dn"><em>-n</em></a></strong><br />
 </dt>
 <dd>
-Print resource name parsed from token being verified.  Returns exit
+Print resource name parsed from stamp being verified.  Returns exit
 code unchecked on exit.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dl"><em>-l</em></a></strong><br />
 </dt>
 <dd>
-Print number of seconds left before token expires.  Returns exit code
+Print number of seconds left before stamp expires.  Returns exit code
 unchecked on exit.
 </dd>
 <dd>
@@ -563,23 +593,23 @@ calculation.</p>
 <dt><strong><a name="item__2dw"><em>-w</em></a></strong><br />
 </dt>
 <dd>
-Print number of bits of collision of token.  Returns exit code
+Print number of bits of collision of stamp.  Returns exit code
 unchecked on exit.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dy"><em>-y</em></a></strong><br />
 </dt>
 <dd>
-Returns success if the token is valid even if it is not fully checked.
+Returns success if the stamp is valid even if it is not fully checked.
 Use with <em>-c</em> where not all of <em>-d</em>, <em>-r</em> are specified to get
-success exit code on valid but partially checked token.  Similarly can
+success exit code on valid but partially checked stamp.  Similarly can
 use with <em>-n</em>, <em>-l</em>, <em>-w</em> with same effect.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dw"><em>-W</em></a></strong><br />
 </dt>
 <dd>
-When checking tokens, allow wildcards <em>*</em> in the resource name to
+When checking stamps, allow wildcards <em>*</em> in the resource name to
 make it simpler to specify multiple email addresses and to allow
 matching catch-all addresses and addresses including subdomains.  This
 is the default.  See also <em>-S</em>, <em>-E</em> and <em>-C</em>
@@ -588,22 +618,28 @@ is the default.  See also <em>-S</em>, <em>-E</em> and <em>-C</em>
 <dt><strong><a name="item__2ds"><em>-S</em></a></strong><br />
 </dt>
 <dd>
-When checking tokens use simple text compare to compare resource names
-to those in tokens.  See also <em>-W</em>, &lt;-E&gt; and <em>-C</em>.
+When checking stamps use simple text compare to compare resource names
+to those in stamps.  See also <em>-W</em>, &lt;-E&gt; and <em>-C</em>.
 </dd>
 <p></p>
 <dt><strong><a name="item__2de"><em>-E</em></a></strong><br />
 </dt>
 <dd>
-When checking tokens use regular expressions to specify resource names
+When checking stamps use regular expressions to specify resource names
 to make it simpler to specify multiple email addresses, catch-all
 addresses, classes of extension addresses and addresses including
 subdomains.  Note regular expression syntax is POSIX style: special
 characters do not need to be quoted to have their special meaning; but
 they do have to be quoted with \ to that character in the searched
-string.  (Note even if BSD regular expressions are used POSIX style
+string.  The regular expression automatically has ^ added at the
+beginning and $ added at the end, if they are not specified.  The
+special characters ^ matches the beginning of the resouce, and $
+matches the end of resource.
+</dd>
+<dd>
+<p>(Note even if compiled with BSD regular expressions, POSIX style
 syntax is used; also note BSD regular expressions do not support
-ranges {}.)
+ranges {}.)</p>
 </dd>
 <p></p>
 <dt><strong><a name="item__2dc"><em>-C</em></a></strong><br />
@@ -620,7 +656,7 @@ as case sensitive.
 <h1><a name="examples">EXAMPLES</a></h1>
 <p>
 </p>
-<h2><a name="creating_tokens">Creating tokens</a></h2>
+<h2><a name="creating_stamps">Creating stamps</a></h2>
 <dl>
 <dt><strong><a name="item_hashcash__2ds"><code>hashcash -s</code></a></strong><br />
 </dt>
@@ -646,7 +682,7 @@ Print how long it would take the machine to compute a 32 bit collision
 <dt><strong><a name="item_hashcash__2dm"><code>hashcash -m</code></a></strong><br />
 </dt>
 <dd>
-Mint a token.  Will prompt for resource name and mint with default
+Mint a stamp.  Will prompt for resource name and mint with default
 value (number of collision bits).
 </dd>
 <p></p>
@@ -666,19 +702,19 @@ Compute 10 bit collision on resource foo.
 <dt><strong><a name="item_hashcash__2da__2d3d"><code>hashcash -a -3d</code></a></strong><br />
 </dt>
 <dd>
-Subtract a random time of between 0 days and 3 days from the token's
+Subtract a random time of between 0 days and 3 days from the stamp's
 creation time.  This is the same fuzz factor used by mixmaster to
 reduce risk of timing-correlations.
 </dd>
 <p></p></dl>
 <p>
 </p>
-<h2><a name="examining_tokens">Examining Tokens</a></h2>
+<h2><a name="examining_stamps">Examining Stamps</a></h2>
 <dl>
 <dt><strong><a name="item_hashcash__2dw_0_3a020814_3afoo_3a4333957e84db47f6"><code>hashcash -w 0:020814:foo:4333957e84db47f6</code></a></strong><br />
 </dt>
 <dd>
-Report the value of the token (how many bits of collision) there are.
+Report the value of the stamp (how many bits of collision) there are.
 The example is a 33 bit collision, which would take on average 13
 hours to create on a 400 Mhz Pentium-II.
 </dd>
@@ -686,91 +722,91 @@ hours to create on a 400 Mhz Pentium-II.
 <dt><strong><a name="item_hashcash__2dmq__2db_10_foo__7c_hashcash__2dw"><code>hashcash -mq -b 10 foo | hashcash -w</code></a></strong><br />
 </dt>
 <dd>
-Create a token in batch mode, pass to hashcash on stdin to verify,
+Create a stamp in batch mode, pass to hashcash on stdin to verify,
 have it print how many bits there were.  Note: half of the time you
-get a token 1 bit larger; similarly with decreasing probability you
-can get even larger tokens.
+get a stamp 1 bit larger; similarly with decreasing probability you
+can get even larger stamps.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dn_0_3a020814_3afoo_3a21c8cf3099cbf467"><code>hashcash -n 0:020814:foo:21c8cf3099cbf467</code></a></strong><br />
 </dt>
 <dd>
-Report the resource name from the token.  The resource name in the
+Report the resource name from the stamp.  The resource name in the
 example is foo.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dl__2de_30y_0_3a020814_3afoo_3a21c8cf30"><code>hashcash -l -e 30y 0:020814:foo:21c8cf3099cbf467</code></a></strong><br />
 </dt>
 <dd>
-Report how long until the token expires if it expires in 30 years from
+Report how long until the stamp expires if it expires in 30 years from
 it's creation date.  (Note dates too far into the future run into the
 2038 end of Epoch, which is the unix time analog of the y2k bug).
 </dd>
 <p></p></dl>
 <p>
 </p>
-<h2><a name="verifying_tokens">Verifying Tokens</a></h2>
+<h2><a name="verifying_stamps">Verifying Stamps</a></h2>
 <dl>
 <dt><strong><a name="item_hashcash__2dc_0_3a020814_3afoo_3a21c8cf3099cbf467"><code>hashcash -c 0:020814:foo:21c8cf3099cbf467</code></a></strong><br />
 </dt>
 <dd>
-Check if the token is valid.  Note as we are not checking the token in
+Check if the stamp is valid.  Note as we are not checking the stamp in
 a double spend database, and did not specify a resource name or
 required number of bits of collision and hashcash will consider the
-token not fully checked, and it will report it as valid but not fully
-unchecked, or as invalid if there is any problem with the token.
+stamp not fully checked, and it will report it as valid but not fully
+unchecked, or as invalid if there is any problem with the stamp.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dc__2db24_0_3a020814_3afoo_3a21c8cf3099"><code>hashcash -c -b24 0:020814:foo:21c8cf3099cbf467</code></a></strong><br />
 </dt>
 <dd>
-Check that the value of the token is greater or equal to 24 bits.
+Check that the value of the stamp is greater or equal to 24 bits.
 This example has 24 bit value.  If you increase the requested number
-of bits or replace the token with one with less than 24 bit collision
-the token will be rejected.
+of bits or replace the stamp with one with less than 24 bit collision
+the stamp will be rejected.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dc__2db24__2dr_foo_0_3a020814_3afoo_3a2"><code>hashcash -c -b24 -r foo 0:020814:foo:21c8cf3099cbf467</code></a></strong><br />
 </dt>
 <dd>
-As above check if the token has sufficient value, but in addition
+As above check if the stamp has sufficient value, but in addition
 check that the resource name given matches the resource name in the
-token.
+stamp.
 </dd>
 <p></p></dl>
 <p>
 </p>
 <h2><a name="double_spending_prevention">Double Spending Prevention</a></h2>
-<p>The examples given in <a href="#verifying_tokens">Verifying Tokens</a> can be modified to keep a
-double spend database so that the same token will not be accepted
-twice.  Note a token will only be checked in and added to the database
+<p>The examples given in <a href="#verifying_stamps">Verifying Stamps</a> can be modified to keep a
+double spend database so that the same stamp will not be accepted
+twice.  Note a stamp will only be checked in and added to the database
 if it is otherwise valid and fully checked (a required number of bits
 of collision has been specified and a resource has been specified).</p>
 <dl>
 <dt><strong><a name="item_hashcash__2dcd__2db_10__2dr_foo_0_3a020814_3afoo_3"><code>hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467</code></a></strong><br />
 </dt>
 <dd>
-Check the token and add to double spent database if it's valid (has
+Check the stamp and add to double spent database if it's valid (has
 correct resource name and sufficient value).
 </dd>
 <p></p>
 <dt><strong><code>hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467</code></strong><br />
 </dt>
 <dd>
-Try to double spend the token.  It will be rejected as double spent.
+Try to double spend the stamp.  It will be rejected as double spent.
 </dd>
 <p></p></dl>
 <p>
 </p>
-<h2><a name="token_expiry">Token Expiry</a></h2>
+<h2><a name="stamp_expiry">Stamp Expiry</a></h2>
 <p>To prevent the double spend database growing indefinately, the
-recipient can request that tokens be no older than a specified period.
-After expiry old tokens can dropped from the double spend database as
-they will no longer be needed -- expired tokens can be rejected based
-purely on their old date, so the space taken by expired tokens in the
+recipient can request that stamps be no older than a specified period.
+After expiry old stamps can dropped from the double spend database as
+they will no longer be needed -- expired stamps can be rejected based
+purely on their old date, so the space taken by expired stamps in the
 double spend database can be saved without risk of accepting an
-expired though otherwise valid token.</p>
-<p>The first field of the token is the UTC time since 1st January 1970.
+expired though otherwise valid stamp.</p>
+<p>The first field of the stamp is the UTC time since 1st January 1970.
 The default time format is YYMMDD, time rounded down to the nearest
 day.  The default validity period is 28 days.</p>
 <p>You can provide an alternative validity period with the <em>-e</em> option.</p>
@@ -778,74 +814,74 @@ day.  The default validity period is 28 days.</p>
 <dt><strong><a name="item_hashcash__2dcd__2db_10__2de_2d__2dr_foo_0_3a020811"><code>hashcash -cd -b 10 -e 2d -r foo 0:020811:foo:21dd87d4c9f5aae1</code></a></strong><br />
 </dt>
 <dd>
-Try verifying an old token, the above token was created 11 Aug 2002.
+Try verifying an old stamp, the above stamp was created 11 Aug 2002.
 </dd>
 <dd>
-<p>We gave option <em>-e 2d</em> so the tokens expiry date is 2 days after
+<p>We gave option <em>-e 2d</em> so the stamps expiry date is 2 days after
 creation, which is now in the past.</p>
 </dd>
 <dd>
-<p>Note: if the creation time is expressed in the token in days, the
+<p>Note: if the creation time is expressed in the stamp in days, the
 precise creation date is the begining of the specified day in UTC time
 (similarly for alternate units the creation time is rounded down to
 the begining of the unit it is expressed in).  For units in days, for
-example, this may mean depending on your time zone that the token
+example, this may mean depending on your time zone that the stamp
 appears to be considered invalid in under the specified expiry period
 in days relative to your relative view of what day it is, as the
 calculation is based on current time in UTC, and the creation time of
-the token is expressed in UTC time.</p>
+the stamp is expressed in UTC time.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dcd__2db_10__2dr_foo_0_3a020811_3afoo_3"><code>hashcash -cd -b 10 -r foo 0:020811:foo:21dd87d4c9f5aae1</code></a></strong><br />
 </dt>
 <dd>
-Test whether the token is otherwise valid, apart from having expired.
-Omitting the <em>-e</em> tells hashcash that the token will never expire.
+Test whether the stamp is otherwise valid, apart from having expired.
+Omitting the <em>-e</em> tells hashcash that the stamp will never expire.
 An expiry period of forever can also be given explitly like this: <em>-e
 0</em>, where an expiry period of 0 means forever.
 </dd>
 <p></p></dl>
 <p>
 </p>
-<h2><a name="purging_old_tokens">Purging old tokens</a></h2>
-<p>If the <em>-c</em>, <em>-d</em> options are used together, each time a token is
-checked, if it is valid and all of the mandatory aspects of the token
+<h2><a name="purging_old_stamps">Purging old stamps</a></h2>
+<p>If the <em>-c</em>, <em>-d</em> options are used together, each time a stamp is
+checked, if it is valid and all of the mandatory aspects of the stamp
 are verified (collision bits check, resource name check) then the
-token and it's expiry period is written to the database file.  The
+stamp and it's expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
-the <em>-e</em> option is 28 days (ie tokens expire after 4 weeks).</p>
-<p>First mint and then add a token:</p>
+the <em>-e</em> option is 28 days (ie stamps expire after 4 weeks).</p>
+<p>First mint and then add a stamp:</p>
 <dl>
-<dt><strong><a name="item_hashcash__2dm__2db_10_foo__2de_1m__3e_token"><code>hashcash -m -b 10 foo -e 1m &gt; token</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dm__2db_10_foo__2de_1m__3e_stamp"><code>hashcash -m -b 10 foo -e 1m &gt; stamp</code></a></strong><br />
 </dt>
 <dd>
 Note: we specified an expiry on minting in this example, to ensure
-that the token creation time is given in high enough resolution in the
-token that the token will not be considered expired at time of
-creation.  (Recall the default resolution is in days, a token created
+that the stamp creation time is given in high enough resolution in the
+stamp that the stamp will not be considered expired at time of
+creation.  (Recall the default resolution is in days, a stamp created
 with a creation time rounded down to the beginging of the day is
 unlikely to be considered valid 1 minute later unless you mint it at
 midnight UTC time.)
 </dd>
 <p></p>
-<dt><strong><a name="item_hashcash__2dcd__2de_1m__2db_10__2dr_foo__3c_token"><code>hashcash -cd -e 1m -b 10 -r foo &lt; token</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dcd__2de_1m__2db_10__2dr_foo__3c_stamp"><code>hashcash -cd -e 1m -b 10 -r foo &lt; stamp</code></a></strong><br />
 </dt>
 <dd>
-The token expires in 1 minute.  Wait 1 minute and then explicitly
-request that expired tokens be purged:
+The stamp expires in 1 minute.  Wait 1 minute and then explicitly
+request that expired stamps be purged:
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dp_now"><code>hashcash -p now</code></a></strong><br />
 </dt>
 <dd>
-Then try resubmitting the same token:
+Then try resubmitting the same stamp:
 </dd>
 <p></p>
-<dt><strong><code>hashcash -cd -e 1m -b 10 -r foo &lt; token</code></strong><br />
+<dt><strong><code>hashcash -cd -e 1m -b 10 -r foo &lt; stamp</code></strong><br />
 </dt>
 <dd>
-and the token will be rejected anyway as it has expired, illustrating
-why it was not necessary to keep this token in the database.
+and the stamp will be rejected anyway as it has expired, illustrating
+why it was not necessary to keep this stamp in the database.
 </dd>
 <dd>
 <p>With the default database (the sdb format) the database contents are
@@ -856,23 +892,23 @@ terminal:</p>
 <dt><strong><a name="item_cat_hashcash_2edb"><code>cat hashcash.db</code></a></strong><br />
 </dt>
 <dd>
-to see that the token really is added and then after puring
+to see that the stamp really is added and then after puring
 subsequently purged due to expiry.
 </dd>
 <p></p></dl>
 <p>
 </p>
-<h2><a name="purging_old_tokens_on_demand">Purging old tokens on Demand</a></h2>
-<p>As a convenience you can purge at the same time as checking tokens by
+<h2><a name="purging_old_stamps_on_demand">Purging old stamps on Demand</a></h2>
+<p>As a convenience you can purge at the same time as checking stamps by
 using the <em>-p</em> option with the <em>-c</em> option.</p>
 <dl>
-<dt><strong><a name="item_hashcash__2dm__2db_10_foo__3e_token"><code>hashcash -m -b 10 foo &gt; token</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dm__2db_10_foo__3e_stamp"><code>hashcash -m -b 10 foo &gt; stamp</code></a></strong><br />
 </dt>
-<dt><strong><a name="item_hashcash__2dcd__2dp_now__2de_1__2db_10__2dr_foo__3"><code>hashcash -cd -p now -e 1 -b 10 -r foo &lt; token</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dcd__2dp_now__2de_1__2db_10__2dr_foo__3"><code>hashcash -cd -p now -e 1 -b 10 -r foo &lt; stamp</code></a></strong><br />
 </dt>
 <dd>
-It may be inefficient to purge tokens on every use as the entire
-database has to be scanned for expired tokens.  By giving a time
+It may be inefficient to purge stamps on every use as the entire
+database has to be scanned for expired stamps.  By giving a time
 period to the <em>-p</em> option, you can tell <code>hashcash</code> to purge no more
 frequently than that time period since the previous purge.
 </dd>
@@ -880,30 +916,30 @@ frequently than that time period since the previous purge.
 <p>For example:</p>
 </dd>
 <p></p>
-<dt><strong><a name="item_hashcash__2dcd__2dp_1d__2de_1__2db_10__2dr_foo__3c"><code>hashcash -cd -p 1d -e 1 -b 10 -r foo &lt; token</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dcd__2dp_1d__2de_1__2db_10__2dr_foo__3c"><code>hashcash -cd -p 1d -e 1 -b 10 -r foo &lt; stamp</code></a></strong><br />
 </dt>
 <dd>
-tells <code>hashcash</code> to purge any expired tokens no more than once per
+tells <code>hashcash</code> to purge any expired stamps no more than once per
 day.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dp_1m__2dj_foo"><code>hashcash -p 1M -j foo</code></a></strong><br />
 </dt>
 <dd>
-tells <code>hashcash</code> to purge only expired tokens matching resource foo
+tells <code>hashcash</code> to purge only expired stamps matching resource foo
 once per month.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dp_now__2dk"><code>hashcash -p now -k</code></a></strong><br />
 </dt>
 <dd>
-tells <code>hashcash</code> to purge all tokens (expired and unexpired) now.
+tells <code>hashcash</code> to purge all stamps (expired and unexpired) now.
 </dd>
 <p></p></dl>
 <p>
 </p>
 <hr />
-<h1><a name="token_format">token format</a></h1>
+<h1><a name="stamp_format">stamp format</a></h1>
 <dl>
 <dt><strong><a name="item_ver_3adate_3aresource_3acollision"><em>ver</em>:<em>date</em>:<em>resource</em>:<em>collision</em></a></strong><br />
 </dt>
@@ -924,16 +960,10 @@ tells <code>hashcash</code> to purge all tokens (expired and unexpired) now.
 <hr />
 <h1><a name="files">FILES</a></h1>
 <dl>
-<dt><strong><a name="item_hashcash_2edb"><em>hashcash.db</em></a></strong><br />
+<dt><strong><a name="item_hashcash_2esdb"><em>hashcash.sdb</em></a></strong><br />
 </dt>
 <dd>
 default double spend database
-</dd>
-<p></p>
-<dt><strong><a name="item_hashcash_2edbt"><em>hashcash.dbt</em></a></strong><br />
-</dt>
-<dd>
-default temporary double spend database used when purging tokens.
 </dd>
 <p></p></dl>
 <p>
@@ -941,17 +971,16 @@ default temporary double spend database used when purging tokens.
 <hr />
 <h1><a name="exit_status">EXIT STATUS</a></h1>
 <p><code>hashcash</code> returns success (exit code 0) after successfully minting a
-token, after fully checking a token and finding it valid, and after a
+stamp, after fully checking a stamp and finding it valid, and after a
 timing test.</p>
-<p>If when checking a token it is found to be invalid (due to being
+<p>If when checking a stamp it is found to be invalid (due to being
 malformed, being expired, having insufficient value, having a date in
 the future, or being double spent), <code>hashcash</code> returns failure (exit
 code 1).</p>
-<p>If insufficient options are given to fully check a token, or if using
-the <em>-n</em>, <em>-l</em>, or <em>-w</em> options, if the token is otherwise valid
-return unchecked (exit code 2).  If the <em>-y</em> flag is given and
-hashcash would normally return unchecked, exit code success is
-returned instead.</p>
+<p>If insufficient options are given to fully check a stamp, if the stamp
+is otherwise valid return unchecked (exit code 2).  If the <em>-y</em> flag
+is given and hashcash would normally return unchecked, exit code
+success is returned instead.</p>
 <p>If any exception occurs (file read failure for database checking or
 corrupted database contents) an exit status of 3 is returned.</p>
 <p>

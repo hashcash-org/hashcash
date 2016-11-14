@@ -2,11 +2,11 @@ NAME
     hashcash - hashcash anti-spam / denial of service counter-measure tool
 
 SYNOPSIS
-  Mint (create) tokens:
+  Mint (create) stamps:
     hashcash *-m* [ [ *options* ] [ *resource* ... ] ... ]
 
-  Check tokens:
-    hashcash *-c* [ [ *options* ] *-r resource* ... ] [ *token* ... ]
+  Check stamps:
+    hashcash *-c* [ [ *options* ] *-r resource* ... ] [ *stamp* ... ]
 
   Speed estimates:
     hashcash *-s* [ *options* ] [ *-b bits* ]
@@ -15,29 +15,29 @@ SYNOPSIS
     hashcash *-p now* [ *-j resource* ] [ *-k* ] [ *-t time* ] [ *-u* ]
 
   Count collision bits:
-    hashcash *-w* [ *options* ] [ *token* ... ]
+    hashcash *-w* [ *options* ] [ *stamp* ... ]
 
   Get resource name:
-    hashcash *-n* [ *options* ] [ *token* ... ]
+    hashcash *-n* [ *options* ] [ *stamp* ... ]
 
   Get time remaining until expiry
-    hashcash *-l* [ *options* ] *-e period* [ *token* ... ]
+    hashcash *-l* [ *options* ] *-e period* [ *stamp* ... ]
 
 DESCRIPTION
     Hashcash is a denial-of-service counter measure tool. It's main current
     use is to help hashcash users avoid losing email due to content based
     and blacklist based anti-spam systems.
 
-    The hashcash tool allows you to create hashcash tokens to attach to
-    emails you send, and to verify hashcash tokens attached to emails you
-    receive. Email senders attach hashcash tokens with the X-Hashcash:
+    The hashcash tool allows you to create hashcash stamps to attach to
+    emails you send, and to verify hashcash stamps attached to emails you
+    receive. Email senders attach hashcash stamps with the X-Hashcash:
     header. Vendors and authors of anti-spam tools are encouraged to exempt
     mail sent with hashcash from their blacklists and content based
     filtering rules.
 
-    A hashcash token constitutes a proof-of-work which takes a
+    A hashcash stamp constitutes a proof-of-work which takes a
     parameterizable amount of work to compute for the sender. The recipient
-    can verify received tokens efficiently. This package also includes a
+    can verify received stamps efficiently. This package also includes a
     sha1 implementation which behaves somewhat like md5sum, but with SHA1.
 
     The hashcash proof-of-work function is to compute partial hash
@@ -52,102 +52,99 @@ DESCRIPTION
 
 USAGE NOTES
     In this man page a resource name is the name of the service or address
-    the token is created for. In the case of email, the resource name is the
+    the stamp is created for. In the case of email, the resource name is the
     recipient's email address in the form user@domain.com.
 
-  Minting tokens
-    The *-m* flag must be given to mint a token.
+  Minting stamps
+    The *-m* flag must be given to mint a stamp.
 
-    The resource name (recipient's email address) to mint the token against
+    The resource name (recipient's email address) to mint the stamp against
     can be passed as an argument, or if omitted is read from stdin. If stdin
     is a tty the user is prompted, if stdin is a pipe the resource name is
     just silently read. The desired collision size can be specified with the
     -b option. If no collision size is specified, the default is 20 bits.
-    *-b default* can be used to get the default size.
+    See also the *-b default* option.
 
-  Checking tokens
-    The *-c* flag must be given to check tokens. The token to check can be
-    given as an argument to "hashcash". If no token is given the token is
-    read from stdin. If stdin is a tty the user will be prompted, if stdin
-    is a pipe the token is just silently read. A resource name (the
+  Checking stamps
+    The *-c* flag must be given to check a stamps expiry. The stamp to check
+    can be given as an argument to "hashcash". If no stamp is given the
+    stamp is read from stdin. If stdin is a tty the user will be prompted,
+    if stdin is a pipe the stamp is just silently read. A resource name (the
     recipient's email address) can be given with the *-r* option. If a
     resource name is given the resource name is compared to the resource
-    name in the token, if they do not match, the token is rejected.
+    name in the stamp, if they do not match, the stamp is rejected.
 
-    Note: if no resource name is given the token is anyway checked to see if
+    Note: if no resource name is given the stamp is anyway checked to see if
     it is otherwise valid, but it could be minted for a different resource,
-    which would allow tokens to be reused across different resources, so
+    which would allow stamps to be reused across different resources, so
     hashcash will return unchecked exit code on exit.
 
-    Tokens are by default considered to be valid forever. The validity
+    Stamps are by default considered to be valid for 28 days. The validity
     period can be changed using the *-e* flag.
 
-    If the token has expired or has a date in the future the token is
+    If the stamp has expired or has a date in the future the stamp is
     rejected and the program exits immediately.
 
-    If a required collision size is given with the *-b* flag, the tokens
-    value is computed and compared, if the token has insufficent value it is
+    If a required collision size is given with the *-b* flag, the stamps
+    value is computed and compared, if the stamp has insufficent value it is
     rejected, and the program exits immediately. If the *-b* flag is not
-    given, the token could be of any size, so hashcash will return unchecked
-    exit code on exit.
+    given, the stamp is checked to see if it is otherwise valid, but
+    hashcash will return unchecked exit code on exit.
 
-    If the token is double spent the token is rejected. Double spending
+    If the stamp is double spent the stamp is rejected. Double spending
     protection is discussed in more detail below in "Double Spending
-    Protection". If double spending protection is not enabled, the token
+    Protection". If double spending protection is not enabled, the stamp
     could be double spent, so hashcash will return unchecked exit code (exit
     code 2) on exit.
 
     The *-w* flag can be used to request that the number of bits of the
-    collision are counted and displayed; exit code unchecked (exit code 2)
-    is returned on exit. The *-n* flag can be used to request that the
-    resource name in the token is parsed out and displayed; exit code
-    unchecked (exit code 2) is returned on exit. The *-l* flag can be used
-    to request the number of seconds until expiry of the token is output;
-    exit code unchecked (exit code 2) is returned on exit.
+    collision are counted and displayed. The *-n* flag can be used to
+    request that the resource name in the stamp is parsed out and displayed.
+    The *-l* flag can be used to request the number of seconds until expiry
+    of the stamp is output.
 
     The program will only return exit codes valid or invalid if the *-c*
-    flag is used, and both of the options, *-d*, *-r resource* are used.
-    These are the minimum set of options necessary to fully check the
-    validty of a token. If these criteria are not met, the program will
-    return exit code unchecked (exit code 2) on exit. (See also the *-y*
-    flag.)
+    flag is used, the *-b* flag is used, *-d*, *-r resource* are used. These
+    are the minimum set of options necessary to fully check the validty of a
+    stamp. If these criteria are not met, the program will return exit code
+    unchecked (exit code 2) on exit. (See also the *-y* flag.)
 
   Double Spending Protection
-    If the *-d* flag is used with the *-c* flag a database of spent tokens
-    is kept.
+    If the *-d* flag is used when checking stamps, a database of spent
+    stamps is kept.
 
-    By default tokens expire after 28 days, without expiry the database
+    By default stamps expire after 28 days, without expiry the database
     would grow indefinately. You can specify an alternate expiry period with
     the *-e* flag. The recommended (and default) expiry period for email is
-    28 days. After the expiry period amount of time, the token is anyway
+    28 days. After the expiry period amount of time, the stamp is anyway
     considered expired and may be purged from the database to save space.
-    (See "Purging Periodically vs on Next Access" for how to purge tokens.)
+    (See "Purging Periodically vs on Next Access" for how to purge stamps.)
 
-    For efficiency reasons a token is verified before it is checked in the
+    For efficiency reasons a stamp is verified before it is checked in the
     database; if it is otherwise invalid no database activity will occur.
 
-    Note: The decision about how long the token should be considered valid
+    Note: The decision about how long the stamp should be considered valid
     is up to the verifier. If it is too short it is possible for some
-    applications that the token will expire before arriving at the recipient
+    applications that the stamp will expire before arriving at the recipient
     (eg with email.) The suggested value of 28 days should be safe for
     normal email delivery delays. The choice is a trade-off between database
     size and risk of expiry prior to arrival, and depends on the
     application.
 
-    Note: Different tokens in the same database can have different validity
-    periods, so for example tokens for different resources with different
+    Note: Different stamps in the same database can have different validity
+    periods, so for example stamps for different resources with different
     validity periods can be stored in the same database, or the recipient
-    may change the validity period for future tokens without affecting the
-    validity of old tokens.
+    may change the validity period for future stamps without affecting the
+    validity of old stamps.
 
   Purging Periodically vs on Next Access
-    To purge old tokens periodically while checking tokens use the *-p
+    To purge old stamps periodically while checking stamps use the *-p
     period* option to purge no sooner than the given time period since the
     last purge. Purging can be used with the *-k* option to purge unexpired
-    tokens also, and with the *-j resource* flag to purge only tokens for
+    stamps also, and with the *-j resource* flag to purge only stamps for
     the given resource.
 
-    There are circumstances where it may be inconvenient to purge tokens on
+    There are circumstances where it may be inconvenient to purge stamps on
     the next access, for example if there is a large double spend database
     which takes some time to purge, and the response time of the hashcash
     checker is important. To avoid this problem, purging can be done
@@ -157,16 +154,16 @@ USAGE NOTES
 
   Speed Estimates
     The *-s* flag requests measurement of how many collisions can be tested
-    per second. No token is minted, or verified.
+    per second. No stamp is minted, or verified.
 
     If the *-b* flag is used with this option, instead an estimate of how
-    many seconds it would take to mint a token of the given size in bits is
+    many seconds it would take to mint a stamp of the given size in bits is
     computed. To find out how much time it will take to mint a default sized
     stamp use *-s -b default*.
 
   Notes
-    All informational output is printed on stderr. Minted tokens, and
-    results of token verification and timing are printed on stdout. The
+    All informational output is printed on stderr. Minted stamps, and
+    results of stamp verification and timing are printed on stdout. The
     quiet flag *-q* suppresses all informational output. The *-v* flag
     requests more informational output. The requested output, which is the
     only information that is output in quiet mode (when *-q* is specified)
@@ -176,46 +173,73 @@ USAGE NOTES
 
 OPTIONS
     *-c*
-        Check the tokens given as an argument or on stdin for validity.
+        Check the expiry information of stamps given as an argument or on
+        stdin. (Use with *-b*, *-d* and *-r resource* to fully check
+        stamps).
 
     *-m*
-        Mint tokens with the resources given as arguments or on stdin.
+        Mint stamps with the resources given as arguments or on stdin.
 
     *-b bits*
-        When minting a token, request a collision of this many bits. When
-        verifying a token require that it have a collision of at minimum
-        this many bits, otherwise reject it. If omitted the default is used.
-        Can also specify the default with *-b default* which is useful for
-        use with *-s*.
+        When minting a stamp, create a collision of at least this many bits.
+        When verifying a stamp require that it have a collision of at
+        minimum this many bits, otherwise reject it. If omitted the default
+        is used.
+
+        When checking stamps, require that the stamps have this many bits.
+
+        The default number of bits can be specified with *-b default*. Bits
+        relative to the default can also be specified with *-b +n* for n
+        bits more than the default and *-b -n* for n bits less than the
+        default.
+
+        *-b default*, *-b +0* and *-b -0* are all equivalent.
+
+        When doing the speed test *-s*, can to measure speed of default
+        token with *-s -b default*.
 
     *-r resource*
-        When minting tokens, the resource name (recipient's email address)
-        to mint the token against can be given either with *-r resource* or
+        When minting stamps, the resource name (recipient's email address)
+        to mint the stamp against can be given either with *-r resource* or
         as an argument to "hashcash".
 
-        When checking tokens, the resource name (your own email address) is
+        When checking stamps, the resource name (your own email address) is
         given with the *-r* option. If the resource name is given it is
-        checked against the resource name in the token, and if they do not
-        match the token is rejected. Note if the resource name is not given,
-        tokens for other resources would be accepted, and therefore hashcash
+        checked against the resource name in the stamp, and if they do not
+        match the stamp is rejected. Note if the resource name is not given,
+        stamps for other resources would be accepted, and therefore hashcash
         returns exit code unchecked (exit code 2) on exit.
 
+    *-o*
+        When verifying stamps multiple resources can be given. By default
+        the resources are just checked one by one until a matching valid
+        resource is found. However when you use wildcards or regular
+        expressions (see *-E*), it is useful to be able to specify that one
+        resource overrides another. For example this: *-b15 -r adam@dev.null
+        -o -b10 *@dev.null* states that mail to address *adam@dev.null*
+        requires 15 bits, but mail to **@dev.null* requires only 10 bits. If
+        we omitted the *-o* override relationship between the two resources,
+        a stamp of 10 bits would be accepted for address *adam@dev.null*
+        because while it would be rejected as having insufficient bits under
+        the first rule, it would be accepted under the 2nd rule. The *-o*
+        option allows you avoid this problem.
+
     *-e time*
-        Expiry period for spent tokens. While checking tokens (using the
-        *-c* flag), if the token was minted more than the specified amount
+        Expiry period for spent stamps. While checking stamps (using the
+        *-c* flag), if the stamp was minted more than the specified amount
         of time ago, it is considered expired. If this option is not used,
-        by default tokens expire after 28 days. The expiry period is given
+        by default stamps expire after 28 days. The expiry period is given
         in seconds by default (an argument of 0 means forever). A single
         character suffix can be used to specify alternate units (m =
         minutes, h = hours, d = days, M = months, y = Y = years, and s =
         seconds).
 
-        If used with the *-d* option, the spent token and it's expiry period
+        If used with the *-d* option, the spent stamp and it's expiry period
         is recorded in the database. See the *-p* option for description of
-        how to purge tokens from the database.
+        how to purge stamps from the database.
 
-        While minting tokens, the *-e* flag can have an effect on the
-        resolution of time created in the token. Without the *-e* option,
+        While minting stamps, the *-e* flag can have an effect on the
+        resolution of time created in the stamp. Without the *-e* option,
         the default resolution is days (time format: YYMMDD). Alternate
         formats based on range of expiry period are as follows:
 
@@ -274,45 +298,45 @@ OPTIONS
         hours, d = days, M = months, y = Y = years, and s = seconds).
 
     *-d*
-        Store tokens in a double spend database. If token has been seen
+        Store stamps in a double spend database. If stamp has been seen
         before it will be rejected even if it is otherwise valid. The
         default database file is database.db in the current directory. Only
-        otherwise valid tokens will be stored in the database. Only fully
-        validated tokens will be stored in the database, unless the *-y*
+        otherwise valid stamps will be stored in the database. Only fully
+        validated stamps will be stored in the database, unless the *-y*
         option is given.
 
     *-f dbname*
         Use dbname instead of default filename for double spend database.
 
     *-p period*
-        Purges the database of expired tokens if the given time period has
+        Purges the database of expired stamps if the given time period has
         passed since the last time it was purged. As a convenience *-p now*
         is equivalent to *-p 0* both of which mean purge now, regardless of
         when the database was last purged.
 
-        If used in combination with *-j resource* only the tokens minted for
+        If used in combination with *-j resource* only the stamps minted for
         the given resource are purged.
 
-        If used in combination with *-k* all tokens even un-expired tokens
+        If used in combination with *-k* all stamps even un-expired stamps
         are purged. Can be used in combination with *-t time* to expire as
         if the current time were the given time.
 
     *-k*
-        Use with option *-p* to request all tokens are purged rather than
+        Use with option *-p* to request all stamps are purged rather than
         just expired ones.
 
     *-j resource*
-        Use with option *-p* to request that just tokens matching the given
+        Use with option *-p* to request that just stamps matching the given
         resource name are to be purged, rather than the default which is to
-        purge all expired tokens. If the resource name is the empty string,
-        all tokens are matched (this is equivalent to omitting the *-j*
+        purge all expired stamps. If the resource name is the empty string,
+        all stamps are matched (this is equivalent to omitting the *-j*
         option).
 
         Note the *-E*, *-W* and *-S* type of match flags also apply to
         resources given with the *-j resource* flag.
 
     *-s*
-        Print timing information only, and don't proceed to create a token.
+        Print timing information only, and don't proceed to create a stamp.
         If combined with *-b bits* flag print estimate of how long the
         requested collision size would take to compute, if *-s* given by
         itself, just prints speed of the collision finder. To print an
@@ -323,7 +347,7 @@ OPTIONS
         Print short usage information.
 
     *-v*
-        Print more verbose informational output about the token minting or
+        Print more verbose informational output about the stamp minting or
         verification. (If -v is the only argument, prints the tool version
         number.)
 
@@ -333,12 +357,12 @@ OPTIONS
 
     *-X*
         When minting, prints the hashcash email X-header 'X-Hashcash: '
-        before the token. Without this option just the bare token is
+        before the stamp. Without this option just the bare stamp is
         printed.
 
-        When checking, after scanning tokens given as arguments, scans stdin
+        When checking, after scanning stamps given as arguments, scans stdin
         for lines starting with the string 'X-Hashcash:', and uses the rest
-        of the matching line as the token. Only the lines up to and ending
+        of the matching line as the stamp. Only the lines up to and ending
         at the first blank line are scanned (see also *-i* flag which can be
         used to override this). A blank line is the separator used to
         separate the headers from the body of a mail message or USENET
@@ -357,7 +381,7 @@ OPTIONS
 
     *-t time*
         Pretend the current time is the time given for purposes of minting
-        tokens, verifying tokens and purging old tokens from the database.
+        stamps, verifying stamps and purging old stamps from the database.
         Time is given in a format based on UTCTIME format
         YYMMDD[hh[mm[ss]]].
 
@@ -380,18 +404,18 @@ OPTIONS
 
     *-a period*
         Add (or subtract if number is negative) a random value from the
-        current time before minting the token. This hides the time the token
+        current time before minting the stamp. This hides the time the stamp
         was created, which may be useful for anonymous users. Note adding
-        (rather than subtracting) a random time may be risky if the token
+        (rather than subtracting) a random time may be risky if the stamp
         takes less than the added time to arrive as the recipient will
-        reject tokens with time stamps in the future.
+        reject stamps with time stamps in the future.
 
     *-n*
-        Print resource name parsed from token being verified. Returns exit
+        Print resource name parsed from stamp being verified. Returns exit
         code unchecked on exit.
 
     *-l*
-        Print number of seconds left before token expires. Returns exit code
+        Print number of seconds left before stamp expires. Returns exit code
         unchecked on exit.
 
         Note: the calculation includes the grace period, so can be up to 2
@@ -401,35 +425,40 @@ OPTIONS
         calculation.
 
     *-w*
-        Print number of bits of collision of token. Returns exit code
+        Print number of bits of collision of stamp. Returns exit code
         unchecked on exit.
 
     *-y*
-        Returns success if the token is valid even if it is not fully
+        Returns success if the stamp is valid even if it is not fully
         checked. Use with *-c* where not all of *-d*, *-r* are specified to
-        get success exit code on valid but partially checked token.
+        get success exit code on valid but partially checked stamp.
         Similarly can use with *-n*, *-l*, *-w* with same effect.
 
     *-W*
-        When checking tokens, allow wildcards *** in the resource name to
+        When checking stamps, allow wildcards *** in the resource name to
         make it simpler to specify multiple email addresses and to allow
         matching catch-all addresses and addresses including subdomains.
         This is the default. See also *-S*, *-E* and *-C*
 
     *-S*
-        When checking tokens use simple text compare to compare resource
-        names to those in tokens. See also *-W*, <-E> and *-C*.
+        When checking stamps use simple text compare to compare resource
+        names to those in stamps. See also *-W*, <-E> and *-C*.
 
     *-E*
-        When checking tokens use regular expressions to specify resource
+        When checking stamps use regular expressions to specify resource
         names to make it simpler to specify multiple email addresses,
         catch-all addresses, classes of extension addresses and addresses
         including subdomains. Note regular expression syntax is POSIX style:
         special characters do not need to be quoted to have their special
         meaning; but they do have to be quoted with \ to that character in
-        the searched string. (Note even if BSD regular expressions are used
-        POSIX style syntax is used; also note BSD regular expressions do not
-        support ranges {}.)
+        the searched string. The regular expression automatically has ^
+        added at the beginning and $ added at the end, if they are not
+        specified. The special characters ^ matches the beginning of the
+        resouce, and $ matches the end of resource.
+
+        (Note even if compiled with BSD regular expressions, POSIX style
+        syntax is used; also note BSD regular expressions do not support
+        ranges {}.)
 
     *-C*
         By default resources are converted to lower case on minting and on
@@ -437,7 +466,7 @@ OPTIONS
         as case sensitive.
 
 EXAMPLES
-  Creating tokens
+  Creating stamps
     "hashcash -s"
         Print timing information about how many collisions the machine can
         try per second.
@@ -451,7 +480,7 @@ EXAMPLES
         collision (but don't actually compute a collision).
 
     "hashcash -m"
-        Mint a token. Will prompt for resource name and mint with default
+        Mint a stamp. Will prompt for resource name and mint with default
         value (number of collision bits).
 
     "hashcash -m foo"
@@ -462,132 +491,132 @@ EXAMPLES
         Compute 10 bit collision on resource foo.
 
     "hashcash -a -3d"
-        Subtract a random time of between 0 days and 3 days from the token's
+        Subtract a random time of between 0 days and 3 days from the stamp's
         creation time. This is the same fuzz factor used by mixmaster to
         reduce risk of timing-correlations.
 
-  Examining Tokens
+  Examining Stamps
     "hashcash -w 0:020814:foo:4333957e84db47f6"
-        Report the value of the token (how many bits of collision) there
+        Report the value of the stamp (how many bits of collision) there
         are. The example is a 33 bit collision, which would take on average
         13 hours to create on a 400 Mhz Pentium-II.
 
     "hashcash -mq -b 10 foo | hashcash -w"
-        Create a token in batch mode, pass to hashcash on stdin to verify,
+        Create a stamp in batch mode, pass to hashcash on stdin to verify,
         have it print how many bits there were. Note: half of the time you
-        get a token 1 bit larger; similarly with decreasing probability you
-        can get even larger tokens.
+        get a stamp 1 bit larger; similarly with decreasing probability you
+        can get even larger stamps.
 
     "hashcash -n 0:020814:foo:21c8cf3099cbf467"
-        Report the resource name from the token. The resource name in the
+        Report the resource name from the stamp. The resource name in the
         example is foo.
 
     "hashcash -l -e 30y 0:020814:foo:21c8cf3099cbf467"
-        Report how long until the token expires if it expires in 30 years
+        Report how long until the stamp expires if it expires in 30 years
         from it's creation date. (Note dates too far into the future run
         into the 2038 end of Epoch, which is the unix time analog of the y2k
         bug).
 
-  Verifying Tokens
+  Verifying Stamps
     "hashcash -c 0:020814:foo:21c8cf3099cbf467"
-        Check if the token is valid. Note as we are not checking the token
+        Check if the stamp is valid. Note as we are not checking the stamp
         in a double spend database, and did not specify a resource name or
         required number of bits of collision and hashcash will consider the
-        token not fully checked, and it will report it as valid but not
+        stamp not fully checked, and it will report it as valid but not
         fully unchecked, or as invalid if there is any problem with the
-        token.
+        stamp.
 
     "hashcash -c -b24 0:020814:foo:21c8cf3099cbf467"
-        Check that the value of the token is greater or equal to 24 bits.
+        Check that the value of the stamp is greater or equal to 24 bits.
         This example has 24 bit value. If you increase the requested number
-        of bits or replace the token with one with less than 24 bit
-        collision the token will be rejected.
+        of bits or replace the stamp with one with less than 24 bit
+        collision the stamp will be rejected.
 
     "hashcash -c -b24 -r foo 0:020814:foo:21c8cf3099cbf467"
-        As above check if the token has sufficient value, but in addition
+        As above check if the stamp has sufficient value, but in addition
         check that the resource name given matches the resource name in the
-        token.
+        stamp.
 
   Double Spending Prevention
-    The examples given in "Verifying Tokens" can be modified to keep a
-    double spend database so that the same token will not be accepted twice.
-    Note a token will only be checked in and added to the database if it is
+    The examples given in "Verifying Stamps" can be modified to keep a
+    double spend database so that the same stamp will not be accepted twice.
+    Note a stamp will only be checked in and added to the database if it is
     otherwise valid and fully checked (a required number of bits of
     collision has been specified and a resource has been specified).
 
     "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
-        Check the token and add to double spent database if it's valid (has
+        Check the stamp and add to double spent database if it's valid (has
         correct resource name and sufficient value).
 
     "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
-        Try to double spend the token. It will be rejected as double spent.
+        Try to double spend the stamp. It will be rejected as double spent.
 
-  Token Expiry
+  Stamp Expiry
     To prevent the double spend database growing indefinately, the recipient
-    can request that tokens be no older than a specified period. After
-    expiry old tokens can dropped from the double spend database as they
-    will no longer be needed -- expired tokens can be rejected based purely
-    on their old date, so the space taken by expired tokens in the double
+    can request that stamps be no older than a specified period. After
+    expiry old stamps can dropped from the double spend database as they
+    will no longer be needed -- expired stamps can be rejected based purely
+    on their old date, so the space taken by expired stamps in the double
     spend database can be saved without risk of accepting an expired though
-    otherwise valid token.
+    otherwise valid stamp.
 
-    The first field of the token is the UTC time since 1st January 1970. The
+    The first field of the stamp is the UTC time since 1st January 1970. The
     default time format is YYMMDD, time rounded down to the nearest day. The
     default validity period is 28 days.
 
     You can provide an alternative validity period with the *-e* option.
 
     "hashcash -cd -b 10 -e 2d -r foo 0:020811:foo:21dd87d4c9f5aae1"
-        Try verifying an old token, the above token was created 11 Aug 2002.
+        Try verifying an old stamp, the above stamp was created 11 Aug 2002.
 
-        We gave option *-e 2d* so the tokens expiry date is 2 days after
+        We gave option *-e 2d* so the stamps expiry date is 2 days after
         creation, which is now in the past.
 
-        Note: if the creation time is expressed in the token in days, the
+        Note: if the creation time is expressed in the stamp in days, the
         precise creation date is the begining of the specified day in UTC
         time (similarly for alternate units the creation time is rounded
         down to the begining of the unit it is expressed in). For units in
         days, for example, this may mean depending on your time zone that
-        the token appears to be considered invalid in under the specified
+        the stamp appears to be considered invalid in under the specified
         expiry period in days relative to your relative view of what day it
         is, as the calculation is based on current time in UTC, and the
-        creation time of the token is expressed in UTC time.
+        creation time of the stamp is expressed in UTC time.
 
     "hashcash -cd -b 10 -r foo 0:020811:foo:21dd87d4c9f5aae1"
-        Test whether the token is otherwise valid, apart from having
-        expired. Omitting the *-e* tells hashcash that the token will never
+        Test whether the stamp is otherwise valid, apart from having
+        expired. Omitting the *-e* tells hashcash that the stamp will never
         expire. An expiry period of forever can also be given explitly like
         this: *-e 0*, where an expiry period of 0 means forever.
 
-  Purging old tokens
-    If the *-c*, *-d* options are used together, each time a token is
-    checked, if it is valid and all of the mandatory aspects of the token
-    are verified (collision bits check, resource name check) then the token
+  Purging old stamps
+    If the *-c*, *-d* options are used together, each time a stamp is
+    checked, if it is valid and all of the mandatory aspects of the stamp
+    are verified (collision bits check, resource name check) then the stamp
     and it's expiry period is written to the database file. The default
     expiry period if an expiry period is not given explicitly with the *-e*
-    option is 28 days (ie tokens expire after 4 weeks).
+    option is 28 days (ie stamps expire after 4 weeks).
 
-    First mint and then add a token:
+    First mint and then add a stamp:
 
-    "hashcash -m -b 10 foo -e 1m > token"
+    "hashcash -m -b 10 foo -e 1m > stamp"
         Note: we specified an expiry on minting in this example, to ensure
-        that the token creation time is given in high enough resolution in
-        the token that the token will not be considered expired at time of
-        creation. (Recall the default resolution is in days, a token created
+        that the stamp creation time is given in high enough resolution in
+        the stamp that the stamp will not be considered expired at time of
+        creation. (Recall the default resolution is in days, a stamp created
         with a creation time rounded down to the beginging of the day is
         unlikely to be considered valid 1 minute later unless you mint it at
         midnight UTC time.)
 
-    "hashcash -cd -e 1m -b 10 -r foo < token"
-        The token expires in 1 minute. Wait 1 minute and then explicitly
-        request that expired tokens be purged:
+    "hashcash -cd -e 1m -b 10 -r foo < stamp"
+        The stamp expires in 1 minute. Wait 1 minute and then explicitly
+        request that expired stamps be purged:
 
     "hashcash -p now"
-        Then try resubmitting the same token:
+        Then try resubmitting the same stamp:
 
-    "hashcash -cd -e 1m -b 10 -r foo < token"
-        and the token will be rejected anyway as it has expired,
-        illustrating why it was not necessary to keep this token in the
+    "hashcash -cd -e 1m -b 10 -r foo < stamp"
+        and the stamp will be rejected anyway as it has expired,
+        illustrating why it was not necessary to keep this stamp in the
         database.
 
         With the default database (the sdb format) the database contents are
@@ -595,34 +624,34 @@ EXAMPLES
         terminal:
 
     "cat hashcash.db"
-        to see that the token really is added and then after puring
+        to see that the stamp really is added and then after puring
         subsequently purged due to expiry.
 
-  Purging old tokens on Demand
-    As a convenience you can purge at the same time as checking tokens by
+  Purging old stamps on Demand
+    As a convenience you can purge at the same time as checking stamps by
     using the *-p* option with the *-c* option.
 
-    "hashcash -m -b 10 foo > token"
-    "hashcash -cd -p now -e 1 -b 10 -r foo < token"
-        It may be inefficient to purge tokens on every use as the entire
-        database has to be scanned for expired tokens. By giving a time
+    "hashcash -m -b 10 foo > stamp"
+    "hashcash -cd -p now -e 1 -b 10 -r foo < stamp"
+        It may be inefficient to purge stamps on every use as the entire
+        database has to be scanned for expired stamps. By giving a time
         period to the *-p* option, you can tell "hashcash" to purge no more
         frequently than that time period since the previous purge.
 
         For example:
 
-    "hashcash -cd -p 1d -e 1 -b 10 -r foo < token"
-        tells "hashcash" to purge any expired tokens no more than once per
+    "hashcash -cd -p 1d -e 1 -b 10 -r foo < stamp"
+        tells "hashcash" to purge any expired stamps no more than once per
         day.
 
     "hashcash -p 1M -j foo"
-        tells "hashcash" to purge only expired tokens matching resource foo
+        tells "hashcash" to purge only expired stamps matching resource foo
         once per month.
 
     "hashcash -p now -k"
-        tells "hashcash" to purge all tokens (expired and unexpired) now.
+        tells "hashcash" to purge all stamps (expired and unexpired) now.
 
-token format
+stamp format
     *ver*:*date*:*resource*:*collision*
 
     where
@@ -633,26 +662,23 @@ token format
     *collision* = printable string of random alpha-numeric chars
 
 FILES
-    hashcash.db
+    hashcash.sdb
         default double spend database
-
-    hashcash.dbt
-        default temporary double spend database used when purging tokens.
 
 EXIT STATUS
     "hashcash" returns success (exit code 0) after successfully minting a
-    token, after fully checking a token and finding it valid, and after a
+    stamp, after fully checking a stamp and finding it valid, and after a
     timing test.
 
-    If when checking a token it is found to be invalid (due to being
+    If when checking a stamp it is found to be invalid (due to being
     malformed, being expired, having insufficient value, having a date in
     the future, or being double spent), "hashcash" returns failure (exit
     code 1).
 
-    If insufficient options are given to fully check a token, or if using
-    the *-n*, *-l*, or *-w* options, if the token is otherwise valid return
-    unchecked (exit code 2). If the *-y* flag is given and hashcash would
-    normally return unchecked, exit code success is returned instead.
+    If insufficient options are given to fully check a stamp, if the stamp
+    is otherwise valid return unchecked (exit code 2). If the *-y* flag is
+    given and hashcash would normally return unchecked, exit code success is
+    returned instead.
 
     If any exception occurs (file read failure for database checking or
     corrupted database contents) an exit status of 3 is returned.

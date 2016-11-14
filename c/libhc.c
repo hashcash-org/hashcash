@@ -4,12 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BSD_REGEXP
-
-#if defined( BSD_REGEXP )
+#if defined( REGEXP_BSD )
     #define _REGEX_RE_COMP
     #include <regex.h>
-#elif defined( POSIX_REGEXP )
+#elif defined( REGEXP_POSIX )
     #include <sys/types.h>
     #include <regex.h>
 #else
@@ -484,6 +482,8 @@ int regexp_match( const char* str, const char* regexp,
 	
 	*err = NULL;
 	
+	if ( quoted_regexp == NULL ) { *err = "out of memory"; return 0; }
+
 	q = quoted_regexp;
 	r = regexp;
 
@@ -518,6 +518,7 @@ int regexp_match( const char* str, const char* regexp,
 	
 	if ( *comp == NULL ) {
 	    *comp = malloc( sizeof(regex_t) );
+	    if ( *comp == NULL ) { *err = "out of memory"; return 0; }
 	    bre_len = re_len = strlen(regexp);
 	    if ( regexp[0] != '^' || regexp[re_len-1] != '$' ) {
 		bound_regexp = malloc( re_len+3 );
@@ -543,8 +544,8 @@ int regexp_match( const char* str, const char* regexp,
 		if ( bound_regexp != regexp ) { free( bound_regexp ); }
 		return 0;
 	    }
+	    if ( bound_regexp != regexp ) { free( bound_regexp ); }
 	}
-	if ( bound_regexp != regexp ) { free( bound_regexp ); }
 	return regexec( *comp, str, 0, NULL, 0 ) == 0;
 #else
 	*err = "regexps not supported on your platform, used -W wildcards";
@@ -574,13 +575,15 @@ int resource_match( int type, const char* token_res, const char* res,
 int hashcash_check( const char* token, const char* resource, void **compile,
 		    char** re_err, int type, time_t now_time, 
 		    time_t validity_period, long grace_period, 
-		    int required_bits ) {
-    time_t token_time;
+		    int required_bits, time_t* token_time ) {
+    time_t token_t;
     char token_utime[ MAX_UTC+1 ];
     char token_res[ MAX_RES+1 ];
     int bits = 0;
     int vers = 0;
     
+    if ( token_time == NULL ) { token_time = &token_t; }
+
     if ( !hashcash_parse( token, &vers, token_utime, 
 			  MAX_UTC, token_res, MAX_RES ) ) {
 	return HASHCASH_INVALID;
@@ -590,8 +593,8 @@ int hashcash_check( const char* token, const char* resource, void **compile,
 	return HASHCASH_UNSUPPORTED_VERSION;
     }
 
-    token_time = from_utctimestr( token_utime, 1 );
-    if ( token_time == -1 ) {
+    *token_time = from_utctimestr( token_utime, 1 );
+    if ( *token_time == -1 ) {
 	return HASHCASH_INVALID;
     }
     if ( resource && 
@@ -606,7 +609,7 @@ int hashcash_check( const char* token, const char* resource, void **compile,
     if ( bits < required_bits ) {
 	return HASHCASH_INSUFFICIENT_BITS;
     }
-    return hashcash_valid_for( token_time, validity_period, 
+    return hashcash_valid_for( *token_time, validity_period, 
 			       grace_period, now_time );
 }
 

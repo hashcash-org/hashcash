@@ -14,7 +14,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 0.31
+#define HASHCASH_VERSION 0.32
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
 #define HASHCASH_VERSION_STRING stringify(HASHCASH_VERSION)
@@ -132,9 +132,9 @@ long hashcash_valid_for( time_t token_time, time_t validity_period,
 /* simple function calling hashcash_parse, hashcash_count for convenience */
 
 int hashcash_check( const char* token, const char* resource, void **compile,
-		    char** comp_err, int type, time_t now_time, 
+		    char** re_err, int type, time_t now_time, 
 		    time_t validity_period, long grace_period, 
-		    int required_bits );
+		    int required_bits, time_t* token_time );
 
 /* return how many tries per second the machine can do */
 

@@ -129,17 +129,17 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2004-04-02" "0.31" "hashcash"
+.TH HASHCASH 1 "2004-04-09" "0.32" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-.Sh "Mint (create) tokens:"
-.IX Subsection "Mint (create) tokens:"
+.Sh "Mint (create) stamps:"
+.IX Subsection "Mint (create) stamps:"
 \&\fBhashcash\fR \fI\-m\fR [ [ \fIoptions\fR ] [ \fIresource\fR ... ] ... ]
-.Sh "Check tokens:"
-.IX Subsection "Check tokens:"
-\&\fBhashcash\fR \fI\-c\fR [ [ \fIoptions\fR ] \fI\-r resource\fR ... ] [ \fItoken\fR ... ] 
+.Sh "Check stamps:"
+.IX Subsection "Check stamps:"
+\&\fBhashcash\fR \fI\-c\fR [ [ \fIoptions\fR ] \fI\-r resource\fR ... ] [ \fIstamp\fR ... ] 
 .Sh "Speed estimates:"
 .IX Subsection "Speed estimates:"
 \&\fBhashcash\fR \fI\-s\fR [ \fIoptions\fR ] [ \fI\-b bits\fR ]
@@ -148,29 +148,29 @@ hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 \&\fBhashcash\fR \fI\-p now\fR [ \fI\-j resource\fR ] [ \fI\-k\fR ] [ \fI\-t time\fR ] [ \fI\-u\fR ]
 .Sh "Count collision bits:"
 .IX Subsection "Count collision bits:"
-\&\fBhashcash\fR \fI\-w\fR [ \fIoptions\fR ] [ \fItoken\fR ... ]
+\&\fBhashcash\fR \fI\-w\fR [ \fIoptions\fR ] [ \fIstamp\fR ... ]
 .Sh "Get resource name:"
 .IX Subsection "Get resource name:"
-\&\fBhashcash\fR \fI\-n\fR [ \fIoptions\fR ] [ \fItoken\fR ... ]
+\&\fBhashcash\fR \fI\-n\fR [ \fIoptions\fR ] [ \fIstamp\fR ... ]
 .Sh "Get time remaining until expiry"
 .IX Subsection "Get time remaining until expiry"
-\&\fBhashcash\fR \fI\-l\fR [ \fIoptions\fR ] \fI\-e period\fR [ \fItoken\fR ... ]
+\&\fBhashcash\fR \fI\-l\fR [ \fIoptions\fR ] \fI\-e period\fR [ \fIstamp\fR ... ]
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 Hashcash is a denial-of-service counter measure tool.  It's main
 current use is to help hashcash users avoid losing email due to
 content based and blacklist based anti-spam systems.
 .PP
-The hashcash tool allows you to create hashcash tokens to attach to
-emails you send, and to verify hashcash tokens attached to emails you
-receive.  Email senders attach hashcash tokens with the X\-Hashcash:
+The hashcash tool allows you to create hashcash stamps to attach to
+emails you send, and to verify hashcash stamps attached to emails you
+receive.  Email senders attach hashcash stamps with the X\-Hashcash:
 header.  Vendors and authors of anti-spam tools are encouraged to
 exempt mail sent with hashcash from their blacklists and content based
 filtering rules.
 .PP
-A hashcash token constitutes a proof-of-work which takes a
+A hashcash stamp constitutes a proof-of-work which takes a
 parameterizable amount of work to compute for the sender.  The
-recipient can verify received tokens efficiently. This package also
+recipient can verify received stamps efficiently. This package also
 includes a sha1 implementation which behaves somewhat like md5sum, but
 with \s-1SHA1\s0.
 .PP
@@ -186,103 +186,102 @@ used for see http://www.hashcash.org/
 .SH "USAGE NOTES"
 .IX Header "USAGE NOTES"
 In this man page a resource name is the name of the service or address
-the token is created for.  In the case of email, the resource name is
+the stamp is created for.  In the case of email, the resource name is
 the recipient's email address in the form user@domain.com.
-.Sh "Minting tokens"
-.IX Subsection "Minting tokens"
-The \fI\-m\fR flag must be given to mint a token.
+.Sh "Minting stamps"
+.IX Subsection "Minting stamps"
+The \fI\-m\fR flag must be given to mint a stamp.
 .PP
-The resource name (recipient's email address) to mint the token against can
-be passed as an argument, or if omitted is read from stdin.  If stdin is a
-tty the user is prompted, if stdin is a pipe the resource name is just
-silently read.  The desired collision size can be specified with the \-b
-option.  If no collision size is specified, the default is 20 bits.  \fI\-b
-default\fR can be used to get the default size.
-.Sh "Checking tokens"
-.IX Subsection "Checking tokens"
-The \fI\-c\fR flag must be given to check tokens.  The token to check can
-be given as an argument to \f(CW\*(C`hashcash\*(C'\fR.  If no token is given the
-token is read from stdin.  If stdin is a tty the user will be
-prompted, if stdin is a pipe the token is just silently read.  A
+The resource name (recipient's email address) to mint the stamp
+against can be passed as an argument, or if omitted is read from
+stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
+resource name is just silently read.  The desired collision size can
+be specified with the \-b option.  If no collision size is specified,
+the default is 20 bits.  See also the \fI\-b default\fR option.
+.Sh "Checking stamps"
+.IX Subsection "Checking stamps"
+The \fI\-c\fR flag must be given to check a stamps expiry.  The stamp to
+check can be given as an argument to \f(CW\*(C`hashcash\*(C'\fR.  If no stamp is
+given the stamp is read from stdin.  If stdin is a tty the user will
+be prompted, if stdin is a pipe the stamp is just silently read.  A
 resource name (the recipient's email address) can be given with the
 \&\fI\-r\fR option.  If a resource name is given the resource name is
-compared to the resource name in the token, if they do not match, the
-token is rejected.
+compared to the resource name in the stamp, if they do not match, the
+stamp is rejected.
 .PP
-Note: if no resource name is given the token is anyway checked to see
+Note: if no resource name is given the stamp is anyway checked to see
 if it is otherwise valid, but it could be minted for a different
-resource, which would allow tokens to be reused across different
+resource, which would allow stamps to be reused across different
 resources, so hashcash will return unchecked exit code on exit.
 .PP
-Tokens are by default considered to be valid forever.  The validity
+Stamps are by default considered to be valid for 28 days.  The validity
 period can be changed using the \fI\-e\fR flag.
 .PP
-If the token has expired or has a date in the future the token is
+If the stamp has expired or has a date in the future the stamp is
 rejected and the program exits immediately.
 .PP
-If a required collision size is given with the \fI\-b\fR flag, the tokens
-value is computed and compared, if the token has insufficent value it
-is rejected, and the program exits immediately.  If the \fI\-b\fR flag is
-not given, the token could be of any size, so hashcash will return
+If a required collision size is given with the \fI\-b\fR flag, the stamps value
+is computed and compared, if the stamp has insufficent value it is rejected,
+and the program exits immediately.  If the \fI\-b\fR flag is not given, the
+stamp is checked to see if it is otherwise valid, but hashcash will return
 unchecked exit code on exit.
 .PP
-If the token is double spent the token is rejected.  Double spending
+If the stamp is double spent the stamp is rejected.  Double spending
 protection is discussed in more detail below in 
 \&\*(L"Double Spending Protection\*(R".  If double spending protection is not
-enabled, the token could be double spent, so hashcash will return
+enabled, the stamp could be double spent, so hashcash will return
 unchecked exit code (exit code 2) on exit.
 .PP
 The \fI\-w\fR flag can be used to request that the number of bits of the
-collision are counted and displayed; exit code unchecked (exit code 2)
-is returned on exit.  The \fI\-n\fR flag can be used to request that the
-resource name in the token is parsed out and displayed; exit code
-unchecked (exit code 2) is returned on exit.  The \fI\-l\fR flag can be
-used to request the number of seconds until expiry of the token is
-output; exit code unchecked (exit code 2) is returned on exit.
+collision are counted and displayed. The \fI\-n\fR flag can be used to
+request that the resource name in the stamp is parsed out and
+displayed.  The \fI\-l\fR flag can be used to request the number of
+seconds until expiry of the stamp is output.
 .PP
-The program will only return exit codes valid or invalid if the \fI\-c\fR flag
-is used, and both of the options, \fI\-d\fR, \fI\-r resource\fR are used.  These are
-the minimum set of options necessary to fully check the validty of a token. 
-If these criteria are not met, the program will return exit code unchecked
-(exit code 2) on exit.  (See also the \fI\-y\fR flag.)
+The program will only return exit codes valid or invalid if the \fI\-c\fR
+flag is used, the \fI\-b\fR flag is used, \fI\-d\fR, \fI\-r resource\fR are used.
+These are the minimum set of options necessary to fully check the
+validty of a stamp.  If these criteria are not met, the program will
+return exit code unchecked (exit code 2) on exit.  (See also the \fI\-y\fR
+flag.)
 .Sh "Double Spending Protection"
 .IX Subsection "Double Spending Protection"
-If the \fI\-d\fR flag is used with the \fI\-c\fR flag a database of spent
-tokens is kept.  
+If the \fI\-d\fR flag is used when checking stamps, a database of spent
+stamps is kept.
 .PP
-By default tokens expire after 28 days, without expiry the database
+By default stamps expire after 28 days, without expiry the database
 would grow indefinately.  You can specify an alternate expiry period
 with the \fI\-e\fR flag.  The recommended (and default) expiry period for
-email is 28 days.  After the expiry period amount of time, the token
+email is 28 days.  After the expiry period amount of time, the stamp
 is anyway considered expired and may be purged from the database to
 save space.  (See \*(L"Purging Periodically vs on Next Access\*(R" for how to
-purge tokens.)
+purge stamps.)
 .PP
-For efficiency reasons a token is verified before it is checked in the
+For efficiency reasons a stamp is verified before it is checked in the
 database; if it is otherwise invalid no database activity will occur.
 .PP
-Note: The decision about how long the token should be considered valid
+Note: The decision about how long the stamp should be considered valid
 is up to the verifier.  If it is too short it is possible for some
-applications that the token will expire before arriving at the
+applications that the stamp will expire before arriving at the
 recipient (eg with email.)  The suggested value of 28 days should be
 safe for normal email delivery delays.  The choice is a trade-off
 between database size and risk of expiry prior to arrival, and depends
 on the application.
 .PP
-Note: Different tokens in the same database can have different
-validity periods, so for example tokens for different resources with
+Note: Different stamps in the same database can have different
+validity periods, so for example stamps for different resources with
 different validity periods can be stored in the same database, or the
-recipient may change the validity period for future tokens without
-affecting the validity of old tokens.
+recipient may change the validity period for future stamps without
+affecting the validity of old stamps.
 .Sh "Purging Periodically vs on Next Access"
 .IX Subsection "Purging Periodically vs on Next Access"
-To purge old tokens periodically while checking tokens use the \fI\-p
+To purge old stamps periodically while checking stamps use the \fI\-p
 period\fR option to purge no sooner than the given time period since the
 last purge.  Purging can be used with the \fI\-k\fR option to purge
-unexpired tokens also, and with the \fI\-j resource\fR flag to purge only
-tokens for the given resource.
+unexpired stamps also, and with the \fI\-j resource\fR flag to purge only
+stamps for the given resource.
 .PP
-There are circumstances where it may be inconvenient to purge tokens
+There are circumstances where it may be inconvenient to purge stamps
 on the next access, for example if there is a large double spend
 database which takes some time to purge, and the response time of the
 hashcash checker is important.  To avoid this problem, purging can be
@@ -293,16 +292,16 @@ low.
 .Sh "Speed Estimates"
 .IX Subsection "Speed Estimates"
 The \fI\-s\fR flag requests measurement of how many collisions can be
-tested per second.  No token is minted, or verified.
+tested per second.  No stamp is minted, or verified.
 .PP
 If the \fI\-b\fR flag is used with this option, instead an estimate of how
-many seconds it would take to mint a token of the given size in bits
+many seconds it would take to mint a stamp of the given size in bits
 is computed.  To find out how much time it will take to mint a default
 sized stamp use \fI\-s \-b default\fR.
 .Sh "Notes"
 .IX Subsection "Notes"
-All informational output is printed on stderr.  Minted tokens, and
-results of token verification and timing are printed on stdout.  The
+All informational output is printed on stderr.  Minted stamps, and
+results of stamp verification and timing are printed on stdout.  The
 quiet flag \fI\-q\fR suppresses all informational output.  The \fI\-v\fR flag
 requests more informational output.  The requested output, which is
 the only information that is output in quiet mode (when \fI\-q\fR is
@@ -313,45 +312,69 @@ when quiet mode is in effect the output is printed without description
 .IX Header "OPTIONS"
 .IP "\fI\-c\fR" 4
 .IX Item "-c"
-Check the tokens given as an argument or on stdin for validity.
+Check the expiry information of stamps given as an argument or on
+stdin.  (Use with \fI\-b\fR, \fI\-d\fR and \fI\-r resource\fR to fully check
+stamps).
 .IP "\fI\-m\fR" 4
 .IX Item "-m"
-Mint tokens with the resources given as arguments or on stdin.
+Mint stamps with the resources given as arguments or on stdin.
 .IP "\fI\-b bits\fR" 4
 .IX Item "-b bits"
-When minting a token, request a collision of this many bits.  When
-verifying a token require that it have a collision of at minimum this
-many bits, otherwise reject it.  If omitted the default is used.  Can
-also specify the default with \fI\-b default\fR which is useful for use
-with \fI\-s\fR.
+When minting a stamp, create a collision of at least this many bits.
+When verifying a stamp require that it have a collision of at minimum
+this many bits, otherwise reject it.  If omitted the default is used.
+.Sp
+When checking stamps, require that the stamps have this many bits.
+.Sp
+The default number of bits can be specified with \fI\-b default\fR.  Bits
+relative to the default can also be specified with \fI\-b +n\fR for n bits
+more than the default and \fI\-b \-n\fR for n bits less than the default.
+.Sp
+\&\fI\-b default\fR, \fI\-b +0\fR and \fI\-b \-0\fR are all equivalent.
+.Sp
+When doing the speed test \fI\-s\fR, can to measure speed of default
+token with \fI\-s \-b default\fR.
 .IP "\fI\-r resource\fR" 4
 .IX Item "-r resource"
-When minting tokens, the resource name (recipient's email address) to
-mint the token against can be given either with \fI\-r resource\fR or as
+When minting stamps, the resource name (recipient's email address) to
+mint the stamp against can be given either with \fI\-r resource\fR or as
 an argument to \f(CW\*(C`hashcash\*(C'\fR.
 .Sp
-When checking tokens, the resource name (your own email address) is
+When checking stamps, the resource name (your own email address) is
 given with the \fI\-r\fR option.  If the resource name is given it is
-checked against the resource name in the token, and if they do not
-match the token is rejected.  Note if the resource name is not given,
-tokens for other resources would be accepted, and therefore hashcash
+checked against the resource name in the stamp, and if they do not
+match the stamp is rejected.  Note if the resource name is not given,
+stamps for other resources would be accepted, and therefore hashcash
 returns exit code unchecked (exit code 2) on exit.
+.IP "\fI\-o\fR" 4
+.IX Item "-o"
+When verifying stamps multiple resources can be given.  By default the
+resources are just checked one by one until a matching valid resource is
+found.  However when you use wildcards or regular expressions (see \fI\-E\fR),
+it is useful to be able to specify that one resource overrides another.  For
+example this: \fI\-b15 \-r adam@dev.null \-o \-b10 *@dev.null\fR states that mail
+to address \fIadam@dev.null\fR requires 15 bits, but mail to \fI*@dev.null\fR
+requires only 10 bits.  If we omitted the \fI\-o\fR override relationship
+between the two resources, a stamp of 10 bits would be accepted for address
+\&\fIadam@dev.null\fR because while it would be rejected as having insufficient
+bits under the first rule, it would be accepted under the 2nd rule.  The
+\&\fI\-o\fR option allows you avoid this problem.
 .IP "\fI\-e time\fR" 4
 .IX Item "-e time"
-Expiry period for spent tokens.  While checking tokens (using the \fI\-c\fR
-flag), if the token was minted more than the specified amount of time ago,
-it is considered expired.  If this option is not used, by default tokens
+Expiry period for spent stamps.  While checking stamps (using the \fI\-c\fR
+flag), if the stamp was minted more than the specified amount of time ago,
+it is considered expired.  If this option is not used, by default stamps
 expire after 28 days.  The expiry period is given in seconds by default (an
 argument of 0 means forever).  A single character suffix can be used to
 specify alternate units (m = minutes, h = hours, d = days, M = months, y = Y
 = years, and s = seconds).
 .Sp
-If used with the \fI\-d\fR option, the spent token and it's expiry period
+If used with the \fI\-d\fR option, the spent stamp and it's expiry period
 is recorded in the database.  See the \fI\-p\fR option for description of
-how to purge tokens from the database.
+how to purge stamps from the database.
 .Sp
-While minting tokens, the \fI\-e\fR flag can have an effect on the
-resolution of time created in the token.  Without the \fI\-e\fR option,
+While minting stamps, the \fI\-e\fR flag can have an effect on the
+resolution of time created in the stamp.  Without the \fI\-e\fR option,
 the default resolution is days (time format: \s-1YYMMDD\s0).  Alternate
 formats based on range of expiry period are as follows:
 .Sp
@@ -415,45 +438,45 @@ suffix can be used to specify alternate units (m = minutes, h = hours,
 d = days, M = months, y = Y = years, and s = seconds).
 .IP "\fI\-d\fR" 4
 .IX Item "-d"
-Store tokens in a double spend database.  If token has been seen
+Store stamps in a double spend database.  If stamp has been seen
 before it will be rejected even if it is otherwise valid.  The default
 database file is \fIdatabase.db\fR in the current directory.  Only
-otherwise valid tokens will be stored in the database.  Only fully
-validated tokens will be stored in the database, unless the \fI\-y\fR
+otherwise valid stamps will be stored in the database.  Only fully
+validated stamps will be stored in the database, unless the \fI\-y\fR
 option is given.
 .IP "\fI\-f dbname\fR" 4
 .IX Item "-f dbname"
 Use \fIdbname\fR instead of default filename for double spend database.  
 .IP "\fI\-p period\fR" 4
 .IX Item "-p period"
-Purges the database of expired tokens if the given time period has
+Purges the database of expired stamps if the given time period has
 passed since the last time it was purged.  As a convenience \fI\-p now\fR
 is equivalent to \fI\-p 0\fR both of which mean purge now, regardless of
 when the database was last purged.  
 .Sp
-If used in combination with \fI\-j resource\fR only the tokens minted for
+If used in combination with \fI\-j resource\fR only the stamps minted for
 the given resource are purged.
 .Sp
-If used in combination with \fI\-k\fR all tokens even un-expired tokens
+If used in combination with \fI\-k\fR all stamps even un-expired stamps
 are purged.  Can be used in combination with \fI\-t time\fR to expire as
 if the current time were the given time.
 .IP "\fI\-k\fR" 4
 .IX Item "-k"
-Use with option \fI\-p\fR to request all tokens are purged rather than
+Use with option \fI\-p\fR to request all stamps are purged rather than
 just expired ones.
 .IP "\fI\-j resource\fR" 4
 .IX Item "-j resource"
-Use with option \fI\-p\fR to request that just tokens matching the given
+Use with option \fI\-p\fR to request that just stamps matching the given
 resource name are to be purged, rather than the default which is to
-purge all expired tokens.  If the resource name is the empty string,
-all tokens are matched (this is equivalent to omitting the \fI\-j\fR
+purge all expired stamps.  If the resource name is the empty string,
+all stamps are matched (this is equivalent to omitting the \fI\-j\fR
 option).
 .Sp
 Note the \fI\-E\fR, \fI\-W\fR and \fI\-S\fR type of match flags also apply to
 resources given with the \fI\-j resource\fR flag.
 .IP "\fI\-s\fR" 4
 .IX Item "-s"
-Print timing information only, and don't proceed to create a token.
+Print timing information only, and don't proceed to create a stamp.
 If combined with \fI\-b bits\fR flag print estimate of how long the
 requested collision size would take to compute, if \fI\-s\fR given by
 itself, just prints speed of the collision finder.  To print an
@@ -464,7 +487,7 @@ default\fR.
 Print short usage information.
 .IP "\fI\-v\fR" 4
 .IX Item "-v"
-Print more verbose informational output about the token minting or
+Print more verbose informational output about the stamp minting or
 verification.  (If \-v is the only argument, prints the tool version
 number.)
 .IP "\fI\-q\fR" 4
@@ -474,11 +497,11 @@ overrides the \fI\-v\fR option.
 .IP "\fI\-X\fR" 4
 .IX Item "-X"
 When minting, prints the hashcash email X\-header 'X\-Hashcash: ' before
-the token.  Without this option just the bare token is printed.  
+the stamp.  Without this option just the bare stamp is printed.  
 .Sp
-When checking, after scanning tokens given as arguments, scans stdin
+When checking, after scanning stamps given as arguments, scans stdin
 for lines starting with the string 'X\-Hashcash:', and uses the rest of
-the matching line as the token.  Only the lines up to and ending at
+the matching line as the stamp.  Only the lines up to and ending at
 the first blank line are scanned (see also \fI\-i\fR flag which can be
 used to override this).  A blank line is the separator used to
 separate the headers from the body of a mail message or \s-1USENET\s0
@@ -497,7 +520,7 @@ collision in the body too if one is not found in the headers.
 .IP "\fI\-t time\fR" 4
 .IX Item "-t time"
 Pretend the current time is the time given for purposes of minting
-tokens, verifying tokens and purging old tokens from the database.
+stamps, verifying stamps and purging old stamps from the database.
 Time is given in a format based on \s-1UTCTIME\s0 format
 YYMMDD[hh[mm[ss]]].
 .Sp
@@ -519,18 +542,18 @@ Input and output absolute times in \s-1UTC\s0 (\s-1GMT\s0) instead of local time
 .IP "\fI\-a period\fR" 4
 .IX Item "-a period"
 Add (or subtract if number is negative) a random value from the
-current time before minting the token.  This hides the time the token
+current time before minting the stamp.  This hides the time the stamp
 was created, which may be useful for anonymous users.  Note adding
-(rather than subtracting) a random time may be risky if the token
+(rather than subtracting) a random time may be risky if the stamp
 takes less than the added time to arrive as the recipient will reject
-tokens with time stamps in the future.
+stamps with time stamps in the future.
 .IP "\fI\-n\fR" 4
 .IX Item "-n"
-Print resource name parsed from token being verified.  Returns exit
+Print resource name parsed from stamp being verified.  Returns exit
 code unchecked on exit.
 .IP "\fI\-l\fR" 4
 .IX Item "-l"
-Print number of seconds left before token expires.  Returns exit code
+Print number of seconds left before stamp expires.  Returns exit code
 unchecked on exit.
 .Sp
 Note: the calculation includes the grace period, so can be up to 2
@@ -540,33 +563,38 @@ the grace period add \fI\-g0\fR to set grace period to 0 for the
 calculation.
 .IP "\fI\-w\fR" 4
 .IX Item "-w"
-Print number of bits of collision of token.  Returns exit code
+Print number of bits of collision of stamp.  Returns exit code
 unchecked on exit.
 .IP "\fI\-y\fR" 4
 .IX Item "-y"
-Returns success if the token is valid even if it is not fully checked.
+Returns success if the stamp is valid even if it is not fully checked.
 Use with \fI\-c\fR where not all of \fI\-d\fR, \fI\-r\fR are specified to get
-success exit code on valid but partially checked token.  Similarly can
+success exit code on valid but partially checked stamp.  Similarly can
 use with \fI\-n\fR, \fI\-l\fR, \fI\-w\fR with same effect.
 .IP "\fI\-W\fR" 4
 .IX Item "-W"
-When checking tokens, allow wildcards \fI*\fR in the resource name to
+When checking stamps, allow wildcards \fI*\fR in the resource name to
 make it simpler to specify multiple email addresses and to allow
 matching catch-all addresses and addresses including subdomains.  This
 is the default.  See also \fI\-S\fR, \fI\-E\fR and \fI\-C\fR
 .IP "\fI\-S\fR" 4
 .IX Item "-S"
-When checking tokens use simple text compare to compare resource names
-to those in tokens.  See also \fI\-W\fR, <\-E> and \fI\-C\fR.
+When checking stamps use simple text compare to compare resource names
+to those in stamps.  See also \fI\-W\fR, <\-E> and \fI\-C\fR.
 .IP "\fI\-E\fR" 4
 .IX Item "-E"
-When checking tokens use regular expressions to specify resource names
+When checking stamps use regular expressions to specify resource names
 to make it simpler to specify multiple email addresses, catch-all
 addresses, classes of extension addresses and addresses including
 subdomains.  Note regular expression syntax is \s-1POSIX\s0 style: special
 characters do not need to be quoted to have their special meaning; but
 they do have to be quoted with \e to that character in the searched
-string.  (Note even if \s-1BSD\s0 regular expressions are used \s-1POSIX\s0 style
+string.  The regular expression automatically has ^ added at the
+beginning and $ added at the end, if they are not specified.  The
+special characters ^ matches the beginning of the resouce, and $
+matches the end of resource.
+.Sp
+(Note even if compiled with \s-1BSD\s0 regular expressions, \s-1POSIX\s0 style
 syntax is used; also note \s-1BSD\s0 regular expressions do not support
 ranges {}.)
 .IP "\fI\-C\fR" 4
@@ -576,8 +604,8 @@ checking.  The \fI\-C\fR flag overrides this so that resources are treated
 as case sensitive.
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
-.Sh "Creating tokens"
-.IX Subsection "Creating tokens"
+.Sh "Creating stamps"
+.IX Subsection "Creating stamps"
 .ie n .IP """hashcash \-s""" 4
 .el .IP "\f(CWhashcash \-s\fR" 4
 .IX Item "hashcash -s"
@@ -596,7 +624,7 @@ Print how long it would take the machine to compute a 32 bit collision
 .ie n .IP """hashcash \-m""" 4
 .el .IP "\f(CWhashcash \-m\fR" 4
 .IX Item "hashcash -m"
-Mint a token.  Will prompt for resource name and mint with default
+Mint a stamp.  Will prompt for resource name and mint with default
 value (number of collision bits).
 .ie n .IP """hashcash \-m foo""" 4
 .el .IP "\f(CWhashcash \-m foo\fR" 4
@@ -610,85 +638,85 @@ Compute 10 bit collision on resource foo.
 .ie n .IP """hashcash \-a \-3d""" 4
 .el .IP "\f(CWhashcash \-a \-3d\fR" 4
 .IX Item "hashcash -a -3d"
-Subtract a random time of between 0 days and 3 days from the token's
+Subtract a random time of between 0 days and 3 days from the stamp's
 creation time.  This is the same fuzz factor used by mixmaster to
 reduce risk of timing\-correlations.
-.Sh "Examining Tokens"
-.IX Subsection "Examining Tokens"
+.Sh "Examining Stamps"
+.IX Subsection "Examining Stamps"
 .ie n .IP """hashcash \-w 0:020814:foo:4333957e84db47f6""" 4
 .el .IP "\f(CWhashcash \-w 0:020814:foo:4333957e84db47f6\fR" 4
 .IX Item "hashcash -w 0:020814:foo:4333957e84db47f6"
-Report the value of the token (how many bits of collision) there are.
+Report the value of the stamp (how many bits of collision) there are.
 The example is a 33 bit collision, which would take on average 13
 hours to create on a 400 Mhz Pentium\-II.
 .ie n .IP """hashcash \-mq \-b 10 foo | hashcash \-w""" 4
 .el .IP "\f(CWhashcash \-mq \-b 10 foo | hashcash \-w\fR" 4
 .IX Item "hashcash -mq -b 10 foo | hashcash -w"
-Create a token in batch mode, pass to hashcash on stdin to verify,
+Create a stamp in batch mode, pass to hashcash on stdin to verify,
 have it print how many bits there were.  Note: half of the time you
-get a token 1 bit larger; similarly with decreasing probability you
-can get even larger tokens.
+get a stamp 1 bit larger; similarly with decreasing probability you
+can get even larger stamps.
 .ie n .IP """hashcash \-n 0:020814:foo:21c8cf3099cbf467""" 4
 .el .IP "\f(CWhashcash \-n 0:020814:foo:21c8cf3099cbf467\fR" 4
 .IX Item "hashcash -n 0:020814:foo:21c8cf3099cbf467"
-Report the resource name from the token.  The resource name in the
+Report the resource name from the stamp.  The resource name in the
 example is foo.
 .ie n .IP """hashcash \-l \-e 30y 0:020814:foo:21c8cf3099cbf467""" 4
 .el .IP "\f(CWhashcash \-l \-e 30y 0:020814:foo:21c8cf3099cbf467\fR" 4
 .IX Item "hashcash -l -e 30y 0:020814:foo:21c8cf3099cbf467"
-Report how long until the token expires if it expires in 30 years from
+Report how long until the stamp expires if it expires in 30 years from
 it's creation date.  (Note dates too far into the future run into the
 2038 end of Epoch, which is the unix time analog of the y2k bug).
-.Sh "Verifying Tokens"
-.IX Subsection "Verifying Tokens"
+.Sh "Verifying Stamps"
+.IX Subsection "Verifying Stamps"
 .ie n .IP """hashcash \-c 0:020814:foo:21c8cf3099cbf467""" 4
 .el .IP "\f(CWhashcash \-c 0:020814:foo:21c8cf3099cbf467\fR" 4
 .IX Item "hashcash -c 0:020814:foo:21c8cf3099cbf467"
-Check if the token is valid.  Note as we are not checking the token in
+Check if the stamp is valid.  Note as we are not checking the stamp in
 a double spend database, and did not specify a resource name or
 required number of bits of collision and hashcash will consider the
-token not fully checked, and it will report it as valid but not fully
-unchecked, or as invalid if there is any problem with the token.
+stamp not fully checked, and it will report it as valid but not fully
+unchecked, or as invalid if there is any problem with the stamp.
 .ie n .IP """hashcash \-c \-b24 0:020814:foo:21c8cf3099cbf467""" 4
 .el .IP "\f(CWhashcash \-c \-b24 0:020814:foo:21c8cf3099cbf467\fR" 4
 .IX Item "hashcash -c -b24 0:020814:foo:21c8cf3099cbf467"
-Check that the value of the token is greater or equal to 24 bits.
+Check that the value of the stamp is greater or equal to 24 bits.
 This example has 24 bit value.  If you increase the requested number
-of bits or replace the token with one with less than 24 bit collision
-the token will be rejected.
+of bits or replace the stamp with one with less than 24 bit collision
+the stamp will be rejected.
 .ie n .IP """hashcash \-c \-b24 \-r foo 0:020814:foo:21c8cf3099cbf467""" 4
 .el .IP "\f(CWhashcash \-c \-b24 \-r foo 0:020814:foo:21c8cf3099cbf467\fR" 4
 .IX Item "hashcash -c -b24 -r foo 0:020814:foo:21c8cf3099cbf467"
-As above check if the token has sufficient value, but in addition
+As above check if the stamp has sufficient value, but in addition
 check that the resource name given matches the resource name in the
-token.
+stamp.
 .Sh "Double Spending Prevention"
 .IX Subsection "Double Spending Prevention"
-The examples given in \*(L"Verifying Tokens\*(R" can be modified to keep a
-double spend database so that the same token will not be accepted
-twice.  Note a token will only be checked in and added to the database
+The examples given in \*(L"Verifying Stamps\*(R" can be modified to keep a
+double spend database so that the same stamp will not be accepted
+twice.  Note a stamp will only be checked in and added to the database
 if it is otherwise valid and fully checked (a required number of bits
 of collision has been specified and a resource has been specified).
 .ie n .IP """hashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467""" 4
 .el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467\fR" 4
 .IX Item "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
-Check the token and add to double spent database if it's valid (has
+Check the stamp and add to double spent database if it's valid (has
 correct resource name and sufficient value).
 .ie n .IP """hashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467""" 4
 .el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 0:020814:foo:21c8cf3099cbf467\fR" 4
 .IX Item "hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467"
-Try to double spend the token.  It will be rejected as double spent.
-.Sh "Token Expiry"
-.IX Subsection "Token Expiry"
+Try to double spend the stamp.  It will be rejected as double spent.
+.Sh "Stamp Expiry"
+.IX Subsection "Stamp Expiry"
 To prevent the double spend database growing indefinately, the
-recipient can request that tokens be no older than a specified period.
-After expiry old tokens can dropped from the double spend database as
-they will no longer be needed \*(-- expired tokens can be rejected based
-purely on their old date, so the space taken by expired tokens in the
+recipient can request that stamps be no older than a specified period.
+After expiry old stamps can dropped from the double spend database as
+they will no longer be needed \*(-- expired stamps can be rejected based
+purely on their old date, so the space taken by expired stamps in the
 double spend database can be saved without risk of accepting an
-expired though otherwise valid token.
+expired though otherwise valid stamp.
 .PP
-The first field of the token is the \s-1UTC\s0 time since 1st January 1970.
+The first field of the stamp is the \s-1UTC\s0 time since 1st January 1970.
 The default time format is \s-1YYMMDD\s0, time rounded down to the nearest
 day.  The default validity period is 28 days.
 .PP
@@ -696,61 +724,61 @@ You can provide an alternative validity period with the \fI\-e\fR option.
 .ie n .IP """hashcash \-cd \-b 10 \-e 2d \-r foo 0:020811:foo:21dd87d4c9f5aae1""" 4
 .el .IP "\f(CWhashcash \-cd \-b 10 \-e 2d \-r foo 0:020811:foo:21dd87d4c9f5aae1\fR" 4
 .IX Item "hashcash -cd -b 10 -e 2d -r foo 0:020811:foo:21dd87d4c9f5aae1"
-Try verifying an old token, the above token was created 11 Aug 2002.
+Try verifying an old stamp, the above stamp was created 11 Aug 2002.
 .Sp
-We gave option \fI\-e 2d\fR so the tokens expiry date is 2 days after
+We gave option \fI\-e 2d\fR so the stamps expiry date is 2 days after
 creation, which is now in the past.
 .Sp
-Note: if the creation time is expressed in the token in days, the
+Note: if the creation time is expressed in the stamp in days, the
 precise creation date is the begining of the specified day in \s-1UTC\s0 time
 (similarly for alternate units the creation time is rounded down to
 the begining of the unit it is expressed in).  For units in days, for
-example, this may mean depending on your time zone that the token
+example, this may mean depending on your time zone that the stamp
 appears to be considered invalid in under the specified expiry period
 in days relative to your relative view of what day it is, as the
 calculation is based on current time in \s-1UTC\s0, and the creation time of
-the token is expressed in \s-1UTC\s0 time.
+the stamp is expressed in \s-1UTC\s0 time.
 .ie n .IP """hashcash \-cd \-b 10 \-r foo 0:020811:foo:21dd87d4c9f5aae1""" 4
 .el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 0:020811:foo:21dd87d4c9f5aae1\fR" 4
 .IX Item "hashcash -cd -b 10 -r foo 0:020811:foo:21dd87d4c9f5aae1"
-Test whether the token is otherwise valid, apart from having expired.
-Omitting the \fI\-e\fR tells hashcash that the token will never expire.
+Test whether the stamp is otherwise valid, apart from having expired.
+Omitting the \fI\-e\fR tells hashcash that the stamp will never expire.
 An expiry period of forever can also be given explitly like this: \fI\-e
 0\fR, where an expiry period of 0 means forever.
-.Sh "Purging old tokens"
-.IX Subsection "Purging old tokens"
-If the \fI\-c\fR, \fI\-d\fR options are used together, each time a token is
-checked, if it is valid and all of the mandatory aspects of the token
+.Sh "Purging old stamps"
+.IX Subsection "Purging old stamps"
+If the \fI\-c\fR, \fI\-d\fR options are used together, each time a stamp is
+checked, if it is valid and all of the mandatory aspects of the stamp
 are verified (collision bits check, resource name check) then the
-token and it's expiry period is written to the database file.  The
+stamp and it's expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
-the \fI\-e\fR option is 28 days (ie tokens expire after 4 weeks).
+the \fI\-e\fR option is 28 days (ie stamps expire after 4 weeks).
 .PP
-First mint and then add a token:
-.ie n .IP """hashcash \-m \-b 10 foo \-e 1m > token""" 4
-.el .IP "\f(CWhashcash \-m \-b 10 foo \-e 1m > token\fR" 4
-.IX Item "hashcash -m -b 10 foo -e 1m > token"
+First mint and then add a stamp:
+.ie n .IP """hashcash \-m \-b 10 foo \-e 1m > stamp""" 4
+.el .IP "\f(CWhashcash \-m \-b 10 foo \-e 1m > stamp\fR" 4
+.IX Item "hashcash -m -b 10 foo -e 1m > stamp"
 Note: we specified an expiry on minting in this example, to ensure
-that the token creation time is given in high enough resolution in the
-token that the token will not be considered expired at time of
-creation.  (Recall the default resolution is in days, a token created
+that the stamp creation time is given in high enough resolution in the
+stamp that the stamp will not be considered expired at time of
+creation.  (Recall the default resolution is in days, a stamp created
 with a creation time rounded down to the beginging of the day is
 unlikely to be considered valid 1 minute later unless you mint it at
 midnight \s-1UTC\s0 time.)
-.ie n .IP """hashcash \-cd \-e 1m \-b 10 \-r foo < token""" 4
-.el .IP "\f(CWhashcash \-cd \-e 1m \-b 10 \-r foo < token\fR" 4
-.IX Item "hashcash -cd -e 1m -b 10 -r foo < token"
-The token expires in 1 minute.  Wait 1 minute and then explicitly
-request that expired tokens be purged:
+.ie n .IP """hashcash \-cd \-e 1m \-b 10 \-r foo < stamp""" 4
+.el .IP "\f(CWhashcash \-cd \-e 1m \-b 10 \-r foo < stamp\fR" 4
+.IX Item "hashcash -cd -e 1m -b 10 -r foo < stamp"
+The stamp expires in 1 minute.  Wait 1 minute and then explicitly
+request that expired stamps be purged:
 .ie n .IP """hashcash \-p now""" 4
 .el .IP "\f(CWhashcash \-p now\fR" 4
 .IX Item "hashcash -p now"
-Then try resubmitting the same token:
-.ie n .IP """hashcash \-cd \-e 1m \-b 10 \-r foo < token""" 4
-.el .IP "\f(CWhashcash \-cd \-e 1m \-b 10 \-r foo < token\fR" 4
-.IX Item "hashcash -cd -e 1m -b 10 -r foo < token"
-and the token will be rejected anyway as it has expired, illustrating
-why it was not necessary to keep this token in the database.
+Then try resubmitting the same stamp:
+.ie n .IP """hashcash \-cd \-e 1m \-b 10 \-r foo < stamp""" 4
+.el .IP "\f(CWhashcash \-cd \-e 1m \-b 10 \-r foo < stamp\fR" 4
+.IX Item "hashcash -cd -e 1m -b 10 -r foo < stamp"
+and the stamp will be rejected anyway as it has expired, illustrating
+why it was not necessary to keep this stamp in the database.
 .Sp
 With the default database (the sdb format) the database contents are
 human readable, so you can view their contents by cating them to the
@@ -758,42 +786,42 @@ terminal:
 .ie n .IP """cat hashcash.db""" 4
 .el .IP "\f(CWcat hashcash.db\fR" 4
 .IX Item "cat hashcash.db"
-to see that the token really is added and then after puring
+to see that the stamp really is added and then after puring
 subsequently purged due to expiry.
-.Sh "Purging old tokens on Demand"
-.IX Subsection "Purging old tokens on Demand"
-As a convenience you can purge at the same time as checking tokens by
+.Sh "Purging old stamps on Demand"
+.IX Subsection "Purging old stamps on Demand"
+As a convenience you can purge at the same time as checking stamps by
 using the \fI\-p\fR option with the \fI\-c\fR option.
-.ie n .IP """hashcash \-m \-b 10 foo > token""" 4
-.el .IP "\f(CWhashcash \-m \-b 10 foo > token\fR" 4
-.IX Item "hashcash -m -b 10 foo > token"
+.ie n .IP """hashcash \-m \-b 10 foo > stamp""" 4
+.el .IP "\f(CWhashcash \-m \-b 10 foo > stamp\fR" 4
+.IX Item "hashcash -m -b 10 foo > stamp"
 .PD 0
-.ie n .IP """hashcash \-cd \-p now \-e 1 \-b 10 \-r foo < token""" 4
-.el .IP "\f(CWhashcash \-cd \-p now \-e 1 \-b 10 \-r foo < token\fR" 4
-.IX Item "hashcash -cd -p now -e 1 -b 10 -r foo < token"
+.ie n .IP """hashcash \-cd \-p now \-e 1 \-b 10 \-r foo < stamp""" 4
+.el .IP "\f(CWhashcash \-cd \-p now \-e 1 \-b 10 \-r foo < stamp\fR" 4
+.IX Item "hashcash -cd -p now -e 1 -b 10 -r foo < stamp"
 .PD
-It may be inefficient to purge tokens on every use as the entire
-database has to be scanned for expired tokens.  By giving a time
+It may be inefficient to purge stamps on every use as the entire
+database has to be scanned for expired stamps.  By giving a time
 period to the \fI\-p\fR option, you can tell \f(CW\*(C`hashcash\*(C'\fR to purge no more
 frequently than that time period since the previous purge.
 .Sp
 For example:
-.ie n .IP """hashcash \-cd \-p 1d \-e 1 \-b 10 \-r foo < token""" 4
-.el .IP "\f(CWhashcash \-cd \-p 1d \-e 1 \-b 10 \-r foo < token\fR" 4
-.IX Item "hashcash -cd -p 1d -e 1 -b 10 -r foo < token"
-tells \f(CW\*(C`hashcash\*(C'\fR to purge any expired tokens no more than once per
+.ie n .IP """hashcash \-cd \-p 1d \-e 1 \-b 10 \-r foo < stamp""" 4
+.el .IP "\f(CWhashcash \-cd \-p 1d \-e 1 \-b 10 \-r foo < stamp\fR" 4
+.IX Item "hashcash -cd -p 1d -e 1 -b 10 -r foo < stamp"
+tells \f(CW\*(C`hashcash\*(C'\fR to purge any expired stamps no more than once per
 day.
 .ie n .IP """hashcash \-p 1M \-j foo""" 4
 .el .IP "\f(CWhashcash \-p 1M \-j foo\fR" 4
 .IX Item "hashcash -p 1M -j foo"
-tells \f(CW\*(C`hashcash\*(C'\fR to purge only expired tokens matching resource foo
+tells \f(CW\*(C`hashcash\*(C'\fR to purge only expired stamps matching resource foo
 once per month.
 .ie n .IP """hashcash \-p now \-k""" 4
 .el .IP "\f(CWhashcash \-p now \-k\fR" 4
 .IX Item "hashcash -p now -k"
-tells \f(CW\*(C`hashcash\*(C'\fR to purge all tokens (expired and unexpired) now.
-.SH "token format"
-.IX Header "token format"
+tells \f(CW\*(C`hashcash\*(C'\fR to purge all stamps (expired and unexpired) now.
+.SH "stamp format"
+.IX Header "stamp format"
 .IP "\fIver\fR:\fIdate\fR:\fIresource\fR:\fIcollision\fR" 4
 .IX Item "ver:date:resource:collision"
 .PP
@@ -810,28 +838,24 @@ where
 .PD
 .SH "FILES"
 .IX Header "FILES"
-.IP "\fIhashcash.db\fR" 4
-.IX Item "hashcash.db"
+.IP "\fIhashcash.sdb\fR" 4
+.IX Item "hashcash.sdb"
 default double spend database
-.IP "\fIhashcash.dbt\fR" 4
-.IX Item "hashcash.dbt"
-default temporary double spend database used when purging tokens.
 .SH "EXIT STATUS"
 .IX Header "EXIT STATUS"
 \&\f(CW\*(C`hashcash\*(C'\fR returns success (exit code 0) after successfully minting a
-token, after fully checking a token and finding it valid, and after a
+stamp, after fully checking a stamp and finding it valid, and after a
 timing test.
 .PP
-If when checking a token it is found to be invalid (due to being
+If when checking a stamp it is found to be invalid (due to being
 malformed, being expired, having insufficient value, having a date in
 the future, or being double spent), \f(CW\*(C`hashcash\*(C'\fR returns failure (exit
 code 1).
 .PP
-If insufficient options are given to fully check a token, or if using
-the \fI\-n\fR, \fI\-l\fR, or \fI\-w\fR options, if the token is otherwise valid
-return unchecked (exit code 2).  If the \fI\-y\fR flag is given and
-hashcash would normally return unchecked, exit code success is
-returned instead.
+If insufficient options are given to fully check a stamp, if the stamp
+is otherwise valid return unchecked (exit code 2).  If the \fI\-y\fR flag
+is given and hashcash would normally return unchecked, exit code
+success is returned instead.
 .PP
 If any exception occurs (file read failure for database checking or
 corrupted database contents) an exit status of 3 is returned.

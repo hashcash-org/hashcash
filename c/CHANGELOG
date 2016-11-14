@@ -1,3 +1,29 @@
+hashcash-0.32 - 09-Apr-2004 - Adam Back <adam@cypherspace.org>
+
+	* documentation fixes
+
+	* change multiple regexp behavior; previous algorithm only allowed
+	  higher overrides; need to support both higher and lower
+	  overrides.  This also required introducing -o option to join
+	  regexps which are set intersections where otherwise risk of
+	  uninteded override occuring and mail being rejected as spent or
+	  insufficent bits.  Now revert to lexical order most specific
+	  regexp first.
+
+	* wrote test script test.sh
+
+	* fix a few minor bugs uncovered by above test script
+
+	* -c now means check date
+
+	* allow -n etc with -X
+
+	* introduced -b relative to default way of specifying bits
+	
+	* -b is no optional, if want token fully checked, but can give -b
+	  default; or new relative to default -b +0.
+	
+	
 hashcash-0.31 - 01-Apr-2004 - Adam Back <adam@cypherspace.org>
 
 	* final 0.x version (v0 format) release before 1.x version (v1

@@ -146,5 +146,5 @@ Hashcash CPL License Requests
 - If you don't like the CPL and want to distribute under a different license
   I find BSD more liberal than GPL, as GPL effectively precludes some
   commerical uses.  As the aim of hashcash is to help defend against spam,
-  and some potential users are using non open source MUAs, this license
+  and some potential users are using non open source MUAs, the BSD license
   probably helps the deployment of hashcash better than GPL license.
