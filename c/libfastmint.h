@@ -26,7 +26,7 @@
 
 #define MINTER_CALLBACK_VARS double percent;	\
 	TIMETYPE prev=TIME0, curr;		\
-        int lastBits = 0
+        int lastBits = *best
 
 /* in minter if have to do something for acces to floating point
  * operations override this */
@@ -111,7 +111,7 @@ extern void hashcash_select_minter();
 		(*((unsigned char*)(_src)+3)      ) )
 
 /* Attempt to mint a hashcash token with a given bit-value.
- * Will append a random string to token that produces the required collision,
+ * Will append a random string to token that produces the required preimage,
  * then return a pointer to the resultant string in result.  Caller must free()
  * result buffer after use.
  * Returns the number of bits actually minted (may be more or less than requested).
@@ -131,7 +131,7 @@ extern unsigned long hashcash_benchtest(int verbose, int core);
 /* Minting backend routines.
  * These are in two parts:
  * - HC_Mint_Routine is the actual backend.  Attempts to produce at least N-bit
- *     collision by incrementing the tail section of the block.  Block need not
+ *     preimage by incrementing the tail section of the block.  Block need not
  *     be initial block, as custom IV is provided, but must be terminal block.
  *     Tail index points just after last character - ie. to beginning of SHA-1
  *     padding - do not overwrite padding.  At least 8 characters will be present.

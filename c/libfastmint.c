@@ -292,9 +292,9 @@ unsigned long hashcash_per_sec_calc( void )
 				       NULL, NULL, 0, 0);
 			if ( gotbits >= test_bits) {
 				/* The benchmark will be inaccurate 
-				   if we actually find a collision! */
+				   if we actually find a preimage! */
 				fprintf(stderr, 
-"Error in hashcash_quickbench(): found collision while trying to benchmark!\n");
+"Error in hashcash_quickbench(): found preimage while trying to benchmark!\n");
 				return 1;
 			}
 			rate += iter_count;
@@ -324,8 +324,8 @@ unsigned long hashcash_per_sec_calc( void )
 			       iter_count, NULL, NULL, 0, 0);
 		if ( gotbits >= test_bits) {
 			/* The benchmark will be inaccurate if we
-			 * actually find a collision! */
-			fprintf(stderr, "Error in hashcash_quickbench(): found collision while trying to benchmark!\n");
+			 * actually find a preimage! */
+			fprintf(stderr, "Error in hashcash_quickbench(): found preimage while trying to benchmark!\n");
 			return 1;
 		}
 		end = clock();
@@ -532,13 +532,11 @@ unsigned long hashcash_benchtest(int verbose, int core)
 
 /* Attempt to mint a hashcash token with a given bit-value.
  * Will append a random string to token that produces the required
- * collision, then return a pointer to the resultant string in result.
+ * preimage, then return a pointer to the resultant string in result.
  * Caller must free() result buffer after use.
  * Returns the number of bits actually minted (may be more or less
  * than requested).
  */
-
-#define BIG_ITER 0x40000000U	/* 2^30 */
 
 double hashcash_fastmint(const int bits, const char *token, int compress,
 			 char **result, hashcash_callback cb, void* user_args)
@@ -547,17 +545,17 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 	unsigned char hash[SHA1_DIGEST_BYTES] = {0};
 	unsigned int IV[SHA1_DIGEST_WORDS] = {0};
 	unsigned char *buffer = NULL, *block = NULL, c = 0;
+	unsigned char *last = NULL;
 	unsigned int buflen = 0, tail = 0, a = 0, b = 0, save_tail = 0;
 	unsigned long t = 0, loop = 0, iters = 0, i = 0, first = 1;
 	HC_Mint_Routine best_minter;
 	double counter = 0, expected = 0;
+	int gotBits = 0, bit_rate = 6, chars = 0, blocks = 1, oldblocks = 0;
+	int prevBits = 0;
+	int* best = &gotBits; /* NB this is needed for CALLBACK macros */
 	/* this is to allow this fn to call the same callback macro */
 	MINTER_CALLBACK_VARS;
-	int gotBits = 0, bit_rate = 6, chars = 0, blocks = 1, oldblocks = 0;
-	int* best;		/* NB this is needed for CALLBACK macros */
 
-	best = &gotBits;
-	
 	/* Make sure list of minters is valid */
 	if(fastest_minter < 0) { hashcash_select_minter(); }
 
@@ -582,13 +580,20 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 		random_getbytes(&c, 1);
 		buffer[tail] = encodeAlphabets[EncodeBase64][c & 0x3f];
 	}
-	
+#if defined( DEBUG )
+	fprintf( stderr, "tail = \"%s\"\n", buffer+tail-16 );
+#endif
+
 	/* Add separator and zeroed count field (for v1 hashcash format) */
 	buffer[tail++] = ':';
 	save_tail = tail;
 
 	bit_rate = EncodeBitRate[encodings[fastest_minter]];
+#if defined( DEBUG )
+	chars = 18/bit_rate;
+#else
 	chars = 31/bit_rate;
+#endif
 	for ( i = compress ? 1 : chars; 
 	      i <= chars && (first || gotBits < bits); i++ ) {
 		first = 0;
@@ -651,21 +656,33 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 		loop=best_minter(bits, &gotBits, block, IV, tail,
 				 0x1U << (i*bit_rate), cb,
 				 user_args,counter,expected);
+
 		if (loop==0) {
 			free(buffer);
+			if ( last ) { free( last ); }
 		  	if (*best==-1) {return -1;}
 		  	else { return 0; }
 		}
+
+		if ( gotBits == 0 || gotBits > prevBits ) {
+		 	block[tail] = 0;
+			prevBits = gotBits;
+			t = strlen( (char*)buffer );
+			last = realloc( last, t+1 );
+			strncpy( (char*)last, (char*)buffer, t+1 );
+		}
+
 		counter += (double)loop;
 	}
 
 	/* if we succeeded call the callback also */
 	if ( gotBits >= bits ) { MINTER_CALLBACK(); }
-	block[tail] = 0;
 	
-	/* Verify solution using reference library */
-	SHA1_Update(&crypter, block, tail);
-	SHA1_Final(&crypter, hash);
+        /* Verify solution using reference library */
+	SHA1_Init(&crypter);
+        SHA1_Update(&crypter, last, strlen( (char*)last ));
+        SHA1_Final(&crypter, hash);
+
 	for(a=0; a < SHA1_DIGEST_BYTES-1 && hash[a] == 0; a++)
 		;
 	for(b=0; b < 8 && (hash[a] & 0x80) == 0; b++)
@@ -676,7 +693,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 	if(b < gotBits) {
 		fprintf(stderr, "ERROR: requested %d bits, reported %d bits, got %d bits using %s minter: \"%s\"\n",
 			bits, gotBits, b, minters[fastest_minter].name, 
-			buffer);
+			last );
 		exit(3);
 	}
 	
@@ -691,6 +708,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 	}
 
 	*result = (char*)buffer;
+	if ( last ) { free( last ); }
 	return counter;
 }
 

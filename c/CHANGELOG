@@ -1,4 +1,20 @@
-hashcash-1.21 - 24-Mar-2005 - Adam Back <adam@cypherspace.org>
+hashcash-1.22 - 08-Apr-2006 - Adam Back <adam@cypherspace.org>
+
+	* fix progress display bug reported by Phil Marek.  (When the
+	  progress reached 2^30 tests, it would reset the best seen).
+	  This involved multiple related bug fixes, complex thing to
+	  debug!
+
+	* make percentage progress show more precision the larger the
+	  stamp, so progress is less boring.
+
+	* remove some cruft from test.sh so it works again
+
+	* change docs and code output to talk about partial hash
+	  preimages instead of partial collisions, as this is a more
+	  accurate description these days.
+
+hashcash-1.21 - 24-Mar-2006 - Adam Back <adam@cypherspace.org>
 
 	* fix potential heap overflow bug reported by 
 	  Andreas Seltenreich <uwi7@rz.uni-karlsruhe.de>
@@ -15,8 +31,7 @@ hashcash-1.20 - 20-Dec-2005 - Adam Back <adam@cypherspace.org>
 	  on rh9 for forwards compatibility, but then on fc4 they have only
 	  libcrypto.so.5, so the rpm fails to install with missing
 	  dependency.  Dependencies are ugly so I built with static link to
-	  libcrypto.a instead of dynamic to libcrypto.so the builtin SHA1
-	  and avoid using openssl.
+	  libcrypto.a instead of dynamic to libcrypto.so.
 
 	* -mcpu is deprecated apparently so I am supposed to use the
  	  equivalent -mtune, but that doesn't work on rh9 era gcc

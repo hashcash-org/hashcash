@@ -1,5 +1,4 @@
 #!/bin/sh
-. jdebug
 
 hashcash="../hashcash -u -t 040404"
 sha1="../sha1"

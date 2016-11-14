@@ -90,7 +90,7 @@ unsigned long minter_altivec_standard_1(int bits, int* best, unsigned char *bloc
 	#if defined(__POWERPC__) && defined(__ALTIVEC__)
 	MINTER_CALLBACK_VARS;
 	unsigned long iters;
-	int n, t, gotBits, maxBits = (bits > 16) ? 16 : bits;
+	int n, t, gotBits = 0, maxBits = (bits > 16) ? 16 : bits;
 	uInt32 bitMask1Low, bitMask1High, s;
 	vector unsigned int vBitMaskHigh, vBitMaskLow;
 	vector unsigned int A,B,C,D,E, F,G;
@@ -102,7 +102,7 @@ unsigned long minter_altivec_standard_1(int bits, int* best, unsigned char *bloc
 	unsigned char *X = (unsigned char*) W;
 	unsigned char *output = (unsigned char*) block;
 	
-	*best = 0;
+	if ( *best > 0 ) { maxBits = *best+1; }
 
 	/* Work out which bits to mask out for test */
 	if(maxBits < 32) {
@@ -346,7 +346,7 @@ unsigned long minter_altivec_standard_1(int bits, int* best, unsigned char *bloc
 					}
 				}
 				
-				*best = gotBits;
+				if ( gotBits > *best ) { *best = gotBits; }
 				/* Regenerate the bit mask */
 				maxBits = gotBits+1;
 				if(maxBits < 32) {

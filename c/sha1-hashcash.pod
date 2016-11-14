@@ -80,7 +80,7 @@ received the following email:
  X-Hashcash: 0:030626:adam@cypherspace.org:6470e06d773e05a8
  
 Then the following command would show visually the size of the
-collision:
+preimage:
 
 =over 4
 
@@ -90,7 +90,7 @@ collision:
 
 =back
 
-and you can see the leading hex 0s.  
+and you can see the leading hex 0s.
 
 =head1 LIMITATIONS
 

@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2005-01-12" "1.15" "hashcash"
+.TH HASHCASH 1 "2006-04-07" "1.22" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
@@ -146,8 +146,8 @@ hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .Sh "Purge database:"
 .IX Subsection "Purge database:"
 \&\fBhashcash\fR \fI\-p now\fR [ \fI\-j resource\fR ] [ \fI\-k\fR ] [ \fI\-t time\fR ] [ \fI\-u\fR ]
-.Sh "Count collision bits:"
-.IX Subsection "Count collision bits:"
+.Sh "Count partial preimage bits:"
+.IX Subsection "Count partial preimage bits:"
 \&\fBhashcash\fR \fI\-w\fR [ \fIoptions\fR ] [ \fIstamp\fR ... ]
 .Sh "Get resource name:"
 .IX Subsection "Get resource name:"
@@ -175,11 +175,11 @@ includes a sha1 implementation which is equivalent in functionality to
 the sha1sum program available on some systems.
 .PP
 The hashcash proof-of-work function is to compute partial hash
-collisions (the \s-1SHA1\s0 hash function is used).  By choosing the number
-of bits of collision, the work required to compute a collision can be
-made arbitrarily expensive \*(-- from fractions of a second to minutes or
-hours.  The verification is efficient requiring the same small cost
-whatever the collision size.
+preimages (the \s-1SHA1\s0 hash function is used).  By choosing the number of
+bits of the preimage that are equal to 0, the work required to compute
+a partial preimage can be made arbitrarily expensive \*(-- from fractions
+of a second to minutes or hours.  The verification is efficient
+requiring the same small cost whatever the preimage size.
 .PP
 For more detailed discussion of other applications hashcash has been
 used for see http://www.hashcash.org/
@@ -195,8 +195,8 @@ The \fI\-m\fR flag must be given to mint a stamp.
 The resource name (recipient's email address) to mint the stamp
 against can be passed as an argument, or if omitted is read from
 stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
-resource name is just silently read.  The desired collision size can
-be specified with the \-b option.  If no collision size is specified,
+resource name is just silently read.  The desired preimage size can
+be specified with the \-b option.  If no preimage size is specified,
 the default is 20 bits.  See also the \fI\-b default\fR option.
 .Sh "Checking stamps"
 .IX Subsection "Checking stamps"
@@ -220,7 +220,7 @@ period can be changed using the \fI\-e\fR flag.
 If the stamp has expired or has a date in the future the stamp is
 rejected and the program exits immediately.
 .PP
-If a required collision size is given with the \fI\-b\fR flag, the stamps value
+If a required preimage size is given with the \fI\-b\fR flag, the stamps value
 is computed and compared, if the stamp has insufficent value it is rejected,
 and the program exits immediately.  If the \fI\-b\fR flag is not given, the
 stamp is checked to see if it is otherwise valid, but hashcash will return
@@ -233,7 +233,7 @@ enabled, the stamp could be double spent, so hashcash will return
 unchecked exit code (exit code 2) on exit.
 .PP
 The \fI\-w\fR flag can be used to request that the number of bits of the
-collision are counted and displayed. The \fI\-n\fR flag can be used to
+preimage are counted and displayed. The \fI\-n\fR flag can be used to
 request that the resource name in the stamp is parsed out and
 displayed.  The \fI\-l\fR flag can be used to request the number of
 seconds until expiry of the stamp is output.
@@ -291,7 +291,7 @@ now\*(C'\fR in a cron job once per day, or on demand when disk was running
 low.
 .Sh "Speed Estimates"
 .IX Subsection "Speed Estimates"
-The \fI\-s\fR flag requests measurement of how many collisions can be
+The \fI\-s\fR flag requests measurement of how many preimage can be
 tested per second.  No stamp is minted, or verified.
 .PP
 If the \fI\-b\fR flag is used with this option, instead an estimate of how
@@ -320,8 +320,8 @@ stamps).
 Mint stamps with the resources given as arguments or on stdin.
 .IP "\fI\-b bits\fR" 4
 .IX Item "-b bits"
-When minting a stamp, create a collision of at least this many bits.
-When verifying a stamp require that it have a collision of at minimum
+When minting a stamp, create a preimage of at least this many bits.
+When verifying a stamp require that it have a preimage of at minimum
 this many bits, otherwise reject it.  If omitted the default is used.
 .Sp
 When checking stamps, require that the stamps have this many bits.
@@ -475,8 +475,8 @@ resources given with the \fI\-j resource\fR flag.
 .IX Item "-s"
 Print timing information only, and don't proceed to create a stamp.
 If combined with \fI\-b bits\fR flag print estimate of how long the
-requested collision size would take to compute, if \fI\-s\fR given by
-itself, just prints speed of the collision finder.  To print an
+requested preimage size would take to compute, if \fI\-s\fR given by
+itself, just prints speed of the preimage finder.  To print an
 estimate of how long the default number of bits would take use \fI\-b
 default\fR.
 .IP "\fI\-h\fR" 4
@@ -520,7 +520,7 @@ subsequent release.
 .IX Item "-i"
 When checking and using the \fI\-X\fR flag, ignore the blank line
 boundary between headers and body of the message, and check for
-collision in the body too if one is not found in the headers.
+stamps in the body too if one is not found in the headers.
 .IP "\fI\-t time\fR" 4
 .IX Item "-t time"
 Pretend the current time is the time given for purposes of minting
@@ -567,7 +567,7 @@ the grace period add \fI\-g0\fR to set grace period to 0 for the
 calculation.
 .IP "\fI\-w\fR" 4
 .IX Item "-w"
-Print number of bits of collision of stamp.  Returns exit code
+Print number of bits of preimage of stamp.  Returns exit code
 unchecked on exit.
 .IP "\fI\-y\fR" 4
 .IX Item "-y"
@@ -630,7 +630,7 @@ discovered bug, \-Z2 is the same as \-Z1 for now until I can fix that.)
 .ie n .IP """hashcash \-s""" 4
 .el .IP "\f(CWhashcash \-s\fR" 4
 .IX Item "hashcash -s"
-Print timing information about how many collisions the machine can try
+Print timing information about how many preimages the machine can try
 per second.
 .ie n .IP """hashcash \-sv""" 4
 .el .IP "\f(CWhashcash \-sv\fR" 4
@@ -641,26 +641,26 @@ specific minting cores.
 .el .IP "\f(CWhashcash \-s \-b default\fR" 4
 .IX Item "hashcash -s -b default"
 Print how long it would take the machine to compute a default sized
-collision (but don't actually compute a collision).
+preimage (but don't actually compute a preimage).
 .ie n .IP """hashcash \-s \-b 32""" 4
 .el .IP "\f(CWhashcash \-s \-b 32\fR" 4
 .IX Item "hashcash -s -b 32"
-Print how long it would take the machine to compute a 32 bit collision
-(but don't actually compute a collision).
+Print how long it would take the machine to compute a 32 bit preimage
+(but don't actually compute a preimage).
 .ie n .IP """hashcash \-m""" 4
 .el .IP "\f(CWhashcash \-m\fR" 4
 .IX Item "hashcash -m"
 Mint a stamp.  Will prompt for resource name and mint with default
-value (number of collision bits).
+value (number of preimage bits).
 .ie n .IP """hashcash \-m foo""" 4
 .el .IP "\f(CWhashcash \-m foo\fR" 4
 .IX Item "hashcash -m foo"
-Compute collision on resource foo.  Will mint with default value
-(number of collision bits).
+Compute preimage on resource foo.  Will mint with default value
+(number of preimage bits).
 .ie n .IP """hashcash \-m foo \-b 10""" 4
 .el .IP "\f(CWhashcash \-m foo \-b 10\fR" 4
 .IX Item "hashcash -m foo -b 10"
-Compute 10 bit collision on resource foo.
+Compute 10 bit preimage on resource foo.
 .ie n .IP """hashcash \-a \-3d""" 4
 .el .IP "\f(CWhashcash \-a \-3d\fR" 4
 .IX Item "hashcash -a -3d"
@@ -672,8 +672,8 @@ reduce risk of timing\-correlations.
 .ie n .IP """hashcash \-w 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
 .el .IP "\f(CWhashcash \-w 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
 .IX Item "hashcash -w 1:24:040806:foo::511801694b4cd6b0:1e7297a"
-Report the value of the stamp (how many bits of collision) there are.
-The example is a 24 bit collision, which takes on average 25 seconds
+Report the value of the stamp (how many bits of preimage) there are.
+The example is a 24 bit preimage, which takes on average 25 seconds
 to create on a 3Ghz P4.
 .ie n .IP """hashcash \-mq \-b 10 foo | hashcash \-w""" 4
 .el .IP "\f(CWhashcash \-mq \-b 10 foo | hashcash \-w\fR" 4
@@ -698,7 +698,7 @@ its creation date.  (Note dates too far into the future run into the
 .IX Item "hashcash -c 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Check if the stamp is valid.  Note as we are not checking the stamp in
 a double spend database, and did not specify a resource name or
-required number of bits of collision and hashcash will consider the
+required number of bits of preimage and hashcash will consider the
 stamp not fully checked, and it will report it as valid but not fully
 unchecked, or as invalid if there is any problem with the stamp.
 .ie n .IP """hashcash \-c \-b24 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
@@ -706,7 +706,7 @@ unchecked, or as invalid if there is any problem with the stamp.
 .IX Item "hashcash -c -b24 1:24:040806:foo::511801694b4cd6b0:1e7297a"
 Check that the value of the stamp is greater or equal to 24 bits.
 This example has 24 bit value.  If you increase the requested number
-of bits or replace the stamp with one with less than 24 bit collision
+of bits or replace the stamp with one with less than 24 bit preimage
 the stamp will be rejected.
 .ie n .IP """hashcash \-c \-b24 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
 .el .IP "\f(CWhashcash \-c \-b24 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
@@ -720,7 +720,7 @@ The examples given in \*(L"Verifying Stamps\*(R" can be modified to keep a
 double spend database so that the same stamp will not be accepted
 twice.  Note a stamp will only be checked in and added to the database
 if it is otherwise valid and fully checked (a required number of bits
-of collision has been specified and a resource has been specified).
+of preimage has been specified and a resource has been specified).
 .ie n .IP """hashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a""" 4
 .el .IP "\f(CWhashcash \-cd \-b 10 \-r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a\fR" 4
 .IX Item "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
@@ -773,7 +773,7 @@ An expiry period of forever can also be given explitly like this: \fI\-e
 .IX Subsection "Purging old stamps"
 If the \fI\-c\fR, \fI\-d\fR options are used together, each time a stamp is
 checked, if it is valid and all of the mandatory aspects of the stamp
-are verified (collision bits check, resource name check) then the
+are verified (preimage bits check, resource name check) then the
 stamp and its expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
 the \fI\-e\fR option is 28 days (ie stamps expire after 4 weeks).
@@ -857,8 +857,8 @@ where
 .IP "\fIver\fR = 1" 4
 .IX Item "ver = 1"
 .PD 0
-.IP "\fIbits\fR = how many bits of partial-collision the stamp is claimed to have" 4
-.IX Item "bits = how many bits of partial-collision the stamp is claimed to have"
+.IP "\fIbits\fR = how many bits of partial-preimage the stamp is claimed to have" 4
+.IX Item "bits = how many bits of partial-preimage the stamp is claimed to have"
 .IP "\fIdate\fR = YYMMDD[hhmm[ss]]" 4
 .IX Item "date = YYMMDD[hhmm[ss]]"
 .IP "\fIresource\fR = resource string (eg \s-1IP\s0 address, email address)" 4
@@ -883,11 +883,11 @@ eg \*(L"var1=2\*(R" could be the value of an option to the extension name3.
 .RE
 .RS 4
 .RE
-.IP "\fIrand\fR = string of random characters from alphabet a\-zA\-Z0\-9+/= to avoid collisions with other sender's stamps" 4
-.IX Item "rand = string of random characters from alphabet a-zA-Z0-9+/= to avoid collisions with other sender's stamps"
+.IP "\fIrand\fR = string of random characters from alphabet a\-zA\-Z0\-9+/= to avoid preimage with other sender's stamps" 4
+.IX Item "rand = string of random characters from alphabet a-zA-Z0-9+/= to avoid preimage with other sender's stamps"
 .PD 0
-.IP "\fIcounter\fR = to find a stamp with the desired number of collision bits need to try lots of different strings this counter is incremented on each try. The Counter is also composed of characters from the alphabet a\-zA\-Z0\-9+/=.  (Note an implementation is not required to count sequentially)." 4
-.IX Item "counter = to find a stamp with the desired number of collision bits need to try lots of different strings this counter is incremented on each try. The Counter is also composed of characters from the alphabet a-zA-Z0-9+/=.  (Note an implementation is not required to count sequentially)."
+.IP "\fIcounter\fR = to find a stamp with the desired number of preimage bits need to try lots of different strings this counter is incremented on each try. The Counter is also composed of characters from the alphabet a\-zA\-Z0\-9+/=.  (Note an implementation is not required to count sequentially)." 4
+.IX Item "counter = to find a stamp with the desired number of preimage bits need to try lots of different strings this counter is incremented on each try. The Counter is also composed of characters from the alphabet a-zA-Z0-9+/=.  (Note an implementation is not required to count sequentially)."
 .PD
 .SH "FILES"
 .IX Header "FILES"

@@ -14,7 +14,7 @@ SYNOPSIS
   Purge database:
     hashcash *-p now* [ *-j resource* ] [ *-k* ] [ *-t time* ] [ *-u* ]
 
-  Count collision bits:
+  Count partial preimage bits:
     hashcash *-w* [ *options* ] [ *stamp* ... ]
 
   Get resource name:
@@ -41,12 +41,12 @@ DESCRIPTION
     sha1 implementation which is equivalent in functionality to the sha1sum
     program available on some systems.
 
-    The hashcash proof-of-work function is to compute partial hash
-    collisions (the SHA1 hash function is used). By choosing the number of
-    bits of collision, the work required to compute a collision can be made
-    arbitrarily expensive -- from fractions of a second to minutes or hours.
-    The verification is efficient requiring the same small cost whatever the
-    collision size.
+    The hashcash proof-of-work function is to compute partial hash preimages
+    (the SHA1 hash function is used). By choosing the number of bits of the
+    preimage that are equal to 0, the work required to compute a partial
+    preimage can be made arbitrarily expensive -- from fractions of a second
+    to minutes or hours. The verification is efficient requiring the same
+    small cost whatever the preimage size.
 
     For more detailed discussion of other applications hashcash has been
     used for see http://www.hashcash.org/
@@ -62,9 +62,9 @@ USAGE NOTES
     The resource name (recipient's email address) to mint the stamp against
     can be passed as an argument, or if omitted is read from stdin. If stdin
     is a tty the user is prompted, if stdin is a pipe the resource name is
-    just silently read. The desired collision size can be specified with the
-    -b option. If no collision size is specified, the default is 20 bits.
-    See also the *-b default* option.
+    just silently read. The desired preimage size can be specified with the
+    -b option. If no preimage size is specified, the default is 20 bits. See
+    also the *-b default* option.
 
   Checking stamps
     The *-c* flag must be given to check a stamps expiry. The stamp to check
@@ -86,7 +86,7 @@ USAGE NOTES
     If the stamp has expired or has a date in the future the stamp is
     rejected and the program exits immediately.
 
-    If a required collision size is given with the *-b* flag, the stamps
+    If a required preimage size is given with the *-b* flag, the stamps
     value is computed and compared, if the stamp has insufficent value it is
     rejected, and the program exits immediately. If the *-b* flag is not
     given, the stamp is checked to see if it is otherwise valid, but
@@ -99,10 +99,10 @@ USAGE NOTES
     code 2) on exit.
 
     The *-w* flag can be used to request that the number of bits of the
-    collision are counted and displayed. The *-n* flag can be used to
-    request that the resource name in the stamp is parsed out and displayed.
-    The *-l* flag can be used to request the number of seconds until expiry
-    of the stamp is output.
+    preimage are counted and displayed. The *-n* flag can be used to request
+    that the resource name in the stamp is parsed out and displayed. The
+    *-l* flag can be used to request the number of seconds until expiry of
+    the stamp is output.
 
     The program will only return exit codes valid or invalid if the *-c*
     flag is used, the *-b* flag is used, *-d*, *-r resource* are used. These
@@ -154,7 +154,7 @@ USAGE NOTES
     cron job once per day, or on demand when disk was running low.
 
   Speed Estimates
-    The *-s* flag requests measurement of how many collisions can be tested
+    The *-s* flag requests measurement of how many preimage can be tested
     per second. No stamp is minted, or verified.
 
     If the *-b* flag is used with this option, instead an estimate of how
@@ -182,10 +182,9 @@ OPTIONS
         Mint stamps with the resources given as arguments or on stdin.
 
     *-b bits*
-        When minting a stamp, create a collision of at least this many bits.
-        When verifying a stamp require that it have a collision of at
-        minimum this many bits, otherwise reject it. If omitted the default
-        is used.
+        When minting a stamp, create a preimage of at least this many bits.
+        When verifying a stamp require that it have a preimage of at minimum
+        this many bits, otherwise reject it. If omitted the default is used.
 
         When checking stamps, require that the stamps have this many bits.
 
@@ -336,8 +335,8 @@ OPTIONS
     *-s*
         Print timing information only, and don't proceed to create a stamp.
         If combined with *-b bits* flag print estimate of how long the
-        requested collision size would take to compute, if *-s* given by
-        itself, just prints speed of the collision finder. To print an
+        requested preimage size would take to compute, if *-s* given by
+        itself, just prints speed of the preimage finder. To print an
         estimate of how long the default number of bits would take use *-b
         default*.
 
@@ -382,7 +381,7 @@ OPTIONS
     *-i*
         When checking and using the *-X* flag, ignore the blank line
         boundary between headers and body of the message, and check for
-        collision in the body too if one is not found in the headers.
+        stamps in the body too if one is not found in the headers.
 
     *-t time*
         Pretend the current time is the time given for purposes of minting
@@ -429,7 +428,7 @@ OPTIONS
         calculation.
 
     *-w*
-        Print number of bits of collision of stamp. Returns exit code
+        Print number of bits of preimage of stamp. Returns exit code
         unchecked on exit.
 
     *-y*
@@ -491,7 +490,7 @@ OPTIONS
 EXAMPLES
   Creating stamps
     "hashcash -s"
-        Print timing information about how many collisions the machine can
+        Print timing information about how many preimages the machine can
         try per second.
 
     "hashcash -sv"
@@ -500,22 +499,22 @@ EXAMPLES
 
     "hashcash -s -b default"
         Print how long it would take the machine to compute a default sized
-        collision (but don't actually compute a collision).
+        preimage (but don't actually compute a preimage).
 
     "hashcash -s -b 32"
         Print how long it would take the machine to compute a 32 bit
-        collision (but don't actually compute a collision).
+        preimage (but don't actually compute a preimage).
 
     "hashcash -m"
         Mint a stamp. Will prompt for resource name and mint with default
-        value (number of collision bits).
+        value (number of preimage bits).
 
     "hashcash -m foo"
-        Compute collision on resource foo. Will mint with default value
-        (number of collision bits).
+        Compute preimage on resource foo. Will mint with default value
+        (number of preimage bits).
 
     "hashcash -m foo -b 10"
-        Compute 10 bit collision on resource foo.
+        Compute 10 bit preimage on resource foo.
 
     "hashcash -a -3d"
         Subtract a random time of between 0 days and 3 days from the stamp's
@@ -524,9 +523,9 @@ EXAMPLES
 
   Examining Stamps
     "hashcash -w 1:24:040806:foo::511801694b4cd6b0:1e7297a"
-        Report the value of the stamp (how many bits of collision) there
-        are. The example is a 24 bit collision, which takes on average 25
-        seconds to create on a 3Ghz P4.
+        Report the value of the stamp (how many bits of preimage) there are.
+        The example is a 24 bit preimage, which takes on average 25 seconds
+        to create on a 3Ghz P4.
 
     "hashcash -mq -b 10 foo | hashcash -w"
         Create a stamp in batch mode, pass to hashcash on stdin to verify,
@@ -546,7 +545,7 @@ EXAMPLES
     "hashcash -c 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Check if the stamp is valid. Note as we are not checking the stamp
         in a double spend database, and did not specify a resource name or
-        required number of bits of collision and hashcash will consider the
+        required number of bits of preimage and hashcash will consider the
         stamp not fully checked, and it will report it as valid but not
         fully unchecked, or as invalid if there is any problem with the
         stamp.
@@ -554,8 +553,8 @@ EXAMPLES
     "hashcash -c -b24 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Check that the value of the stamp is greater or equal to 24 bits.
         This example has 24 bit value. If you increase the requested number
-        of bits or replace the stamp with one with less than 24 bit
-        collision the stamp will be rejected.
+        of bits or replace the stamp with one with less than 24 bit preimage
+        the stamp will be rejected.
 
     "hashcash -c -b24 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         As above check if the stamp has sufficient value, but in addition
@@ -566,8 +565,8 @@ EXAMPLES
     The examples given in "Verifying Stamps" can be modified to keep a
     double spend database so that the same stamp will not be accepted twice.
     Note a stamp will only be checked in and added to the database if it is
-    otherwise valid and fully checked (a required number of bits of
-    collision has been specified and a resource has been specified).
+    otherwise valid and fully checked (a required number of bits of preimage
+    has been specified and a resource has been specified).
 
     "hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a"
         Check the stamp and add to double spent database if it's valid (has
@@ -617,7 +616,7 @@ EXAMPLES
   Purging old stamps
     If the *-c*, *-d* options are used together, each time a stamp is
     checked, if it is valid and all of the mandatory aspects of the stamp
-    are verified (collision bits check, resource name check) then the stamp
+    are verified (preimage bits check, resource name check) then the stamp
     and its expiry period is written to the database file. The default
     expiry period if an expiry period is not given explicitly with the *-e*
     option is 28 days (ie stamps expire after 4 weeks).
@@ -688,7 +687,7 @@ stamp format (version 1)
     where
 
     *ver* = 1
-    *bits* = how many bits of partial-collision the stamp is claimed to have
+    *bits* = how many bits of partial-preimage the stamp is claimed to have
     *date* = YYMMDD[hhmm[ss]]
     *resource* = resource string (eg IP address, email address)
     *ext* = extension -- ignored in the current version
@@ -707,8 +706,8 @@ stamp format (version 1)
             option to the extension name3.
 
     *rand* = string of random characters from alphabet a-zA-Z0-9+/= to avoid
-    collisions with other sender's stamps
-    *counter* = to find a stamp with the desired number of collision bits
+    preimage with other sender's stamps
+    *counter* = to find a stamp with the desired number of preimage bits
     need to try lots of different strings this counter is incremented on
     each try. The Counter is also composed of characters from the alphabet
     a-zA-Z0-9+/=. (Note an implementation is not required to count

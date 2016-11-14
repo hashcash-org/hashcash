@@ -106,7 +106,7 @@ unsigned long minter_ansi_compact_2(int bits, int* best, unsigned char *block, c
 	const int W32[] = {21,23,24,26,27,29,30,31,0}, W52[] = {20,23,26,28,29,31,0};
 	char wordUpdate[80] = {0};
 	
-	*best = 0;
+	if ( *best > 0 ) { maxBits = *best+1; }
 
 	/* Work out whether we need to swap bytes during encoding */
 	addressMask = ( *(char*)&endTest );
@@ -321,7 +321,7 @@ unsigned long minter_ansi_compact_2(int bits, int* best, unsigned char *block, c
 				}
 			}
 			
-			*best=gotBits;
+			if ( gotBits > *best ) { *best = gotBits; }
 			/* Regenerate the bit mask */
 			maxBits = gotBits+1;
 			if(maxBits < 32) {

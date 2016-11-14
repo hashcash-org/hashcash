@@ -304,7 +304,7 @@ unsigned long minter_mmx_standard_1(int bits, int* best, unsigned char *block, c
   unsigned char *X = (unsigned char*) W;
   unsigned char *output = (unsigned char*) block;
 	
-  *best = 0;
+  if ( *best > 0 ) { maxBits = *best+1; }
 
   /* Splat Kn constants into MMX-style array */
   ((uInt32*)K)[0] = ((uInt32*)K)[1] = K1;
@@ -591,7 +591,7 @@ unsigned long minter_mmx_standard_1(int bits, int* best, unsigned char *block, c
 						gotBits = 64;
 					}
 				}
-				*best = gotBits;
+				if ( gotBits > *best ) { *best = gotBits; }
 				/* Regenerate the bit mask */
 				maxBits = gotBits+1;
 				if(maxBits < 32) {

@@ -240,8 +240,9 @@ int progress_callback(int percent, int largest, int target,
 		      double counter, double expected, void* user)
 {
     static int previous_percent = -1;
-    static int previous_largest;
-    double previous_counter = -1;
+    static int previous_largest = -1;
+    static double previous_counter = -1;
+
     if ( previous_counter != counter || 
 	 previous_percent != percent || previous_largest != largest ) {
 	fprintf( stderr, "percent: %.0lf/%.0lf = %d%% [%d/%d bits]\r", 
@@ -250,7 +251,6 @@ int progress_callback(int percent, int largest, int target,
 	previous_largest = largest;
 	previous_counter = counter;
     }
-    return 0;
     return 1;
 }
 
@@ -262,7 +262,7 @@ void usage( const char* msg )
     fprintf( stderr, "check:\t\thashcash -c [opts] -d -r resource [-e period] [token]\n" );
     fprintf( stderr, "purge expired:\thashcash -p now [-k] [-j resource] [-t time] [-u]\n" );
     fprintf( stderr, "\n" );
-    fprintf( stderr, "\t-b bits\t\tfind or check partial hash collision of length bits\n" );
+    fprintf( stderr, "\t-b bits\t\tfind or check partial preimage of length bits\n" );
     fprintf( stderr, "\t-d\t\tuse database (for double spending detection)\n" );
     fprintf( stderr, "\t-r resource\tresource name for minting or checking token\n" );
     fprintf( stderr, "\t-e period\ttime until token expires\n" );
@@ -285,8 +285,8 @@ void usage( const char* msg )
     fprintf( stderr, "\t-P\t\tshow progress while searching\n");
     fprintf( stderr, "\t-O core\t\tuse specified minting core\n");
     fprintf( stderr, "examples:\n" );
-    fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit collision\n" );
-    fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check collision\n" );
+    fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit preimage\n" );
+    fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check preimage\n" );
     fprintf( stderr, "\n" );
     fprintf( stderr, "see hashcash (1) man page or http://www.hashcash.org/ for more details.\n" );
     exit( EXIT_ERROR );

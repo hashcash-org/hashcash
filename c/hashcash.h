@@ -26,7 +26,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.21
+#define HASHCASH_VERSION 1.22
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -97,7 +97,7 @@ const char* hashcash_version( void );
  * resource        -- resource name, unique descriptor for resource you're
  *                    trying to protect
  *
- * bits            -- bits of collision the resource demands
+ * bits            -- bits of partial preimage the resource demands
  * 
  * anon_period     -- add (or subtract if negative) a random period
  *                    in seconds between this value and 0
@@ -179,7 +179,7 @@ char* hashcash_make_header( const char* stamp, int line_len,
 HCEXPORT
 int hashcash_validity_to_width( long validity_period );
 
-/* count bits of collision in stamp */
+/* count bits of preimage in stamp */
 
 HCEXPORT
 unsigned hashcash_count( const char* stamp );

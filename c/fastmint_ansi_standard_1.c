@@ -60,7 +60,7 @@ unsigned long minter_ansi_standard_1(int bits, int* best, unsigned char *block, 
 	static const int endTest = 3;
 	unsigned char *output = (unsigned char*) block;
 	
-	*best = 0;
+	if ( *best > 0 ) { maxBits = *best+1; }
 
 	/* Work out whether we need to swap bytes during encoding */
 	addressMask = ( *(char*)&endTest );
@@ -262,7 +262,7 @@ unsigned long minter_ansi_standard_1(int bits, int* best, unsigned char *block, 
 				}
 			}
 			
-			*best=gotBits;
+			if ( gotBits > *best ) { *best = gotBits; }
 			/* Regenerate the bit mask */
 			maxBits = gotBits+1;
 			if(maxBits < 32) {

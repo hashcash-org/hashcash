@@ -3,7 +3,7 @@
 /*  hashcash mint and verification 
  * 
  *  hashcash is payment in burnt CPU cycles by calculating n-bit
- *  partial hash collisions
+ *  partial hash preimages of the all 0 string
  *
  *  see:         http://www.hashcash.org/
  *
@@ -146,6 +146,9 @@ int verbose_flag;
 int out_is_tty;
 int in_is_tty;
 
+#define PROGRESS_FMT "percent: %%.0lf/%%.0lf = %%.%dlf%%%% [%%d/%%d bits]%%c"
+char progress_format[80] = { 0 };
+
 int progress_callback(int percent, int largest, int target, 
 		      double counter, double expected, void* user);
 
@@ -197,8 +200,8 @@ int main( int argc, char* argv[] )
     int core = 0, res = 0, core_flag = 0;
 
     double tries_taken = 0, taken = 0, tries_expected = 0, time_est = 0;
-    int opt = 0, vers = 0, db_opened = 0, i = 0, t = 0, tty_info = 0;
-    int in_headers = 0, skip = 0, over = 0;
+    int opt = 0, vers = 0, db_opened = 0, i = 0, j = 0, t = 0, tty_info = 0;
+    int in_headers = 0, skip = 0, over = 0, precision = 0;
     char *re_err = NULL;
     ELEMENT* ent = NULL;
     DB db;
@@ -247,7 +250,7 @@ int main( int argc, char* argv[] )
 		if ( bits < 0 ) { usage( "error: -b invalid bits arg" ); }
 	    }
 	    if ( bits > SHA1_DIGEST_BYTES * 8 ) {
-		usage( "error: max collision with sha1 is 160 bits" );
+		usage( "error: max preimage with sha1 is 160 bits" );
 	    }
 	    break;
 	case 'C': case_flag = 1; break;
@@ -489,7 +492,7 @@ int main( int argc, char* argv[] )
 	if ( !verbose_flag && speed_flag && mint_flag ) {
 	    QPRINTF( stderr, "core: %s\n", 
 		     hashcash_core_name( hashcash_core() ) );
-	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
+	    QPRINTF( stderr, "speed: %ld preimage tests per second\n",
                      hashcash_per_sec() );
             PPRINTF( stdout, "%ld\n", hashcash_per_sec() );
 	    QPRINTF( stderr, "compression: %d\n", compress );
@@ -498,7 +501,7 @@ int main( int argc, char* argv[] )
 	if ( verbose_flag || ( speed_flag && !bits_flag ) ) {
 	    QPRINTF( stderr, "core: %s\n",
                      hashcash_core_name( hashcash_core() ) );
-	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
+	    QPRINTF( stderr, "speed: %ld preimage tests per second\n",
                      hashcash_per_sec() );
 	    if ( speed_flag && !bits_flag && !mint_flag ) {
                 PPRINTF( stdout, "%ld\n", hashcash_per_sec() );
@@ -527,6 +530,15 @@ int main( int argc, char* argv[] )
 
 	    if ( !ent->case_flag ) { stolower( ent->str ); }
 
+	    /* calculate precision to see responsive % progress */
+	    /* aim to see progress min every 0.25 seconds */
+	    time_est = hc_est_time( ent->bits ) / 100;
+	    precision = 0;
+	    for ( j = 0; j <= 12; j++ ) {
+		if ( time_est > 0.25 ) { time_est /= 10; precision++; }
+	    }
+	    sprintf( progress_format, PROGRESS_FMT, precision );
+
 	    err = hashcash_mint( now_time, ent->width, ent->str, ent->bits, 
 				 ent->anon, &new_token, &anon_random, 
 				 &tries_taken, ext, compress, 
@@ -535,15 +547,15 @@ int main( int argc, char* argv[] )
 
 	    switch ( err ) {
 	    case HASHCASH_INVALID_TOK_LEN:
-		die_msg( "error: maximum collision with sha1 is 160 bits" );
+		die_msg( "error: maximum preimage with sha1 is 160 bits" );
 	    case HASHCASH_RNG_FAILED:
 		die_msg( "error: random number generator failed" );
 	    case HASHCASH_INVALID_TIME:
 		die_msg( "error: outside unix time Epoch" );
 	    case HASHCASH_TOO_MANY_TRIES:
-		die_msg( "error: failed to find collision in 2^96 tries!" );
+		die_msg( "error: failed to find preimage in 2^96 tries!" );
 	    case HASHCASH_EXPIRED_ON_CREATION:
-		die_msg( "error: -a token may expire on creation" );
+		die_msg( "error: -a stamp may expire on creation" );
 	    case HASHCASH_INVALID_VALIDITY_PERIOD:
 		die_msg( "error: negative validity period" );
 	    case HASHCASH_INVALID_TIME_WIDTH:
@@ -583,7 +595,7 @@ int main( int argc, char* argv[] )
 		free( header_wrapped );
 	    } else { 
 		fprintf( stdout, "%s%s\n", 
-			 ((quiet_flag||!out_is_tty)? "" : "hashcash token: "),
+			 ((quiet_flag||!out_is_tty)? "" : "hashcash stamp: "),
 			 new_token );
 	    }
 	    free( new_token );
@@ -667,7 +679,7 @@ int main( int argc, char* argv[] )
 	    /* end of stamp finder which results in clean stamp in token */
 
 	    if ( token_found ) {
-		VPRINTF( stderr, "examining token: %s\n", token );
+		VPRINTF( stderr, "examining stamp: %s\n", token );
 
 		skip = 0;
 		over = 0;
@@ -702,7 +714,7 @@ int main( int argc, char* argv[] )
 		    /* reasons token is broken, give up */
 
 			case HASHCASH_INVALID:
-			    QPRINTF( stderr, "skipped: token invalid\n" );
+			    QPRINTF( stderr, "skipped: stamp invalid\n" );
 			    skip = 1; continue;
 
 			case HASHCASH_UNSUPPORTED_VERSION:
@@ -716,7 +728,7 @@ int main( int argc, char* argv[] )
 
 			case HASHCASH_WRONG_RESOURCE:
 			    if ( !multiple_resources ) {
-				QPRINTF( stderr, "skipped: token with wrong resource\n" );
+				QPRINTF( stderr, "skipped: stamp with wrong resource\n" );
 				skip = 1; continue;
 			    }
 			    break;
@@ -724,21 +736,21 @@ int main( int argc, char* argv[] )
 			case HASHCASH_INSUFFICIENT_BITS:
 			    if ( !multiple_bits && bits_flag ) {
 			        QPRINTF( stderr, 
-					 "skipped: token has insufficient bits\n" );
+					 "skipped: stamp has insufficient bits\n" );
 				skip = 1; continue;
 			    }
 			    break;
 
 			case HASHCASH_EXPIRED:
 			    if ( !multiple_validity && check_flag ) {
-				QPRINTF( stderr, "skipped: token expired\n" );
+				QPRINTF( stderr, "skipped: stamp expired\n" );
 				skip = 1; continue;
 			    }
 			    break;
 
 			case HASHCASH_VALID_IN_FUTURE:
 			    if ( !multiple_grace && check_flag ) {
-				QPRINTF( stderr, "skipped: valid in future\n" );
+				QPRINTF( stderr, "skipped: stamp valid in future\n" );
 				skip = 1; continue;
 			    }
 			    break;
@@ -766,19 +778,19 @@ int main( int argc, char* argv[] )
 
 		    case HASHCASH_INSUFFICIENT_BITS:
 			if ( bits_flag ) {
-			    QPUTS( stderr, "no match: token has insufficient bits\n" );
+			    QPUTS( stderr, "no match: stamp has insufficient bits\n" );
 			    over = 1; accept = 0; continue;
 			}
 			break;
 		    case HASHCASH_VALID_IN_FUTURE:
 			if ( check_flag ) {
-			    QPRINTF( stderr, "no match: valid in future\n" );
+			    QPRINTF( stderr, "no match: stamp valid in future\n" );
 			    over = 1; accept = 0; continue;
 			}
 			break;
 		    case HASHCASH_EXPIRED:
 			if ( check_flag ) { 
-			    QPUTS( stderr, "no match: token expired\n" );
+			    QPUTS( stderr, "no match: stamp expired\n" );
 			    over = 1; accept = 0; continue;
 			}
 			break;
@@ -807,13 +819,13 @@ int main( int argc, char* argv[] )
 			    db_opened = 1;
 			}
 			if ( db_in( &db, token, token_utime ) ) {
-			    QPRINTF( stderr, "skipped: spent token\n" );
+			    QPRINTF( stderr, "skipped: spent stamp\n" );
 			    valid_for = HASHCASH_SPENT;
 			    continue; /* to next token */
 			}
 		    }
 
-		    QPRINTF( stderr, "matched token: %s\n", token );
+		    QPRINTF( stderr, "matched stamp: %s\n", token );
 
 		    if ( name_flag || verbose_flag ) {
 			if ( ext ) { free( ext ); ext = NULL; }
@@ -821,7 +833,7 @@ int main( int argc, char* argv[] )
 					utcttime, MAX_UTC,
 					token_resource, MAX_RES, &ext, 0 );
 			parsed = 1;
-			QPRINTF( stderr, "token resource name: %s\n", 
+			QPRINTF( stderr, "stamp resource name: %s\n", 
 				 token_resource );
 			PPRINTF( stdout, "%s", token_resource );
 		    }
@@ -838,7 +850,7 @@ int main( int argc, char* argv[] )
 			    count_bits = ( count_bits < claimed_bits ) ? 
 				0 : claimed_bits;
 			}
-			QPRINTF( stderr, "token value: %d\n", count_bits );
+			QPRINTF( stderr, "stamp value: %d\n", count_bits );
 			if ( name_flag || verbose_flag ) { 
 			    PPUTS( stdout, " " ); 
 			}
@@ -915,7 +927,7 @@ int main( int argc, char* argv[] )
 		QPRINTF( stderr, "warning: no line matching %s found in input\n",
 			 header );
 	    } 
-	    QPUTS( stderr, "rejected: no valid tokens found\n" );
+	    QPUTS( stderr, "rejected: no valid stamps found\n" );
 	    valid_for = HASHCASH_NO_TOKEN;
 	}
 
@@ -956,16 +968,19 @@ int main( int argc, char* argv[] )
     return 0;
 }
 
-int progress_callback(int percent, int largest, int target, 
+int progress_callback(int ignore, int largest, int target, 
 		      double counter, double expected, void* user)
 {
     static int previous_percent = -1;
-    static int previous_largest;
-    double previous_counter = -1;
-    if ( previous_counter != counter || 
-	 previous_percent != percent || previous_largest != largest ) {
-	fprintf( stderr, "percent: %.0lf/%.0lf = %d%% [%d/%d bits]\r", 
-		 counter, expected, percent, largest, target );
+    static int previous_largest = -1;
+    static double previous_counter = -1;
+    double percent;
+
+    if ( previous_counter != counter || previous_largest != largest ) {
+	percent = counter*100/expected;
+	fprintf( stderr, progress_format,
+		 counter, expected, percent, largest, target,
+		 (previous_largest == largest) ? '\r' : '\n' );
 	previous_percent = percent;
 	previous_largest = largest;
 	previous_counter = counter;
@@ -1019,31 +1034,31 @@ void usage( const char* msg )
     if ( msg ) { fputs( msg, stderr ); fputs( "\n\n", stderr ); }
     fprintf( stderr, "mint:\t\thashcash [-m] [opts] resource\n" );
     fprintf( stderr, "measure speed:\thashcash -s [-b bits]\n" );
-    fprintf( stderr, "check:\t\thashcash -c [opts] -d -r resource [-e period] [token]\n" );
+    fprintf( stderr, "check:\t\thashcash -c [opts] -d -r resource [-e period] [stamp]\n" );
     fprintf( stderr, "purge expired:\thashcash -p now [-k] [-j resource] [-t time] [-u]\n" );
-    fprintf( stderr, "count bits:\thashcash -w [opts] [token]\n" );
-    fprintf( stderr, "get resource:\thashcash -n [opts] [token]\n" );
-    fprintf( stderr, "time remaining:\thashcash -l [opts] -e period [token]\n" );
+    fprintf( stderr, "count bits:\thashcash -w [opts] [stamp]\n" );
+    fprintf( stderr, "get resource:\thashcash -n [opts] [stamp]\n" );
+    fprintf( stderr, "time remaining:\thashcash -l [opts] -e period [stamp]\n" );
     fprintf( stderr, "\n" );
-    fprintf( stderr, "\t-b bits\t\tfind or check partial hash collision of length bits\n" );
+    fprintf( stderr, "\t-b bits\t\tfind or check partial preimage of length bits\n" );
     fprintf( stderr, "\t-d\t\tuse database (for double spending detection)\n" );
-    fprintf( stderr, "\t-r resource\tresource name for minting or checking token\n" );
+    fprintf( stderr, "\t-r resource\tresource name for minting or checking stamp\n" );
     fprintf( stderr, "\t-o\t\tprevious resource overrides this resource\n" );
-    fprintf( stderr, "\t-e period\ttime until token expires\n" );
+    fprintf( stderr, "\t-e period\ttime until stamp expires\n" );
     fprintf( stderr, "\t-g\t\tgrace period for clock skew\n" );
-    fprintf( stderr, "\t-t time\t\tmodify current time token created at\n" );
+    fprintf( stderr, "\t-t time\t\tmodify current time stamp created at\n" );
     fprintf( stderr, "\t-a time\t\tmodify time by random amount in range given\n" );
     fprintf( stderr, "\t-u\t\tgive time in UTC instead of local time\n" );
     fprintf( stderr, "\t-q\t\tquiet -- suppress all informational output\n" );
     fprintf( stderr, "\t-v\t\tprint verbose informational output\n" );
     fprintf( stderr, "\t-h\t\tprint this usage info\n" );
     fprintf( stderr, "\t-f dbfile\tuse filename dbfile for database\n" );
-    fprintf( stderr, "\t-j resource\twith -p delete just tokens matching the given resource\n" );
+    fprintf( stderr, "\t-j resource\twith -p delete just stamps matching the given resource\n" );
     fprintf( stderr, "\t-k\t\twith -p delete all not just expired\n" );
     fprintf( stderr, "\t-x ext\t\tput in extension field\n" );
     fprintf( stderr, "\t-X\t\toutput with header format 'X-Hashcash: '\n" );
     fprintf( stderr, "\t-i\t\twith -X and -c, check msg body as well\n" );
-    fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
+    fprintf( stderr, "\t-y\t\treturn success if stamps is valid but not fully checked\n" );
     fprintf( stderr, "\t-z width\twidth of time field 6,10 or 12 chars (default 6)\n" );
     fprintf( stderr, "\t-C\t\tmatch resources as case sensitive (default insensitive)\n" );
     fprintf( stderr, "\t-S\t\tmatch following resources as text strings\n" );
@@ -1053,8 +1068,8 @@ void usage( const char* msg )
     fprintf( stderr, "\t-O core\t\tuse specified minting core\n");
     fprintf( stderr, "\t-Z n\t\t0 = fast (default), 1 = medium, 2 = small/slow\n");
     fprintf( stderr, "examples:\n" );
-    fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit collision\n" );
-    fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check collision\n" );
+    fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit preimage\n" );
+    fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check preimage\n" );
     fprintf( stderr, "\n" );
     fprintf( stderr, "see hashcash (1) man page or http://www.hashcash.org/ for more details.\n" );
     fflush( stderr );
@@ -1345,7 +1360,7 @@ double report_speed( int bits, double* time_est, int display )
     double te = 0;
     double tries_expected = hashcash_expected_tries( bits );
     
-    VPRINTF( stderr, "mint: %d bit partial hash collision\n", bits );
+    VPRINTF( stderr, "mint: %d bit partial hash preimage\n", bits );
     VPRINTF( stderr, "expected: %.0f tries (= 2^%d tries)\n",
 	     tries_expected, bits );
 

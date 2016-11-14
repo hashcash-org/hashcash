@@ -1,4 +1,4 @@
-HC_VERS = 1.21
+HC_VERS = 1.22
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -15,7 +15,7 @@ MSLIB = mslib
 # if no POSIX or BSD, disable, still have builtin basic wildcard support
 # 	REGEXP = 
 REGEXP=-DREGEXP_POSIX
-COPT_DEBUG = -g
+COPT_DEBUG = -g -DDEBUG
 COPT_GENERIC = -O3
 COPT_GNU = -O3 -funroll-loops
 COPT_X86 = -O3 -funroll-loops -march=pentium-mmx -mmmx \
@@ -120,7 +120,7 @@ sha1$(EXE):	sha1.o libsha1.o
 	$(CC) sha1.o libsha1.o -o $@ $(LDFLAGS)
 
 example$(EXE):	example.o getopt.o libhashcash$(LIB)
-	$(CC) example.o getopt.o libhashcash$(LIB) -o $@ $(LDFLAGS)
+	$(CC) example.o getopt.o libhashcash$(LIB) $(LIBCRYPTO) -o $@ $(LDFLAGS) 
 
 hashcash-dll$(EXE):   $(EXEOBJS) hashcash.dll
 	$(CC) $(EXEOBJS) hashcash.dll -o $@ $(LDFLAGS)

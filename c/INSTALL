@@ -15,11 +15,14 @@ type:
 
 to use the openssl SHA1 implementation rather than builtin:
 
-	make <platform> CFLAGS=-DOPENSSL LDFLAGS=-lcrypto
+	make <platform>-openssl
 
-Note: if you are using the libhashcash.a or linking with other
-software that uses openssl, you will want to compile it this way or
-you will get conflicts with function names.
+(ie the platform names with the -openssl suffix link to the openssl
+SHA1 implementation).
+
+Note: if you are using the libhashcash.a or linking hashcash with
+other software that uses openssl, you will want to compile hashcash to
+also use openssl or you will get conflicts with SHA1 function names.
 
 COMPILING WINDOWS
 

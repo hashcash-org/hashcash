@@ -368,7 +368,7 @@ unsigned hashcash_count( const char* token )
     int ver_len = 0 ;
     int i = 0 ;
     int last = 0 ;
-    int collision_bits = 0 ;
+    int preimage_bits = 0 ;
 
     first_colon = strchr( token, ':' );
     if ( first_colon == NULL ) { return 0; } /* should really fail */
@@ -393,7 +393,7 @@ unsigned hashcash_count( const char* token )
     }
     
     last = i;
-    collision_bits = 8 * i;
+    preimage_bits = 8 * i;
 
 #define bit( n, c ) (((c) >> (7 - (n))) & 1)
 
@@ -401,12 +401,12 @@ unsigned hashcash_count( const char* token )
     {
 	if ( bit( i, token_digest[ last ] ) == 
 	     bit( i, target_digest[ last ] ) ) { 
-	    collision_bits++; 
+	    preimage_bits++; 
 	} else { 
 	    break; 
 	}
     }
-    return collision_bits;
+    return preimage_bits;
 }
 
 long hashcash_valid_for( time_t token_time, long validity_period,

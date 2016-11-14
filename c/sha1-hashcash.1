@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "SHA1-HASHCASH 1"
-.TH SHA1-HASHCASH 1 "2004-12-17" "1.15" "sha1"
+.TH SHA1-HASHCASH 1 "2006-04-07" "1.22" "sha1"
 .SH "NAME"
 sha1 \- Secure Hash Algorithm (version 1) hash function
 .SH "SYNOPSIS"
@@ -204,7 +204,7 @@ received the following email:
 .Ve
 .PP
 Then the following command would show visually the size of the
-collision:
+preimage:
 .ie n .IP """echo \-n 0:030626:adam@cypherspace.org:6470e06d773e05a8 | sha1""" 4
 .el .IP "\f(CWecho \-n 0:030626:adam@cypherspace.org:6470e06d773e05a8 | sha1\fR" 4
 .IX Item "echo -n 0:030626:adam@cypherspace.org:6470e06d773e05a8 | sha1"
@@ -212,7 +212,7 @@ collision:
 \& 00000000c70db7389f241b8f441fcf068aead3f0
 .Ve
 .PP
-and you can see the leading hex 0s.  
+and you can see the leading hex 0s.
 .SH "LIMITATIONS"
 .IX Header "LIMITATIONS"
 Doesn't have the check option that md5sum has.  Perhaps I'll add that in a

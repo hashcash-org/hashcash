@@ -20,7 +20,7 @@
 		<li><a href="#check_stamps_">Check stamps:</a></li>
 		<li><a href="#speed_estimates_">Speed estimates:</a></li>
 		<li><a href="#purge_database_">Purge database:</a></li>
-		<li><a href="#count_collision_bits_">Count collision bits:</a></li>
+		<li><a href="#count_partial_preimage_bits_">Count partial preimage bits:</a></li>
 		<li><a href="#get_resource_name_">Get resource name:</a></li>
 		<li><a href="#get_time_remaining_until_expiry">Get time remaining until expiry</a></li>
 	</ul>
@@ -85,7 +85,7 @@
 <p><strong>hashcash</strong> <em>-p now</em> [ <em>-j resource</em> ] [ <em>-k</em> ] [ <em>-t time</em> ] [ <em>-u</em> ]</p>
 <p>
 </p>
-<h2><a name="count_collision_bits_">Count collision bits:</a></h2>
+<h2><a name="count_partial_preimage_bits_">Count partial preimage bits:</a></h2>
 <p><strong>hashcash</strong> <em>-w</em> [ <em>options</em> ] [ <em>stamp</em> ... ]</p>
 <p>
 </p>
@@ -114,11 +114,11 @@ recipient can verify received stamps efficiently.  This package also
 includes a sha1 implementation which is equivalent in functionality to
 the sha1sum program available on some systems.</p>
 <p>The hashcash proof-of-work function is to compute partial hash
-collisions (the SHA1 hash function is used).  By choosing the number
-of bits of collision, the work required to compute a collision can be
-made arbitrarily expensive -- from fractions of a second to minutes or
-hours.  The verification is efficient requiring the same small cost
-whatever the collision size.</p>
+preimages (the SHA1 hash function is used).  By choosing the number of
+bits of the preimage that are equal to 0, the work required to compute
+a partial preimage can be made arbitrarily expensive -- from fractions
+of a second to minutes or hours.  The verification is efficient
+requiring the same small cost whatever the preimage size.</p>
 <p>For more detailed discussion of other applications hashcash has been
 used for see <a href="http://www.hashcash.org/">http://www.hashcash.org/</a></p>
 <p>
@@ -135,8 +135,8 @@ the recipient's email address in the form <a href="mailto:user@domain.com.">user
 <p>The resource name (recipient's email address) to mint the stamp
 against can be passed as an argument, or if omitted is read from
 stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
-resource name is just silently read.  The desired collision size can
-be specified with the -b option.  If no collision size is specified,
+resource name is just silently read.  The desired preimage size can
+be specified with the -b option.  If no preimage size is specified,
 the default is 20 bits.  See also the <em>-b default</em> option.</p>
 <p>
 </p>
@@ -157,7 +157,7 @@ resources, so hashcash will return unchecked exit code on exit.</p>
 period can be changed using the <em>-e</em> flag.</p>
 <p>If the stamp has expired or has a date in the future the stamp is
 rejected and the program exits immediately.</p>
-<p>If a required collision size is given with the <em>-b</em> flag, the stamps value
+<p>If a required preimage size is given with the <em>-b</em> flag, the stamps value
 is computed and compared, if the stamp has insufficent value it is rejected,
 and the program exits immediately.  If the <em>-b</em> flag is not given, the
 stamp is checked to see if it is otherwise valid, but hashcash will return
@@ -168,7 +168,7 @@ protection is discussed in more detail below in
 enabled, the stamp could be double spent, so hashcash will return
 unchecked exit code (exit code 2) on exit.</p>
 <p>The <em>-w</em> flag can be used to request that the number of bits of the
-collision are counted and displayed. The <em>-n</em> flag can be used to
+preimage are counted and displayed. The <em>-n</em> flag can be used to
 request that the resource name in the stamp is parsed out and
 displayed.  The <em>-l</em> flag can be used to request the number of
 seconds until expiry of the stamp is output.</p>
@@ -223,7 +223,7 @@ low.</p>
 <p>
 </p>
 <h2><a name="speed_estimates">Speed Estimates</a></h2>
-<p>The <em>-s</em> flag requests measurement of how many collisions can be
+<p>The <em>-s</em> flag requests measurement of how many preimage can be
 tested per second.  No stamp is minted, or verified.</p>
 <p>If the <em>-b</em> flag is used with this option, instead an estimate of how
 many seconds it would take to mint a stamp of the given size in bits
@@ -262,8 +262,8 @@ Mint stamps with the resources given as arguments or on stdin.
 <dt><strong><a name="item__2db_bits"><em>-b bits</em></a></strong><br />
 </dt>
 <dd>
-When minting a stamp, create a collision of at least this many bits.
-When verifying a stamp require that it have a collision of at minimum
+When minting a stamp, create a preimage of at least this many bits.
+When verifying a stamp require that it have a preimage of at minimum
 this many bits, otherwise reject it.  If omitted the default is used.
 </dd>
 <dd>
@@ -463,8 +463,8 @@ resources given with the <em>-j resource</em> flag.</p>
 <dd>
 Print timing information only, and don't proceed to create a stamp.
 If combined with <em>-b bits</em> flag print estimate of how long the
-requested collision size would take to compute, if <em>-s</em> given by
-itself, just prints speed of the collision finder.  To print an
+requested preimage size would take to compute, if <em>-s</em> given by
+itself, just prints speed of the preimage finder.  To print an
 estimate of how long the default number of bits would take use <em>-b
 default</em>.
 </dd>
@@ -530,7 +530,7 @@ subsequent release.
 <dd>
 When checking and using the <em>-X</em> flag, ignore the blank line
 boundary between headers and body of the message, and check for
-collision in the body too if one is not found in the headers.
+stamps in the body too if one is not found in the headers.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dt_time"><em>-t time</em></a></strong><br />
@@ -599,7 +599,7 @@ calculation.</p>
 <dt><strong><a name="item__2dw"><em>-w</em></a></strong><br />
 </dt>
 <dd>
-Print number of bits of collision of stamp.  Returns exit code
+Print number of bits of preimage of stamp.  Returns exit code
 unchecked on exit.
 </dd>
 <p></p>
@@ -693,7 +693,7 @@ discovered bug, -Z2 is the same as -Z1 for now until I can fix that.)
 <dt><strong><a name="item_hashcash__2ds"><code>hashcash -s</code></a></strong><br />
 </dt>
 <dd>
-Print timing information about how many collisions the machine can try
+Print timing information about how many preimages the machine can try
 per second.
 </dd>
 <p></p>
@@ -708,34 +708,34 @@ specific minting cores.
 </dt>
 <dd>
 Print how long it would take the machine to compute a default sized
-collision (but don't actually compute a collision).
+preimage (but don't actually compute a preimage).
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2ds__2db_32"><code>hashcash -s -b 32</code></a></strong><br />
 </dt>
 <dd>
-Print how long it would take the machine to compute a 32 bit collision
-(but don't actually compute a collision).
+Print how long it would take the machine to compute a 32 bit preimage
+(but don't actually compute a preimage).
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dm"><code>hashcash -m</code></a></strong><br />
 </dt>
 <dd>
 Mint a stamp.  Will prompt for resource name and mint with default
-value (number of collision bits).
+value (number of preimage bits).
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dm_foo"><code>hashcash -m foo</code></a></strong><br />
 </dt>
 <dd>
-Compute collision on resource foo.  Will mint with default value
-(number of collision bits).
+Compute preimage on resource foo.  Will mint with default value
+(number of preimage bits).
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dm_foo__2db_10"><code>hashcash -m foo -b 10</code></a></strong><br />
 </dt>
 <dd>
-Compute 10 bit collision on resource foo.
+Compute 10 bit preimage on resource foo.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2da__2d3d"><code>hashcash -a -3d</code></a></strong><br />
@@ -753,8 +753,8 @@ reduce risk of timing-correlations.
 <dt><strong><a name="item_hashcash__2dw_1_3a24_3a040806_3afoo_3a_3a511801694"><code>hashcash -w 1:24:040806:foo::511801694b4cd6b0:1e7297a</code></a></strong><br />
 </dt>
 <dd>
-Report the value of the stamp (how many bits of collision) there are.
-The example is a 24 bit collision, which takes on average 25 seconds
+Report the value of the stamp (how many bits of preimage) there are.
+The example is a 24 bit preimage, which takes on average 25 seconds
 to create on a 3Ghz P4.
 </dd>
 <p></p>
@@ -789,7 +789,7 @@ its creation date.  (Note dates too far into the future run into the
 <dd>
 Check if the stamp is valid.  Note as we are not checking the stamp in
 a double spend database, and did not specify a resource name or
-required number of bits of collision and hashcash will consider the
+required number of bits of preimage and hashcash will consider the
 stamp not fully checked, and it will report it as valid but not fully
 unchecked, or as invalid if there is any problem with the stamp.
 </dd>
@@ -799,7 +799,7 @@ unchecked, or as invalid if there is any problem with the stamp.
 <dd>
 Check that the value of the stamp is greater or equal to 24 bits.
 This example has 24 bit value.  If you increase the requested number
-of bits or replace the stamp with one with less than 24 bit collision
+of bits or replace the stamp with one with less than 24 bit preimage
 the stamp will be rejected.
 </dd>
 <p></p>
@@ -818,7 +818,7 @@ stamp.
 double spend database so that the same stamp will not be accepted
 twice.  Note a stamp will only be checked in and added to the database
 if it is otherwise valid and fully checked (a required number of bits
-of collision has been specified and a resource has been specified).</p>
+of preimage has been specified and a resource has been specified).</p>
 <dl>
 <dt><strong><a name="item_hashcash__2dcd__2db_10__2dr_foo_1_3a24_3a040806_3a"><code>hashcash -cd -b 10 -r foo 1:24:040806:foo::511801694b4cd6b0:1e7297a</code></a></strong><br />
 </dt>
@@ -883,7 +883,7 @@ An expiry period of forever can also be given explitly like this: <em>-e
 <h2><a name="purging_old_stamps">Purging old stamps</a></h2>
 <p>If the <em>-c</em>, <em>-d</em> options are used together, each time a stamp is
 checked, if it is valid and all of the mandatory aspects of the stamp
-are verified (collision bits check, resource name check) then the
+are verified (preimage bits check, resource name check) then the
 stamp and its expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
 the <em>-e</em> option is 28 days (ie stamps expire after 4 weeks).</p>
@@ -989,7 +989,7 @@ format.</p>
 <dl>
 <dt><strong><a name="item_ver__3d_1"><em>ver</em> = 1</a></strong><br />
 </dt>
-<dt><strong><a name="item_bits__3d_how_many_bits_of_partial_2dcollision_the_"><em>bits</em> = how many bits of partial-collision the stamp is claimed to have</a></strong><br />
+<dt><strong><a name="item_bits__3d_how_many_bits_of_partial_2dpreimage_the_s"><em>bits</em> = how many bits of partial-preimage the stamp is claimed to have</a></strong><br />
 </dt>
 <dt><strong><a name="item_date__3d_yymmdd_5bhhmm_5bss_5d_5d"><em>date</em> = YYMMDD[hhmm[ss]]</a></strong><br />
 </dt>
@@ -1018,11 +1018,11 @@ eg ``var1=2'' could be the value of an option to the extension name3.</p>
 </dd>
 <p></p></dl>
 <dt><strong><a name="item_rand__3d_string_of_random_characters_from_alphabet"><em>rand</em> = string of random characters from alphabet
-		a-zA-Z0-9+/= to avoid collisions with other sender's
+		a-zA-Z0-9+/= to avoid preimage with other sender's
 		stamps</a></strong><br />
 </dt>
 <dt><strong><a name="item_counter__3d_to_find_a_stamp_with_the_desired_numbe"><em>counter</em> = to find a stamp with the desired number of
-		   collision bits need to try lots of different strings
+		   preimage bits need to try lots of different strings
                    this counter is incremented on each try.  
 		   The Counter is also composed of characters from the
 		   alphabet a-zA-Z0-9+/=.  (Note an implementation is
