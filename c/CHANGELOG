@@ -1,0 +1,92 @@
+hashcash-0.14 - 13-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+	* revamped flags and arguments
+	* lots of new options and features
+	* more safe error reporting (avoid risk of false positives)
+	* fix all warnings
+	* make compile on machines with 64 bit longs
+	* make compile on IRIX
+	* make Makefile more portable
+	* more reliable timing strategy
+	* remove separate endian.c -- put endian stuff in libsha1.c
+	* create man page
+	* update documentation
+	* re-implement SDB simple database to have a more standard
+	  interface to facilitate plugging in gdb etc
+	* import random number interface to /dev/urandom
+
+hashcash-0.13 - 03-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+ 	* fix bug introduced in 0.12
+	* update documentation
+
+hashcash-0.12 - 03-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+	* add option to verify resource name given on command line
+          matches resource name in collision
+	* also more compatible with 0.10 command line as a result
+     	* add option to print resource name parsed from collision
+
+hashcash-0.11 - 02-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+  	* fix buffer overflow reported by Max Greenius
+	* add -v mode suggested by Michael Shinn
+	* add interactive mode instead of usage as default, another
+	  suggestion from Michael Shinn
+	* add explicit -h for usage
+	* add -q mode for even quieter output (batch like mode)
+	* add -x option to take collision to verify from stdin
+	* update the documentation in readme.txt to reflect
+	  new format and options
+	* add install target to makefile to install binaries
+	  for hashcash and sha1 in /usr/local/bin, another
+	  suggestion from Michael Shinn
+
+hashcash-0.10 - 20-Feb-2002 - Michael Shinn <mike@shinn.net>
+
+	* change output format slightly to make it easier
+	  to recognize the collision amongst the verbose output
+
+hashcash-0.09 - 25-May-2001 - Adam Back <adam@cypherspace.org>
+	
+	* clean up sha1.h
+	* add simple makefile
+	* fix bug in endian.h with linux redhat62
+	* change format to use : delimiters
+	* changed old version numers to be two digit
+	* standardised on bsd indentation
+	
+hashcash-0.08 - 28-Feb-2000 - Adam Back <adam@cypherspace.org>
+
+	* support for openSSL sha1 (-DOPENSSL)
+
+hashcash-0.07 - 08-Dec-1997 - Adam Back <adam@cypherspace.org>
+	
+	* bug fix in SHA1 code
+
+hashcash-0.06 - 07-May-1997 - Andy Dustman <andy@CCMSD.chem.uga.edu>
+
+	* bug fix + SPARSE compile option for library use
+
+hashcash-0.05 - 07-Mar-1997 - Adam Back <adam@cypherspace.org>
+
+	* made mods as suggested by Andy Dustman <andy@CCMSD.chem.uga.edu>
+	  to avoid collision collisions on larger collision lengths
+	  previous method was bugged
+
+hashcash-0.04 - 31-Mar-1997 - Adam Back <adam@cypherspace.org>
+
+	* no description
+
+hashcash-0.03 - 30-Mar-1997 - Adam Back <adam@cypherspace.org>
+
+	* put in fast SHA1, and other mods giving a 4x speedup
+	* plus a few bug fixes
+
+hashcash-0.02 - 28-Mar-1997 - Chris Kuethe <ckuethe@gpu.srv.ualberta.ca>
+
+	* added minimal macintosh support (Think C)
+
+hashcash-0.01 - 27-Mar-1997 - Adam Back <adam@cypherspace.org>
+
+	* first version

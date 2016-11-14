@@ -1,0 +1,655 @@
+<HTML>
+<HEAD>
+<TITLE>hashcash</TITLE>
+<LINK REV="made" HREF="mailto:prospector@porky.devel.redhat.com">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#name">NAME</A></LI>
+	<LI><A HREF="#synopsis">SYNOPSIS</A></LI>
+	<UL>
+
+		<LI><A HREF="#mint (create) token:">Mint (create) token:</A></LI>
+		<LI><A HREF="#check token:">Check token:</A></LI>
+		<LI><A HREF="#speed estimates:">Speed estimates:</A></LI>
+		<LI><A HREF="#purge database:">Purge database:</A></LI>
+		<LI><A HREF="#count collision bits:">Count collision bits:</A></LI>
+		<LI><A HREF="#get resource name:">Get resource name:</A></LI>
+		<LI><A HREF="#get time remaining until expiry">Get time remaining until expiry</A></LI>
+	</UL>
+
+	<LI><A HREF="#description">DESCRIPTION</A></LI>
+	<LI><A HREF="#usage notes">USAGE NOTES</A></LI>
+	<UL>
+
+		<LI><A HREF="#minting tokens">Minting tokens</A></LI>
+		<LI><A HREF="#checking tokens">Checking tokens</A></LI>
+		<LI><A HREF="#double spending protection">Double Spending Protection</A></LI>
+		<LI><A HREF="#purging periodically vs on next access">Purging Periodically vs on Next Access</A></LI>
+		<LI><A HREF="#speed estimates">Speed Estimates</A></LI>
+		<LI><A HREF="#notes">Notes</A></LI>
+	</UL>
+
+	<LI><A HREF="#options">OPTIONS</A></LI>
+	<LI><A HREF="#examples">EXAMPLES</A></LI>
+	<UL>
+
+		<LI><A HREF="#creating tokens">Creating tokens</A></LI>
+		<LI><A HREF="#examining tokens">Examining Tokens</A></LI>
+		<LI><A HREF="#verifying tokens">Verifying Tokens</A></LI>
+		<LI><A HREF="#double spending prevention">Double Spending Prevention</A></LI>
+		<LI><A HREF="#token expiry">Token Expiry</A></LI>
+		<LI><A HREF="#purging old tokens">Purging old tokens</A></LI>
+		<LI><A HREF="#purging old tokens on demand">Purging old tokens on Demand</A></LI>
+	</UL>
+
+	<LI><A HREF="#files">FILES</A></LI>
+	<LI><A HREF="#exit status">EXIT STATUS</A></LI>
+	<LI><A HREF="#author">AUTHOR</A></LI>
+	<LI><A HREF="#see also">SEE ALSO</A></LI>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="name">NAME</A></H1>
+<P>hashcash - hashcash minting and verification command line tool</P>
+<P>
+<HR>
+<H1><A NAME="synopsis">SYNOPSIS</A></H1>
+<P>
+<H2><A NAME="mint (create) token:">Mint (create) token:</A></H2>
+<P><STRONG>hashcash</STRONG> [ <EM>options</EM> ] [ <EM>-b bits</EM> ] [ <EM>resource</EM> ]&gt;</P>
+<P>
+<H2><A NAME="check token:">Check token:</A></H2>
+<P><STRONG>hashcash</STRONG> <EM>-c</EM> [ <EM>options</EM> ] <EM>-b bits</EM> <EM>-r resource</EM> [ <EM>token</EM> ]</P>
+<P>
+<H2><A NAME="speed estimates:">Speed estimates:</A></H2>
+<P><STRONG>hashcash</STRONG> <EM>-s</EM> [ <EM>options</EM> ] [ <EM>-b bits</EM> ]</P>
+<P>
+<H2><A NAME="purge database:">Purge database:</A></H2>
+<P><STRONG>hashcash</STRONG> <EM>-p now</EM> [ <EM>-j resource</EM> ] [ <EM>-k</EM> ] [ <EM>-t time</EM> ] [ <EM>-u</EM> ]</P>
+<P>
+<H2><A NAME="count collision bits:">Count collision bits:</A></H2>
+<P><STRONG>hashcash</STRONG> <EM>-w</EM> [ <EM>options</EM> ] [ <EM>token</EM> ]</P>
+<P>
+<H2><A NAME="get resource name:">Get resource name:</A></H2>
+<P><STRONG>hashcash</STRONG> <EM>-n</EM> [ <EM>options</EM> ] [ <EM>token</EM> ]</P>
+<P>
+<H2><A NAME="get time remaining until expiry">Get time remaining until expiry</A></H2>
+<P><STRONG>hashcash</STRONG> <EM>-l</EM> [ <EM>options</EM> ] <EM>-e period</EM> [ <EM>token</EM> ]</P>
+<P>
+<HR>
+<H1><A NAME="description">DESCRIPTION</A></H1>
+<P>Hashcash is a DoS counter-measure tool.  This tool allows you to mint
+(create) and verify hashcash tokens.  A hashcash token constitutes a
+proof-of-work which takes a parameterizable amount of work to compute
+for the sender.  The recipient can verify received tokens efficiently.</P>
+<P>The proof-of-work function is to compute partial hash collisions (in
+this version the SHA1 hash function is used).  By choosing the number
+of bits of collision, the work required to compute a collision can be
+made arbitrarily expensive -- from fractions of a second to minutes or
+hours.  The verification is efficient requiring the same small cost
+whatever the collision size.</P>
+<P>For more detailed discussion of potential applications for hashcash
+see <A HREF="http://www.cypherspace.org/hashcash/.">http://www.cypherspace.org/hashcash/.</A></P>
+<P>
+<HR>
+<H1><A NAME="usage notes">USAGE NOTES</A></H1>
+<P>
+<H2><A NAME="minting tokens">Minting tokens</A></H2>
+<P>If neither the <EM>-c</EM> or <EM>-s</EM> option are given, it is assumed that you
+want to mint a token.</P>
+<P>The resource name to mint the token against can be passed as an
+argument, or if omitted is read from stdin.  If stdin is a tty the
+user is prompted, if stdin is a pipe the resource name is just
+silently read.  The desired collision size can be specified with the
+-b option.  If no collision size is specified, the default is 20 bits.
+As a convenience, if stdin is a tty and no collision size is given
+with the <EM>-b</EM> flag, the user is prompted for a collision size.</P>
+<P>
+<H2><A NAME="checking tokens">Checking tokens</A></H2>
+<P>The <EM>-c</EM> flag must be given to check tokens.  The token to check can
+be given as an argument to <A HREF="#item_hashcash"><CODE>hashcash</CODE></A>.  If no token is given the
+token is read from stdin.  If stdin is a tty the user will be
+prompted, if stdin is a pipe the token is just silently read.  A
+resource name can be given with the <EM>-r</EM> option.  If a resource name
+is given the resource name is compared to the name in the token, if
+they do not match, the token is rejected.</P>
+<P>Note: if no resource name is given the token is anyway checked to see
+if it is otherwise valid, but it could be minted for a different
+resource, which would allow tokens to be reused across different
+resources, so hashcash will return unchecked exit code on exit.</P>
+<P>Tokens are by default considered to be valid forever.  The validity
+period can be changed using the <EM>-e</EM> flag.</P>
+<P>If the token has expired or has a date in the future the token is
+rejected and the program exits immediately.</P>
+<P>If a required collision size is given with the <EM>-b</EM> flag, the tokens
+value is computed and compared, if the token has insufficent value it
+is rejected, and the program exits immediately.  If the <EM>-b</EM> flag is
+not given, the token could be of any size, so hashcash will return
+unchecked exit code on exit.</P>
+<P>If the token is double spent the token is rejected.  Double spending
+protection is discussed in more detail below in 
+<A HREF="#double spending protection">Double Spending Protection</A>.  If double spending protection is not
+enabled, the token could be double spent, so hashcash will return
+unchecked exit code on exit.</P>
+<P>The <EM>-w</EM> flag can be used to request that the number of bits of the
+collision are counted and displayed; exit code unchecked is returned
+on exit.  The <EM>-n</EM> flag can be used to request that the resource name
+in the token is parsed out and displayed; exit code unchecked is
+returned on exit.  The <EM>-l</EM> flag can be used to request the number of
+seconds until expiry of the token is output; exit code unchecked is
+returned on exit.</P>
+<P>The program will only return exit codes valid or invalid if the <EM>-c</EM>
+flag is used, and all of the options <EM>-b bits</EM>, <EM>-d</EM>, <EM>-r resource</EM>
+are used.  These are the minimum set of options necessary to check the
+validty of a token.  If these criteria are not met, the program will
+return exit code unchecked on exit.</P>
+<P>
+<H2><A NAME="double spending protection">Double Spending Protection</A></H2>
+<P>If the <EM>-d</EM> flag is used with the <EM>-c</EM> flag a database of spent
+tokens is kept.</P>
+<P>By default tokens do not expire, and over time the database will grow
+indefinately.  To prevent this, you can specify an expiry period with
+the <EM>-e</EM> flag.  A recommended expiry period is 28 days.  After the
+expiry period amount of time, the token is anyway considered expired
+and may be purged from the database to save space.  (See 
+<A HREF="#purging periodically vs on next access">Purging Periodically vs on Next Access</A> for how to purge tokens.)</P>
+<P>For efficiency reasons a token is verified before it is checked in the
+database; if it is otherwise invalid no database activity will occur.</P>
+<P>Note: The decision about how long the token should be considered valid
+is up to the verifier.  If it is too short it is possible for some
+applications that the token will expire before arriving at the
+recipient (eg with email.)  The suggested value of 28 days should be
+safe for normal email delivery delays.  The choice is a trade-off
+between database size and risk of expiry prior to arrival, and depends
+on the application.</P>
+<P>Note: Different tokens in the same database can have different
+validity periods, so for example tokens for different resources with
+different validity periods can be stored in the same database, or the
+recipient may change the validity period for future tokens without
+affecting the validity of old tokens.</P>
+<P>
+<H2><A NAME="purging periodically vs on next access">Purging Periodically vs on Next Access</A></H2>
+<P>To purge old tokens periodically while checking tokens use the <EM>-p
+period</EM> option to purge no sooner than the given time period since the
+last purge.  Purging can be used with the <EM>-k</EM> to purge unexpired
+tokens also, and with the <EM>-r resource</EM> flag to purge only tokens for
+the given resource.</P>
+<P>There are circumstances where it may be inconvenient to purge tokens
+on the next access, for example if there is a large double spend
+database which takes some time to purge, and the response time of the
+hashcash checker is important.  To avoid this problem, purging can be
+done separately using just the <EM>-p now</EM> option to request just the
+purge operation.  On unix for example you could call <A HREF="#item_hashcash_%2Dp_now"><CODE>hashcash -p
+now</CODE></A> in a cron job once per day, or on demand when disk was running
+low.</P>
+<P>
+<H2><A NAME="speed estimates">Speed Estimates</A></H2>
+<P>The <EM>-s</EM> flag requests measurement of how many collisions can be
+tested per second.  No token is minted, or verified.</P>
+<P>If the <EM>-b</EM> flag is used this option, instead an estimate of how many
+seconds it would take to mint a token of that size is computed.</P>
+<P>
+<H2><A NAME="notes">Notes</A></H2>
+<P>All informational output is printed on stderr.  Minted tokens, and
+results of token verification and timing are printed on stdout.  The
+quiet flag <EM>-q</EM> suppresses all informational output.  The <EM>-v</EM> flag
+requests more informational output.  The requested output, which is
+the only information that is output in quiet mode (when <EM>-q</EM> is
+specified) is printed on standard output.  If stdout is a pipe the
+output is printed without description (ie just bits, just seconds,
+just resource).</P>
+<P>
+<HR>
+<H1><A NAME="options">OPTIONS</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_%2Dc"><EM>-c</EM></A></STRONG><BR>
+<DD>
+Check the token given as an argument or on stdin for validity.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dm"><EM>-m</EM></A></STRONG><BR>
+<DD>
+Mint a token.  If none of <EM>-c</EM>, <EM>-p</EM>, <EM>-s</EM>, <EM>-l</EM>, <EM>-n</EM>, <EM>-w</EM> are
+given it is anyway assumed that the user wishes to mint a token.
+<P></P>
+<DT><STRONG><A NAME="item_%2Db_bits"><EM>-b bits</EM></A></STRONG><BR>
+<DD>
+When minting a token, request a collision of this many bits.  When
+verifying a token require that it have a collision of at minimum this
+many bits, otherwise reject it.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dr_resource"><EM>-r resource</EM></A></STRONG><BR>
+<DD>
+When minting tokens, the resource name to mint the token against can
+be given either with <EM>-r resource</EM> or as an argument to <A HREF="#item_hashcash"><CODE>hashcash</CODE></A>.
+<P>When checking tokens, the resource name can be given with the <EM>-r</EM>
+option.  If the resource name is given it is checked against the
+resource name in the token, and if they do not match the token is
+rejected.  Note if the resource name is not given, tokens for other
+resources would be accepted, and therefore hashcash returns exit code
+unchecked on exit.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2De_time"><EM>-e time</EM></A></STRONG><BR>
+<DD>
+Expiry period for spent tokens.  While checking tokens (using the
+<EM>-c</EM> flag), if the token was minted more than the specified amount of
+time ago, it is considered expired.  If this option is not used, by
+default tokens do not expire (they have an expiry period of forever).
+The expiry period is given in seconds by default (an argument of 0
+means forever).  A single character suffix can be used to specify
+alternate units (m = minutes, h = hours, d = days, M = months, y = Y =
+years, and s = seconds).
+<P>If used with the <EM>-d</EM> option, the spent token and it's expiry period
+is recorded in the database.  See the <EM>-p</EM> option for description of
+how to purge tokens from the database.</P>
+<P>While minting tokens, if the <EM>-e</EM> flag can have an effect on the
+resolution of time created in the token.  Without the <EM>-e</EM> option,
+the default resolution is days (time format: YYMMDD).  Alternate
+formats based on range of expiry period are as follows:</P>
+<UL>
+<LI><STRONG><A NAME="item_period_%3E%3D_2_years_then_time_format_YY_is_used_">period &gt;= 2 years then time format YY is used rounded down
+to the nearest year start;</A></STRONG><BR>
+
+<LI><STRONG><A NAME="item_2_years_%3C_period_%3C%3D_2_months_then_time_forma">2 years &lt; period &lt;= 2 months then time format YYMM is
+used rounded down to the nearest month start;</A></STRONG><BR>
+
+<LI><STRONG><A NAME="item_2_months_%3C_period_%3C%3D_2_days_then_time_format">2 months &lt; period &lt;= 2 days then time format YYMMDD is
+used rounded down to the begining of the nearest day;</A></STRONG><BR>
+
+<LI><STRONG><A NAME="item_2_days_%3C_period_%3C%3D_2_hours_then_time_format_">2 days &lt; period &lt;= 2 hours then time format YYMMDDhh is
+used rounded down to the begining of the nearest hour;</A></STRONG><BR>
+
+<LI><STRONG><A NAME="item_2_hours_%3C_period_%3C%3D_2_minutes_then_time_form">2 hours &lt; period &lt;= 2 minutes then time format
+YYMMDDhhmm is used rounded down to the begining of the nearest minute;</A></STRONG><BR>
+
+<LI><STRONG><A NAME="item_period_%3C_2_minutes_then_time_format_YYMMDDhhmmss">period &lt; 2 minutes then time format YYMMDDhhmmss is used in
+seconds.</A></STRONG><BR>
+
+</UL>
+<P>Note the rounding down is based on UTC time, not local time.  This can
+lead to initially suprising results when rounding down to eg days in
+time zones other than GMT (GMT = UTC).  It may be clearer to
+understand if you use the <EM>-u</EM> option.</P>
+<DT><STRONG><A NAME="item_%2Dd"><EM>-d</EM></A></STRONG><BR>
+<DD>
+Store tokens in a double spend database.  If token has been seen
+before it will be rejected even if it is otherwise valid.  The default
+database file is <EM>database.db</EM> in the current directory.
+<P>It is recommended that if you use the <EM>-e</EM> option with the database
+option, to prevent the database growing indefinately over time.  A
+suggested value is <EM>-e 28d</EM>, 28 days.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Df_dbname"><EM>-f dbname</EM></A></STRONG><BR>
+<DD>
+Use <EM>dbname</EM> instead of default filename for double spend database.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dp_period"><EM>-p period</EM></A></STRONG><BR>
+<DD>
+Purges the database of expired tokens if the given time period has
+passed since the last time it was purged.  As a convenience <EM>-p now</EM>
+is equivalent to <EM>-p 0</EM> both of which mean purge now, regardless of
+when the database was last purged.
+<P>If used in combination with <EM>-j resource</EM> only the tokens minted for
+the given resource are purged.</P>
+<P>If used in combination with <EM>-k</EM> all tokens even un-expired tokens
+are purged.  Can be used in combination with <EM>-t time</EM> to expire as
+if the current time were the given time.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dk"><EM>-k</EM></A></STRONG><BR>
+<DD>
+Use with option <EM>-p</EM> to request all tokens are purged rather than
+just expired ones.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dj_resource"><EM>-j resource</EM></A></STRONG><BR>
+<DD>
+Use with option <EM>-p</EM> to request that just tokens matching the given
+resource name are to be purged, rather than the default which is to
+purge all expired tokens.  If the resource name is the empty string,
+all tokens are matched (this is equivalent to omitting the <EM>-j</EM>
+option).
+<P></P>
+<DT><STRONG><A NAME="item_%2Ds"><EM>-s</EM></A></STRONG><BR>
+<DD>
+Print timing information only don't find collision.  If combined with
+<EM>-b</EM> flag print estimate of how long the requested collision size
+would take to compute, if <EM>-s</EM> given by itself, just prints speed of
+collision finder.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dh"><EM>-h</EM></A></STRONG><BR>
+<DD>
+Print short usage information.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dv"><EM>-v</EM></A></STRONG><BR>
+<DD>
+Print more verbose informational output about the token minting or
+verification.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dq"><EM>-q</EM></A></STRONG><BR>
+<DD>
+Batch mode.  Prints no information other than output.  This option
+overrides the <EM>-v</EM> option.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dx_string"><EM>-x string</EM></A></STRONG><BR>
+<DD>
+When minting, prints the string before the token.  An example might be
+<EM>-x 'X-Hashcash: '</EM>, to insert as a mail header.  Without this option
+just the bare token is printed.
+<P>When checking, if no token is given as an argument, scans stdin for a
+line starting with the given string, and use the rest of the matching
+as the token.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dt_time"><EM>-t time</EM></A></STRONG><BR>
+<DD>
+Pretend the current time is the time given for purposes of minting
+tokens, verifying tokens and purging old tokens from the database.
+Time is given in a format based on UTCTIME format
+YYMMDD[hh[mm[ss]]]['Z'] -- the 'Z' is optional.
+<P>Time is expressed in local time by default.  Use with <EM>-u</EM> flag to
+give time in UTC (GMT).</P>
+<P>You can also give time relative to the current time by prefixing the
+argument with + or -.  The default units for relative time are
+seconds.  A single character suffix can be used to specify alternate
+units (m = minutes, h = hours, d = days, M = months, y = Y = years,
+and s = seconds).</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Du"><EM>-u</EM></A></STRONG><BR>
+<DD>
+Input and output absolute times in UTC (GMT) instead of local time.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dz"><EM>-z</EM></A></STRONG><BR>
+<DD>
+Use strict UTCTIME format: YYMMDDhhmm[ss]'Z' rather than the UTCTIME
+based extension normally used which omits 'Z', and makes more time
+units optional for lower resolution times as described under the <EM>-t</EM>
+option.
+<P></P>
+<DT><STRONG><A NAME="item_%2Da_period"><EM>-a period</EM></A></STRONG><BR>
+<DD>
+Add (or subtract if number is negative) a random value from the
+current time before minting the token.  This hides the time the token
+was created, which may be useful for anonymous users.  Note adding
+(rather than subtracting) a random time may be risky if the token
+takes less than the added time to arrive as the recipient will reject
+tokens with time stamps in the future.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dn"><EM>-n</EM></A></STRONG><BR>
+<DD>
+Print resource name parsed from token being verified.  Returns exit
+code unchecked on exit.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dl"><EM>-l</EM></A></STRONG><BR>
+<DD>
+Print number of seconds left before token expires.  Returns exit code
+unchecked on exit.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dw"><EM>-w</EM></A></STRONG><BR>
+<DD>
+Print number of bits of collision of token.  Returns exit code
+unchecked on exit.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dy"><EM>-y</EM></A></STRONG><BR>
+<DD>
+Returns success if the token is valid even if it is not fully checked.
+Use with <EM>-c</EM> where not all of <EM>-b</EM>, <EM>-d</EM>, <EM>-r</EM> are specified to
+get success exit code on valid but partially checked token.  Similarly
+can use with <EM>-n</EM>, <EM>-l</EM>, <EM>-w</EM> with same effect.
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="examples">EXAMPLES</A></H1>
+<P>
+<H2><A NAME="creating tokens">Creating tokens</A></H2>
+<DL>
+<DT><STRONG><A NAME="item_hashcash_%2Ds"><CODE>hashcash -s</CODE></A></STRONG><BR>
+<DD>
+Print timing information about how many collisions the machine can try
+per second.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Ds_%2Db_32"><CODE>hashcash -s -b 32</CODE></A></STRONG><BR>
+<DD>
+Print how long it would take the machine to compute a 32 bit collision
+(but don't actually compute a collision).
+<P></P>
+<DT><STRONG><A NAME="item_hashcash"><CODE>hashcash</CODE></A></STRONG><BR>
+<DD>
+Mint a token.  Will prompt for resource name and desired value (number
+of collision bits).
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_foo"><CODE>hashcash foo</CODE></A></STRONG><BR>
+<DD>
+Compute collision on resource foo.  Will prompt desired value (number
+of collision bits).
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_foo_%2Db_10"><CODE>hashcash foo -b 10</CODE></A></STRONG><BR>
+<DD>
+Compute 10 bit collision on resource foo.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Da_%2D3d"><CODE>hashcash -a -3d</CODE></A></STRONG><BR>
+<DD>
+Subtract a random time of between 0 days and 3 days to to the token's
+creation time.  This is the same fuzz factor used by mixmaster to
+reduce risk of timing-correlations.
+<P></P></DL>
+<P>
+<H2><A NAME="examining tokens">Examining Tokens</A></H2>
+<DL>
+<DT><STRONG><A NAME="item_hashcash_%2Dw_020312%3Afoo%3A88dab6b5cb593991"><CODE>hashcash -w 020312:foo:88dab6b5cb593991</CODE></A></STRONG><BR>
+<DD>
+Report the value of the token (how many bits of collision) there are.
+The example is a 33 bit collision, which would take on average 13
+hours to create on a 400 Mhz Pentium-II.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dq_%2Db_10_foo_%7C_hashcash_%2Dw"><CODE>hashcash -q -b 10 foo | hashcash -w</CODE></A></STRONG><BR>
+<DD>
+Create a token in batch mode, pass to hashcash on stdin to verify,
+have it print how many bits there were.  Note: half of the time you
+get a token 1 bit larger; similarly with decreasing probability you
+can get even larger tokens.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dn_020312%3Afoo%3A72dcdc01a42589a0"><CODE>hashcash -n 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DD>
+Report the resource name from the token.  The resource name in the
+example is foo.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dl_%2De_30y_020312%3Afoo%3A72dcdc01a425"><CODE>hashcash -l -e 30y 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DD>
+Report how long until the token expires if it expires in 30 years from
+it's creation date.  (Note dates too far into the future run into the
+2038 end of Epoch, which is the unix time analog of the y2k bug).
+<P></P></DL>
+<P>
+<H2><A NAME="verifying tokens">Verifying Tokens</A></H2>
+<DL>
+<DT><STRONG><A NAME="item_hashcash_%2Dc_020312%3Afoo%3A72dcdc01a42589a0"><CODE>hashcash -c 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DD>
+Check if the token is valid.  Note as we are not checking the token in
+a double spend database, and did not specify a resource name or
+required number of bits of collision and hashcash will consider the
+token not fully checked, and it will report it as valid but not fully
+unchecked, or as invalid if there is any problem with the token.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dc_%2Db24_020312%3Afoo%3A72dcdc01a42589"><CODE>hashcash -c -b24 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DD>
+Check that the value of the token is greater or equal to 24 bits.
+This example has 24 bit value.  If you increase the requested number
+of bits or replace the token with one with less than 24 bit collision
+the token will be rejected.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dc_%2Db_24_%2Dr_foo_020312%3Afoo%3A72dc"><CODE>hashcash -c -b 24 -r foo 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DD>
+As above check if the token has sufficient value, but in addition
+check that the resource name given matches the resource name in the
+token.
+<P></P></DL>
+<P>
+<H2><A NAME="double spending prevention">Double Spending Prevention</A></H2>
+<P>The examples given in <A HREF="#verifying tokens">Verifying Tokens</A> can be modified to keep a
+double spend database so that the same token will not be accepted
+twice.  Note a token will only be checked in and added to the database
+if it is otherwise valid and fully checked (a required number of bits
+of collision has been specified and a resource has been specified).</P>
+<DL>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2Dr_foo_020312%3Afoo%3A72d"><CODE>hashcash -cd -b 10 -r foo 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DD>
+Check the token and add to double spent database if it's valid (has
+correct resource name and sufficient value).
+<P></P>
+<DT><STRONG><CODE>hashcash -cd -b 10 -r foo 020312:foo:72dcdc01a42589a0</CODE></STRONG><BR>
+<DD>
+Try to double spend the token.  It will be rejected as double spent.
+<P></P></DL>
+<P>
+<H2><A NAME="token expiry">Token Expiry</A></H2>
+<P>To prevent the double spend database growing indefinately, the
+recipient can request that tokens be no older than a specified period.
+After expiry old tokens can dropped from the double spend database as
+they will no longer be needed -- expired tokens can be rejected based
+purely on their old date, so the space taken by expired tokens in the
+double spend database can be saved without risk of accepting an
+expired though otherwise valid token.</P>
+<P>The first field of the token is the UTC time since 1st January 1970.
+The default time format is YYMMDD, time rounded down to the nearest
+day.  The default validity period is forever.</P>
+<P>You can provide an alternative validity period with the <EM>-e</EM> option.</P>
+<DL>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2De_2d_%2Dr_foo_020311%3Af"><CODE>hashcash -cd -b 10 -e 2d -r foo 020311:foo:835fa2b0b8c692cc</CODE></A></STRONG><BR>
+<DD>
+Try verifying an old token, the above token was created 11 Mar 2002.
+<P>We gave option <EM>-e 2d</EM> so the tokens expiry date is 2 days after
+creation, which is now in the past.</P>
+<P>Note: if the creation time is expressed in the token in days, the
+precise creation date is the begining of the specified day in UTC time
+(similarly for alternate units the creation time is rounded down to
+the begining of the unit it is expressed in).  For units in days, for
+example, this may mean depending on your time zone that the token
+appears to be considered invalid in under the specified expiry period
+in days relative to your relative view of what day it is, as the
+calculation is based on current time in UTC, and the creation time of
+the token is expressed in UTC time.</P>
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2Dr_foo_020311%3Afoo%3A835"><CODE>hashcash -cd -b 10 -r foo 020311:foo:835fa2b0b8c692cc</CODE></A></STRONG><BR>
+<DD>
+Test whether the token is otherwise valid, apart from having expired.
+Omitting the <EM>-e</EM> tells hashcash that the token will never expire.
+An expiry period of forever can also be given explitly like this: <EM>-e
+0</EM>, where an expiry period of 0 means forever.
+<P></P></DL>
+<P>
+<H2><A NAME="purging old tokens">Purging old tokens</A></H2>
+<P>If the <EM>-c</EM>, <EM>-d</EM> options are used together, each time a token is
+checked, if it is valid and all of the mandatory aspects of the token
+are verified (collision bits check, resource name check) then the
+token and it's expiry period is written to the database file.  The
+default expiry period if an expiry period is not given explicitly with
+the <EM>-e</EM> option is forever (ie tokens do not expire).</P>
+<P>First mint and then add a token:</P>
+<DL>
+<DT><STRONG><A NAME="item_hashcash_%2Db_10_foo_%2De_1m_%3E_token"><CODE>hashcash -b 10 foo -e 1m &gt; token</CODE></A></STRONG><BR>
+<DD>
+Note: we specified an expiry on minting in this example, to ensure
+that the token creation time is given in high enough resolution in the
+token that the token will not be considered expired at time of
+creation.  (Recall the default resolution is in days, a token created
+with a creation time rounded down to the beginging of the day is
+unlikely to be considered valid 1 minute later unless you mint it at
+midnight UTC time.)
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2De_1m_%2Db_10_%2Dr_foo_%3C_token"><CODE>hashcash -cd -e 1m -b 10 -r foo &lt; token</CODE></A></STRONG><BR>
+<DD>
+The token expires in 1 minute.  Wait 1 minute and then explicitly
+request that expired tokens be purged:
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dp_now"><CODE>hashcash -p now</CODE></A></STRONG><BR>
+<DD>
+Then try resubmitting the same token:
+<P></P>
+<DT><STRONG><CODE>hashcash -cd -e 1m -b 10 -r foo &lt; token</CODE></STRONG><BR>
+<DD>
+and the token will be rejected anyway as it has expired, illustrating
+why it was not necessary to keep this token in the database.
+<P>With the default database (the sdb format) the database contents are
+human readable, so you can view their contents by cating them to the
+terminal:</P>
+<P></P>
+<DT><STRONG><A NAME="item_cat_hashcash%2Edb"><CODE>cat hashcash.db</CODE></A></STRONG><BR>
+<DD>
+to see that the token really is added and then after puring
+subsequently purged due to expiry.
+<P></P></DL>
+<P>
+<H2><A NAME="purging old tokens on demand">Purging old tokens on Demand</A></H2>
+<P>As a convenience you can purge at the same time as checking tokens by
+using the <EM>-p</EM> option with the <EM>-c</EM> option.</P>
+<DL>
+<DT><STRONG><A NAME="item_hashcash_%2Db_10_foo_%3E_token_%3Ditem_C%3Chashcas"><CODE>hashcash -b 10 foo &gt; token</CODE>
+=item <CODE>hashcash -cd -p now -e 1 -b 10 -r foo &lt; token</CODE></A></STRONG><BR>
+<DD>
+It may be inefficient to purge tokens on every use as the entire
+database has to be scanned for expired tokens.  By giving a time
+period to the <EM>-p</EM> option, you can tell <A HREF="#item_hashcash"><CODE>hashcash</CODE></A> to purge no more
+frequently than that time period since the previous purge.
+<P>For example:</P>
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Dp_1d_%2De_1_%2Db_10_%2Dr_foo_%3C"><CODE>hashcash -cd -p 1d -e 1 -b 10 -r foo &lt; token</CODE></A></STRONG><BR>
+<DD>
+tells <A HREF="#item_hashcash"><CODE>hashcash</CODE></A> to purge any expired tokens no more than once per
+day.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dp_1M_%2Dj_foo"><CODE>hashcash -p 1M -j foo</CODE></A></STRONG><BR>
+<DD>
+tells <A HREF="#item_hashcash"><CODE>hashcash</CODE></A> to purge only expired tokens matching resource foo
+once per month.
+<P></P>
+<DT><STRONG><A NAME="item_hashcash_%2Dp_now_%2Dk"><CODE>hashcash -p now -k</CODE></A></STRONG><BR>
+<DD>
+tells <A HREF="#item_hashcash"><CODE>hashcash</CODE></A> to purge all tokens (expired and unexpired) now.
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="files">FILES</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_hashcash%2Edb"><EM>hashcash.db</EM></A></STRONG><BR>
+<DD>
+default double spend database
+<P></P>
+<DT><STRONG><A NAME="item_hashcash%2Edbt"><EM>hashcash.dbt</EM></A></STRONG><BR>
+<DD>
+default temporary double spend database used when purging tokens.
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="exit status">EXIT STATUS</A></H1>
+<P><A HREF="#item_hashcash"><CODE>hashcash</CODE></A> returns success (exit code 0) after successfully minting a
+token, after fully checking a token and finding it valid, and after a
+timing test.</P>
+<P>If when checking a token it is found to be invalid (due to being
+malformed, being expired, having insufficient value, having a date in
+the future, or being double spent), <A HREF="#item_hashcash"><CODE>hashcash</CODE></A> returns failure (exit
+code 1).</P>
+<P>If insufficient options are given to fully check a token, or if using
+the <EM>-n</EM>, <EM>-l</EM>, or <EM>-w</EM> options, if the token is otherwise valid
+return unchecked (exit code 2).  If the <EM>-y</EM> flag is given and
+hashcash would normally return unchecked, exit code success is
+returned instead.</P>
+<P>If any exception occurs (file read failure for database checking or
+corrupted database contents) an exit status of 3 is returned.</P>
+<P>
+<HR>
+<H1><A NAME="author">AUTHOR</A></H1>
+<P>Written by Adam Back &lt;<A HREF="mailto:adam@cypherspace.org">adam@cypherspace.org</A>&gt;</P>
+<P>
+<HR>
+<H1><A NAME="see also">SEE ALSO</A></H1>
+<P>sha1(1), <A HREF="http://www.cypherspace.org/hashcash/">http://www.cypherspace.org/hashcash/</A></P>
+
+</BODY>
+
+</HTML>

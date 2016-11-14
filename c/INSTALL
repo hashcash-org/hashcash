@@ -1,0 +1,15 @@
+To compile type:
+
+make clean
+make
+
+Then to install type:
+
+make install
+
+which will install the binaries sha1 and hashcash in /usr/local/bin.
+
+To change the installation location change the INSTALL_PATH in the
+makefile.
+
+For usage information see the readme.txt file.
