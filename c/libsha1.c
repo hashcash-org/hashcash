@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 /*
  * Implementation of Federal Information Processing Standards Publication
@@ -192,8 +192,7 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
 /********************* use the macros *********************/
 
 #if defined( VERBOSE )
-    for ( t = 0; t < 16; t++ )
-    {
+    for ( t = 0; t < 16; t++ ) {
 	fprintf( stderr, "W[%2d] = %08x\n", t, W[ t ] );
     }
     fprintf( stderr, 
@@ -254,8 +253,7 @@ void SHA1_Update( SHA1_ctx* ctx, const void* pdata, size_t data_len )
     data_len -= use;
     data += use;
 
-    while ( mlen == SHA1_INPUT_BYTES )
-    {
+    while ( mlen == SHA1_INPUT_BYTES ) {
 	make_big_endian32( (word32*)ctx->M, SHA1_INPUT_WORDS );
 	SHA1_Transform( ctx->H, ctx->M );
 	use = (unsigned)min( SHA1_INPUT_BYTES, data_len );
@@ -286,13 +284,10 @@ void SHA1_Final( SHA1_ctx* ctx, byte digest[ SHA1_DIGEST_BYTES ] )
 #define BIT_COUNT_WORDS 2
 #define BIT_COUNT_BYTES ( BIT_COUNT_WORDS * sizeof( word32 ) )
 
-    if ( (unsigned)padding >= BIT_COUNT_BYTES )
-    {
+    if ( (unsigned)padding >= BIT_COUNT_BYTES ) {
 	memset( ctx->M + mlen, 0x00, padding - BIT_COUNT_BYTES );
 	make_big_endian32( ctx->M, SHA1_INPUT_WORDS - BIT_COUNT_WORDS );
-    }
-    else
-    {
+    } else {
 	memset( ctx->M + mlen, 0x00, SHA1_INPUT_BYTES - mlen );
 	make_big_endian32( ctx->M, SHA1_INPUT_WORDS );
 	SHA1_Transform( ctx->H, ctx->M );
@@ -300,12 +295,9 @@ void SHA1_Final( SHA1_ctx* ctx, byte digest[ SHA1_DIGEST_BYTES ] )
     }
     
 #if defined( word64 )
-    if ( little_endian )
-    {
+    if ( little_endian ) {
 	temp = ( ctx->bits << 32 | ctx->bits >> 32 );
-    }
-    else
-    {
+    } else {
 	temp = ctx->bits;
     }
     memcpy( ctx->M + SHA1_INPUT_BYTES - BIT_COUNT_BYTES, &temp, 
@@ -328,8 +320,7 @@ static int swap_endian32( void* data, size_t len )
     byte* data_as_bytes;
     size_t i;
     
-    for ( i = 0; i < len; i++ )
-    {
+    for ( i = 0; i < len; i++ ) {
 	tmp32 = data_as_word32s[ i ];
 	data_as_bytes = (byte*) &( data_as_word32s[ i ] );
 	

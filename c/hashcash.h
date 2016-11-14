@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #if !defined( _hashcash_h )
 #define _hashcash_h
@@ -14,10 +14,14 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 0.30
+#define HASHCASH_VERSION 0.31
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
 #define HASHCASH_VERSION_STRING stringify(HASHCASH_VERSION)
+
+#define TYPE_STR 0
+#define TYPE_WILD 1
+#define TYPE_REGEXP 2
 
 #define MAX_UTC 13
 #define MAX_CTR 64
@@ -45,7 +49,7 @@ extern int no_purge_flag;
 #define HASHCASH_TOO_MANY_TRIES -4
 #define HASHCASH_EXPIRED_ON_CREATION -5
 #define HASHCASH_INVALID_VALIDITY_PERIOD -6
-#define HASHCASH_NULL_ARG -7
+#define HASHCASH_INTERNAL_ERROR -7
 #define HASHCASH_INVALID_TIME_WIDTH -8
 #define HASHCASH_VALID_IN_FUTURE -9
 #define HASHCASH_EXPIRED -10
@@ -53,6 +57,9 @@ extern int no_purge_flag;
 #define HASHCASH_WRONG_RESOURCE -12
 #define HASHCASH_INSUFFICIENT_BITS -13
 #define HASHCASH_UNSUPPORTED_VERSION -14
+#define HASHCASH_SPENT -15
+#define HASHCASH_NO_TOKEN -16
+#define HASHCASH_REGEXP_ERROR -17
 
 /* function hashcash_mint calling info:
  *
@@ -72,10 +79,6 @@ extern int no_purge_flag;
  *
  * bits            -- bits of collision the resource demands
  * 
- * validity_period -- default to 0 (forever), only effect on minting
- *                    is checks are made to ensure token won't be
- *                    already considered expired at time of minting
- * 
  * anon_period     -- add (or subtract if negative) a random period
  *                    in seconds between this value and 0
  *                    to get same as mixmaster does set this to -3days
@@ -88,16 +91,15 @@ extern int no_purge_flag;
  * anon_random     -- default NULL, if set to pointer to long
  *                    returns actuall random offset added to time
  *
- * tries_atken     -- default NULL, if set to pointer to double
+ * tries_taken     -- default NULL, if set to pointer to double
  *                    returns number of tokens tested before finding
  *                    returned token.
  */
 
 int hashcash_mint( time_t now_time, int time_width,
 		   const char* resource, unsigned bits, 
-		   time_t validity_period, long anon_period, 
-		   char* token, int tok_len, long* anon_random,
-		   double* tries_taken );
+		   long anon_period, char* token, int tok_len, 
+		   long* anon_random, double* tries_taken );
 
 /* return time field width necessary to express time in sufficient
  * resolution to avoid premature expiry of token minted
@@ -107,9 +109,9 @@ int hashcash_mint( time_t now_time, int time_width,
 
 int validity_to_width( time_t validity_period );
 
-/* count bits of collision between resource and token */
+/* count bits of collision in token */
 
-unsigned hashcash_count( const char* resource, const char* token );
+unsigned hashcash_count( const char* token );
 
 /* parse token into time field and resouce name */
 /* max lengths exclude space for trailing \0 */
@@ -129,7 +131,8 @@ long hashcash_valid_for( time_t token_time, time_t validity_period,
 
 /* simple function calling hashcash_parse, hashcash_count for convenience */
 
-int hashcash_check( const char* token, const char* resource, time_t now_time, 
+int hashcash_check( const char* token, const char* resource, void **compile,
+		    char** comp_err, int type, time_t now_time, 
 		    time_t validity_period, long grace_period, 
 		    int required_bits );
 
@@ -149,7 +152,12 @@ double hashcash_expected_tries( int b );
 time_t from_utctime( const char[MAX_UTCTIME+1] );
 int to_utctime( char[MAX_UTCTIME+1], int len, time_t );
 
+int email_match( const char* pattern, const char* email );
+
 #define sstrncpy(d,s,l) (d[l]='\0',strncpy(d,s,l))
+
+int resource_match( int type, const char* token_res, const char* res, 
+		    void** compile, char** err );
 
 #if defined( __cplusplus )
 }

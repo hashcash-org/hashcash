@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #if !defined( _sha1_h )
 #define _sha1_h

@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #include <stdio.h>
 #include <string.h>
@@ -14,33 +14,24 @@ int SHA1_file( char* filename, byte md[ SHA1_DIGEST_BYTES ] )
     int opened = 0;
     SHA1_ctx ctx;
     
-    if ( strcmp( filename, "-" ) == 0 )
-    {
+    if ( strcmp( filename, "-" ) == 0 ) {
 	file = stdin;
-    }
-    else
-    {
+    } else {
 	file = fopen( filename, "rb" );
-	if ( file == 0 )
-	{
-	    return -1;
-	}
+	if ( file == 0 ) { return -1; }
 	opened = 1;
     }
 
     SHA1_Init( &ctx );
-    while ( !feof( file ) )
-    {
+    while ( !feof( file ) ) {
 	bytes_read = fread( buffer, 1, BUFFER_SIZE, file );
-	if ( bytes_read < BUFFER_SIZE && ferror( file ) )
-	{
+	if ( bytes_read < BUFFER_SIZE && ferror( file ) ) {
 	    return -1;
 	}
 	SHA1_Update( &ctx, buffer, bytes_read );
     }
     SHA1_Final( &ctx, md );
-    if ( opened )
-    {
+    if ( opened ) {
 	fclose( file );
     }
     return 0;
@@ -51,8 +42,7 @@ const char* hex_digest( byte md[ SHA1_DIGEST_BYTES ] )
     int i;
     static char hex[ SHA1_DIGEST_BYTES * 2 + 1 ];
 
-    for ( i = 0; i < SHA1_DIGEST_BYTES; i++ )
-    {
+    for ( i = 0; i < SHA1_DIGEST_BYTES; i++ ) {
 	sprintf( hex + 2 * i, "%02x", md[ i ] );
     }
     hex[ sizeof( hex ) - 1 ] = '\0';
@@ -65,30 +55,20 @@ int main( int argc, char* argv[] )
     byte digest[ SHA1_DIGEST_BYTES ];
     int status;
     
-    if ( argc == 1 )
-    {
+    if ( argc == 1 ) {
 	status = SHA1_file( "-", digest );
-	if ( status < 0 )
-	{
+	if ( status < 0 ) {
 	    perror( "(stdin)" );
-	}
-	else
-	{
+	} else {
 	    printf( "%s\n", hex_digest( digest ) );
 	}
-    }
-    else
-    {
-	for ( i = 1; i < argc; i++ )
-	{
+    } else {
+	for ( i = 1; i < argc; i++ ) {
 	    status = SHA1_file( argv[ i ], digest );
-	    if ( status < 0 )
-	    {
+	    if ( status < 0 ) {
 		perror( argv[ i ] );
 		return 1;
-	    }
-	    else
-	    {
+	    } else {
 		printf( "%s %s\n", hex_digest( digest ), argv[ i ] );
 	    }
 	}

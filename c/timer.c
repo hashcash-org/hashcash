@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #include <time.h>
 #include "timer.h"
@@ -30,12 +30,10 @@ word32 find_tick_us( void )
 /* if it is very high resolution, this may be inaccurate */
 /* but if it is very high resolution, we haven't got a problem anyway */
 
-    do
-    {
+    do {
 	timer_read( &t2 );
-    } 
-    while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
-	    timer_secs( &t1 ) == timer_secs( &t2 ) );
+    } while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
+	      timer_secs( &t1 ) == timer_secs( &t2 ) );
     elapsed = timer_interval( &t1, &t2 );
 
 /* see how many us the tick took */
@@ -80,8 +78,7 @@ void timer_diff( timer* s, timer* e, timer* diff )
     timer* t;
     double interval;
     
-    if ( timer_gt( s, e ) )	/* s > e */
-    {
+    if ( timer_gt( s, e ) ) {	/* s > e */
 	t = s; s = e; e = t;	/* swap( s, e ) */
     }
     
@@ -89,8 +86,7 @@ void timer_diff( timer* s, timer* e, timer* diff )
 	* 1000000.0 + ( (double) e->usecs ) - ( (double) s->usecs );
 
 /* if diff is not NULL, store the difference between end and start in it */
-    if ( diff )
-    {
+    if ( diff ) {
 	diff->secs = (word32)(interval / 1000000.0);
 	diff->usecs = (word32)(interval - diff->secs);
     }
@@ -101,8 +97,7 @@ double timer_interval( timer* s, timer* e )
     timer* t;
     double interval;
     
-    if ( timer_gt( s, e ) )	/* s > e */
-    {
+    if ( timer_gt( s, e ) ) {	/* s > e */
 	t = s; s = e; e = t;	/* swap( s, e ) */
     }
     

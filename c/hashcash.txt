@@ -2,11 +2,11 @@ NAME
     hashcash - hashcash anti-spam / denial of service counter-measure tool
 
 SYNOPSIS
-  Mint (create) token:
-    hashcash [ *options* ] [ *-b bits* ] [ *resource* ]>
+  Mint (create) tokens:
+    hashcash *-m* [ [ *options* ] [ *resource* ... ] ... ]
 
-  Check token:
-    hashcash *-c* [ *options* ] *-b bits* *-r resource* [ *token* ]
+  Check tokens:
+    hashcash *-c* [ [ *options* ] *-r resource* ... ] [ *token* ... ]
 
   Speed estimates:
     hashcash *-s* [ *options* ] [ *-b bits* ]
@@ -15,13 +15,13 @@ SYNOPSIS
     hashcash *-p now* [ *-j resource* ] [ *-k* ] [ *-t time* ] [ *-u* ]
 
   Count collision bits:
-    hashcash *-w* [ *options* ] [ *token* ]
+    hashcash *-w* [ *options* ] [ *token* ... ]
 
   Get resource name:
-    hashcash *-n* [ *options* ] [ *token* ]
+    hashcash *-n* [ *options* ] [ *token* ... ]
 
   Get time remaining until expiry
-    hashcash *-l* [ *options* ] *-e period* [ *token* ]
+    hashcash *-l* [ *options* ] *-e period* [ *token* ... ]
 
 DESCRIPTION
     Hashcash is a denial-of-service counter measure tool. It's main current
@@ -56,16 +56,14 @@ USAGE NOTES
     recipient's email address in the form user@domain.com.
 
   Minting tokens
-    If neither the *-c* or *-s* option are given, it is assumed that you
-    want to mint a token.
+    The *-m* flag must be given to mint a token.
 
     The resource name (recipient's email address) to mint the token against
     can be passed as an argument, or if omitted is read from stdin. If stdin
     is a tty the user is prompted, if stdin is a pipe the resource name is
     just silently read. The desired collision size can be specified with the
-    -b option. If no collision size is specified, the default is 20 bits. As
-    a convenience, if stdin is a tty and no collision size is given with the
-    *-b* flag, the user is prompted for a collision size.
+    -b option. If no collision size is specified, the default is 20 bits.
+    *-b default* can be used to get the default size.
 
   Checking tokens
     The *-c* flag must be given to check tokens. The token to check can be
@@ -108,8 +106,8 @@ USAGE NOTES
     exit code unchecked (exit code 2) is returned on exit.
 
     The program will only return exit codes valid or invalid if the *-c*
-    flag is used, and all of the options *-b bits*, *-d*, *-r resource* are
-    used. These are the minimum set of options necessary to fully check the
+    flag is used, and both of the options, *-d*, *-r resource* are used.
+    These are the minimum set of options necessary to fully check the
     validty of a token. If these criteria are not met, the program will
     return exit code unchecked (exit code 2) on exit. (See also the *-y*
     flag.)
@@ -146,7 +144,7 @@ USAGE NOTES
     To purge old tokens periodically while checking tokens use the *-p
     period* option to purge no sooner than the given time period since the
     last purge. Purging can be used with the *-k* option to purge unexpired
-    tokens also, and with the *-r resource* flag to purge only tokens for
+    tokens also, and with the *-j resource* flag to purge only tokens for
     the given resource.
 
     There are circumstances where it may be inconvenient to purge tokens on
@@ -163,7 +161,8 @@ USAGE NOTES
 
     If the *-b* flag is used with this option, instead an estimate of how
     many seconds it would take to mint a token of the given size in bits is
-    computed.
+    computed. To find out how much time it will take to mint a default sized
+    stamp use *-s -b default*.
 
   Notes
     All informational output is printed on stderr. Minted tokens, and
@@ -177,24 +176,25 @@ USAGE NOTES
 
 OPTIONS
     *-c*
-        Check the token given as an argument or on stdin for validity.
+        Check the tokens given as an argument or on stdin for validity.
 
     *-m*
-        Mint a token. If none of *-c*, *-p*, *-s*, *-l*, *-n*, *-w* are
-        given it is anyway assumed that the user wishes to mint a token.
+        Mint tokens with the resources given as arguments or on stdin.
 
     *-b bits*
         When minting a token, request a collision of this many bits. When
         verifying a token require that it have a collision of at minimum
-        this many bits, otherwise reject it.
+        this many bits, otherwise reject it. If omitted the default is used.
+        Can also specify the default with *-b default* which is useful for
+        use with *-s*.
 
     *-r resource*
         When minting tokens, the resource name (recipient's email address)
         to mint the token against can be given either with *-r resource* or
         as an argument to "hashcash".
 
-        When checking tokens, the resource name (your own email address) can
-        be given with the *-r* option. If the resource name is given it is
+        When checking tokens, the resource name (your own email address) is
+        given with the *-r* option. If the resource name is given it is
         checked against the resource name in the token, and if they do not
         match the token is rejected. Note if the resource name is not given,
         tokens for other resources would be accepted, and therefore hashcash
@@ -214,16 +214,17 @@ OPTIONS
         is recorded in the database. See the *-p* option for description of
         how to purge tokens from the database.
 
-        The following *-e* usage to give an implicit time resolution while
-        minting is deprecated, use explicit *-z* option instead. (*-z*
-        overrides *-e* if both are given. *-e* still works for backwards
-        compatibility. If neither are given the default is 6 chars (time
-        format: YYMMDD)).
-
         While minting tokens, the *-e* flag can have an effect on the
         resolution of time created in the token. Without the *-e* option,
         the default resolution is days (time format: YYMMDD). Alternate
         formats based on range of expiry period are as follows:
+
+        While minting you can also given an explicit time width with the
+        *-z* option instead. (*-z* overrides *-e* if both are given. If
+        neither are given the default is 6 chars (time format: YYMMDD)).
+
+        The rules for automatically determining appropriate time width from
+        *-e* if no *-z* option is given are:
 
         * period >= 2 years then time format YY is used rounded down to the
         nearest year start;
@@ -244,12 +245,13 @@ OPTIONS
         understand if you use the *-u* option.
 
     *-z width*
-        The *-z* option is for use during minting and deprecates the *-e*
-        option given in combination with *-m* to specify an implicit time
-        field width. Valid widths are 2,4,6,8,10 or 12 chars corresponding
-        respectively to: YY, YYMM, YYMMDD, YYMMDDhh, YYMMDDhhmm, and
-        YYMMDDhhmmss rounded down to the nearest year, month, day, hour,
-        minute respectively.
+        The *-z* option is for use during minting and allows user choice of
+        width of time width field. See also the *-e* option given in
+        combination with *-m* to specify an implicit time field width under
+        the description of the *-e* flag. Valid widths are 2,4,6,8,10 or 12
+        chars corresponding respectively to: YY, YYMM, YYMMDD, YYMMDDhh,
+        YYMMDDhhmm, and YYMMDDhhmmss rounded down to the nearest year,
+        month, day, hour, minute respectively.
 
         Note the rounding down is based on UTC time, not local time. This
         can lead to initially suprising results when rounding down to eg
@@ -274,7 +276,10 @@ OPTIONS
     *-d*
         Store tokens in a double spend database. If token has been seen
         before it will be rejected even if it is otherwise valid. The
-        default database file is database.db in the current directory.
+        default database file is database.db in the current directory. Only
+        otherwise valid tokens will be stored in the database. Only fully
+        validated tokens will be stored in the database, unless the *-y*
+        option is given.
 
     *-f dbname*
         Use dbname instead of default filename for double spend database.
@@ -303,11 +308,16 @@ OPTIONS
         all tokens are matched (this is equivalent to omitting the *-j*
         option).
 
+        Note the *-E*, *-W* and *-S* type of match flags also apply to
+        resources given with the *-j resource* flag.
+
     *-s*
         Print timing information only, and don't proceed to create a token.
-        If combined with *-b* flag print estimate of how long the requested
-        collision size would take to compute, if *-s* given by itself, just
-        prints speed of the collision finder.
+        If combined with *-b bits* flag print estimate of how long the
+        requested collision size would take to compute, if *-s* given by
+        itself, just prints speed of the collision finder. To print an
+        estimate of how long the default number of bits would take use *-b
+        default*.
 
     *-h*
         Print short usage information.
@@ -326,11 +336,12 @@ OPTIONS
         before the token. Without this option just the bare token is
         printed.
 
-        When checking, if no token is given as an argument, scans stdin for
-        a line starting with the string 'X-Hashcash:', and uses the rest of
-        the matching line as the token. Only the lines up to and ending at
-        the first blank line are scanned. A blank line is the separator used
-        to separate the headers from the body of a mail message or USENET
+        When checking, after scanning tokens given as arguments, scans stdin
+        for lines starting with the string 'X-Hashcash:', and uses the rest
+        of the matching line as the token. Only the lines up to and ending
+        at the first blank line are scanned (see also *-i* flag which can be
+        used to override this). A blank line is the separator used to
+        separate the headers from the body of a mail message or USENET
         article. This is meant to make it convenient to pipe a mail message
         or USENET article to hashcash on stdin.
 
@@ -395,9 +406,35 @@ OPTIONS
 
     *-y*
         Returns success if the token is valid even if it is not fully
-        checked. Use with *-c* where not all of *-b*, *-d*, *-r* are
-        specified to get success exit code on valid but partially checked
-        token. Similarly can use with *-n*, *-l*, *-w* with same effect.
+        checked. Use with *-c* where not all of *-d*, *-r* are specified to
+        get success exit code on valid but partially checked token.
+        Similarly can use with *-n*, *-l*, *-w* with same effect.
+
+    *-W*
+        When checking tokens, allow wildcards *** in the resource name to
+        make it simpler to specify multiple email addresses and to allow
+        matching catch-all addresses and addresses including subdomains.
+        This is the default. See also *-S*, *-E* and *-C*
+
+    *-S*
+        When checking tokens use simple text compare to compare resource
+        names to those in tokens. See also *-W*, <-E> and *-C*.
+
+    *-E*
+        When checking tokens use regular expressions to specify resource
+        names to make it simpler to specify multiple email addresses,
+        catch-all addresses, classes of extension addresses and addresses
+        including subdomains. Note regular expression syntax is POSIX style:
+        special characters do not need to be quoted to have their special
+        meaning; but they do have to be quoted with \ to that character in
+        the searched string. (Note even if BSD regular expressions are used
+        POSIX style syntax is used; also note BSD regular expressions do not
+        support ranges {}.)
+
+    *-C*
+        By default resources are converted to lower case on minting and on
+        checking. The *-C* flag overrides this so that resources are treated
+        as case sensitive.
 
 EXAMPLES
   Creating tokens
@@ -405,25 +442,29 @@ EXAMPLES
         Print timing information about how many collisions the machine can
         try per second.
 
+    "hashcash -s -b default"
+        Print how long it would take the machine to compute a default sized
+        collision (but don't actually compute a collision).
+
     "hashcash -s -b 32"
         Print how long it would take the machine to compute a 32 bit
         collision (but don't actually compute a collision).
 
-    "hashcash"
-        Mint a token. Will prompt for resource name and desired value
+    "hashcash -m"
+        Mint a token. Will prompt for resource name and mint with default
+        value (number of collision bits).
+
+    "hashcash -m foo"
+        Compute collision on resource foo. Will mint with default value
         (number of collision bits).
 
-    "hashcash foo"
-        Compute collision on resource foo. Will prompt desired value (number
-        of collision bits).
-
-    "hashcash foo -b 10"
+    "hashcash -m foo -b 10"
         Compute 10 bit collision on resource foo.
 
     "hashcash -a -3d"
-        Subtract a random time of between 0 days and 3 days to to the
-        token's creation time. This is the same fuzz factor used by
-        mixmaster to reduce risk of timing-correlations.
+        Subtract a random time of between 0 days and 3 days from the token's
+        creation time. This is the same fuzz factor used by mixmaster to
+        reduce risk of timing-correlations.
 
   Examining Tokens
     "hashcash -w 0:020814:foo:4333957e84db47f6"
@@ -431,7 +472,7 @@ EXAMPLES
         are. The example is a 33 bit collision, which would take on average
         13 hours to create on a 400 Mhz Pentium-II.
 
-    "hashcash -q -b 10 foo | hashcash -w"
+    "hashcash -mq -b 10 foo | hashcash -w"
         Create a token in batch mode, pass to hashcash on stdin to verify,
         have it print how many bits there were. Note: half of the time you
         get a token 1 bit larger; similarly with decreasing probability you
@@ -524,11 +565,11 @@ EXAMPLES
     are verified (collision bits check, resource name check) then the token
     and it's expiry period is written to the database file. The default
     expiry period if an expiry period is not given explicitly with the *-e*
-    option is forever (ie tokens do not expire).
+    option is 28 days (ie tokens expire after 4 weeks).
 
     First mint and then add a token:
 
-    "hashcash -b 10 foo -e 1m > token"
+    "hashcash -m -b 10 foo -e 1m > token"
         Note: we specified an expiry on minting in this example, to ensure
         that the token creation time is given in high enough resolution in
         the token that the token will not be considered expired at time of
@@ -561,8 +602,8 @@ EXAMPLES
     As a convenience you can purge at the same time as checking tokens by
     using the *-p* option with the *-c* option.
 
-    "hashcash -b 10 foo > token" =item "hashcash -cd -p now -e 1 -b 10 -r
-    foo < token"
+    "hashcash -m -b 10 foo > token"
+    "hashcash -cd -p now -e 1 -b 10 -r foo < token"
         It may be inefficient to purge tokens on every use as the entire
         database has to be scanned for expired tokens. By giving a time
         period to the *-p* option, you can tell "hashcash" to purge no more

@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #if !defined( _sdb_h )
 #define _sdb_h
@@ -16,10 +16,15 @@ extern "C" {
 typedef struct {
     FILE* file;
     char filename[PATH_MAX+1];
+    long read_pos;
+    long write_pos;
 } DB;
 
 #define MAX_KEY 1024
 #define MAX_VAL 1024
+
+#define READ_MODE 0
+#define WRITE_MODE 1
 
 /* empty string matches any key for sdb_find, sdb_findnext */
 
@@ -32,10 +37,8 @@ typedef int (*sdb_rcallback)( const char* key, const char* val,
 
 /* NOTE: keys should not contain spaces */
 
-int sdb_create( DB*, const char* filename, int* err );
 int sdb_open( DB*, const char* filename, int* err );
 int sdb_add( DB*, const char* key, const char* val, int* err );
-int sdb_update( DB*, char* key, char* nval, int* err );
 int sdb_updateiterate( DB*, sdb_wcallback cb, void* arg, int* err );
 int sdb_del( DB*, const char* key, int* err );
 int sdb_findfirst( DB*, char* key, int klen, char* val, int vlen, int* err );

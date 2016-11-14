@@ -1,8 +1,9 @@
 From: Someone <test@test.invalid>
 To: Adam Back <adam@cypherspace.org>
-Cc: Someone <test@test.invalid>
+Cc: Someone <test@test.invalid>, Adam Back <adam@cypherspace.org
 X-Hashcash: 0:040308:test@test.invalid:f2361c24689b7dcf
 X-Hashcash: 0:040308:adam@cypherspace.org:819167212bbd56f2
+X-Hashcash: 0:040326:adam@cypherspace.org:bace19f1eeac1f28
 Subject: test hashcash
 Date: Thu, 26 Jun 2003 11:59:59 +0000
 

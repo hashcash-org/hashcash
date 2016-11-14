@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #include <time.h>
 #include <stdlib.h>
@@ -86,8 +86,7 @@ time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
     int utct_len = strlen( utct );
     int century_offset;
 
-    if ( utct_len > MAX_UTCTIME || utct_len < 2 || ( utct_len % 2 == 1 ) )
-    {
+    if ( utct_len > MAX_UTCTIME || utct_len < 2 || ( utct_len % 2 == 1 ) ) {
 	return failed;
     }
 
@@ -123,12 +122,9 @@ time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
     if ( tms.tm_sec < 0 ) { return failed; }
 
  convert:
-    if ( utc ) 
-    {
+    if ( utc ) {
         return mk_utctime( &tms );
-    }
-    else
-    {
+    } else {
     /* note when switching from daylight to standard the last daylight
        hour(s) are ambiguous with the first hour(s) of standard time.  The
        system calls give you the first hour(s) of standard time which is

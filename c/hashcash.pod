@@ -4,13 +4,13 @@ hashcash - hashcash anti-spam / denial of service counter-measure tool
 
 =head1 SYNOPSIS
 
-=head2 Mint (create) token:
+=head2 Mint (create) tokens:
 
-B<hashcash> [ I<options> ] [ I<-b bits> ] [ I<resource> ]>
+B<hashcash> I<-m> [ [ I<options> ] [ I<resource> ... ] ... ]
 
-=head2 Check token:
+=head2 Check tokens:
 
-B<hashcash> I<-c> [ I<options> ] I<-b bits> I<-r resource> [ I<token> ]
+B<hashcash> I<-c> [ [ I<options> ] I<-r resource> ... ] [ I<token> ... ] 
 
 =head2 Speed estimates:
 
@@ -22,15 +22,15 @@ B<hashcash> I<-p now> [ I<-j resource> ] [ I<-k> ] [ I<-t time> ] [ I<-u> ]
 
 =head2 Count collision bits:
 
-B<hashcash> I<-w> [ I<options> ] [ I<token> ]
+B<hashcash> I<-w> [ I<options> ] [ I<token> ... ]
 
 =head2 Get resource name:
 
-B<hashcash> I<-n> [ I<options> ] [ I<token> ]
+B<hashcash> I<-n> [ I<options> ] [ I<token> ... ]
 
 =head2 Get time remaining until expiry
 
-B<hashcash> I<-l> [ I<options> ] I<-e period> [ I<token> ]
+B<hashcash> I<-l> [ I<options> ] I<-e period> [ I<token> ... ]
 
 =head1 DESCRIPTION
 
@@ -69,17 +69,14 @@ the recipient's email address in the form user@domain.com.
 
 =head2 Minting tokens
 
-If neither the I<-c> or I<-s> option are given, it is assumed that you
-want to mint a token.
+The I<-m> flag must be given to mint a token.
 
-The resource name (recipient's email address) to mint the token
-against can be passed as an argument, or if omitted is read from
-stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
-resource name is just silently read.  The desired collision size can
-be specified with the -b option.  If no collision size is specified,
-the default is 20 bits.  As a convenience, if stdin is a tty and no
-collision size is given with the I<-b> flag, the user is prompted for
-a collision size.
+The resource name (recipient's email address) to mint the token against can
+be passed as an argument, or if omitted is read from stdin.  If stdin is a
+tty the user is prompted, if stdin is a pipe the resource name is just
+silently read.  The desired collision size can be specified with the -b
+option.  If no collision size is specified, the default is 20 bits.  I<-b
+default> can be used to get the default size.
 
 =head2 Checking tokens
 
@@ -123,12 +120,11 @@ unchecked (exit code 2) is returned on exit.  The I<-l> flag can be
 used to request the number of seconds until expiry of the token is
 output; exit code unchecked (exit code 2) is returned on exit.
 
-The program will only return exit codes valid or invalid if the I<-c>
-flag is used, and all of the options I<-b bits>, I<-d>, I<-r resource>
-are used.  These are the minimum set of options necessary to fully
-check the validty of a token.  If these criteria are not met, the
-program will return exit code unchecked (exit code 2) on exit.  (See
-also the I<-y> flag.)
+The program will only return exit codes valid or invalid if the I<-c> flag
+is used, and both of the options, I<-d>, I<-r resource> are used.  These are
+the minimum set of options necessary to fully check the validty of a token. 
+If these criteria are not met, the program will return exit code unchecked
+(exit code 2) on exit.  (See also the I<-y> flag.)
 
 =head2 Double Spending Protection
 
@@ -165,7 +161,7 @@ affecting the validity of old tokens.
 To purge old tokens periodically while checking tokens use the I<-p
 period> option to purge no sooner than the given time period since the
 last purge.  Purging can be used with the I<-k> option to purge
-unexpired tokens also, and with the I<-r resource> flag to purge only
+unexpired tokens also, and with the I<-j resource> flag to purge only
 tokens for the given resource.
 
 There are circumstances where it may be inconvenient to purge tokens
@@ -184,7 +180,8 @@ tested per second.  No token is minted, or verified.
 
 If the I<-b> flag is used with this option, instead an estimate of how
 many seconds it would take to mint a token of the given size in bits
-is computed.
+is computed.  To find out how much time it will take to mint a default
+sized stamp use I<-s -b default>.
 
 =head2 Notes
 
@@ -203,18 +200,19 @@ when quiet mode is in effect the output is printed without description
 
 =item I<-c>
 
-Check the token given as an argument or on stdin for validity.
+Check the tokens given as an argument or on stdin for validity.
 
 =item I<-m>
 
-Mint a token.  If none of I<-c>, I<-p>, I<-s>, I<-l>, I<-n>, I<-w> are
-given it is anyway assumed that the user wishes to mint a token.
+Mint tokens with the resources given as arguments or on stdin.
 
 =item I<-b bits>
 
 When minting a token, request a collision of this many bits.  When
 verifying a token require that it have a collision of at minimum this
-many bits, otherwise reject it.
+many bits, otherwise reject it.  If omitted the default is used.  Can
+also specify the default with I<-b default> which is useful for use
+with I<-s>.
 
 =item I<-r resource>
 
@@ -222,8 +220,8 @@ When minting tokens, the resource name (recipient's email address) to
 mint the token against can be given either with I<-r resource> or as
 an argument to C<hashcash>.
 
-When checking tokens, the resource name (your own email address) can
-be given with the I<-r> option.  If the resource name is given it is
+When checking tokens, the resource name (your own email address) is
+given with the I<-r> option.  If the resource name is given it is
 checked against the resource name in the token, and if they do not
 match the token is rejected.  Note if the resource name is not given,
 tokens for other resources would be accepted, and therefore hashcash
@@ -243,15 +241,17 @@ If used with the I<-d> option, the spent token and it's expiry period
 is recorded in the database.  See the I<-p> option for description of
 how to purge tokens from the database.
 
-The following I<-e> usage to give an implicit time resolution while minting
-is deprecated, use explicit I<-z> option instead.  (I<-z> overrides I<-e> if
-both are given.  I<-e> still works for backwards compatibility.  If neither
-are given the default is 6 chars (time format: YYMMDD)).
-
 While minting tokens, the I<-e> flag can have an effect on the
 resolution of time created in the token.  Without the I<-e> option,
 the default resolution is days (time format: YYMMDD).  Alternate
 formats based on range of expiry period are as follows:
+
+While minting you can also given an explicit time width with the I<-z>
+option instead.  (I<-z> overrides I<-e> if both are given.  If neither
+are given the default is 6 chars (time format: YYMMDD)).
+
+The rules for automatically determining appropriate time width from
+I<-e> if no I<-z> option is given are:
 
 =over 8
 
@@ -282,11 +282,13 @@ understand if you use the I<-u> option.
 
 =item I<-z width>
 
-The I<-z> option is for use during minting and deprecates the I<-e> option
-given in combination with I<-m> to specify an implicit time field width. 
-Valid widths are 2,4,6,8,10 or 12 chars corresponding respectively to: YY,
-YYMM, YYMMDD, YYMMDDhh, YYMMDDhhmm, and YYMMDDhhmmss rounded down to the
-nearest year, month, day, hour, minute respectively.
+The I<-z> option is for use during minting and allows user choice of
+width of time width field.  See also the I<-e> option given in
+combination with I<-m> to specify an implicit time field width under
+the description of the I<-e> flag.  Valid widths are 2,4,6,8,10 or 12
+chars corresponding respectively to: YY, YYMM, YYMMDD, YYMMDDhh,
+YYMMDDhhmm, and YYMMDDhhmmss rounded down to the nearest year, month,
+day, hour, minute respectively.
 
 Note the rounding down is based on UTC time, not local time.  This can
 lead to initially suprising results when rounding down to eg days in
@@ -313,7 +315,10 @@ d = days, M = months, y = Y = years, and s = seconds).
 
 Store tokens in a double spend database.  If token has been seen
 before it will be rejected even if it is otherwise valid.  The default
-database file is F<database.db> in the current directory.
+database file is F<database.db> in the current directory.  Only
+otherwise valid tokens will be stored in the database.  Only fully
+validated tokens will be stored in the database, unless the I<-y>
+option is given.
 
 =item I<-f dbname>
 
@@ -346,12 +351,17 @@ purge all expired tokens.  If the resource name is the empty string,
 all tokens are matched (this is equivalent to omitting the I<-j>
 option).
 
+Note the I<-E>, I<-W> and I<-S> type of match flags also apply to
+resources given with the I<-j resource> flag.
+
 =item I<-s>
 
 Print timing information only, and don't proceed to create a token.
-If combined with I<-b> flag print estimate of how long the requested
-collision size would take to compute, if I<-s> given by itself, just
-prints speed of the collision finder.
+If combined with I<-b bits> flag print estimate of how long the
+requested collision size would take to compute, if I<-s> given by
+itself, just prints speed of the collision finder.  To print an
+estimate of how long the default number of bits would take use I<-b
+default>.
 
 =item I<-h>
 
@@ -373,10 +383,11 @@ overrides the I<-v> option.
 When minting, prints the hashcash email X-header 'X-Hashcash: ' before
 the token.  Without this option just the bare token is printed.  
 
-When checking, if no token is given as an argument, scans stdin for a
-line starting with the string 'X-Hashcash:', and uses the rest of the
-matching line as the token.  Only the lines up to and ending at the
-first blank line are scanned.  A blank line is the separator used to
+When checking, after scanning tokens given as arguments, scans stdin
+for lines starting with the string 'X-Hashcash:', and uses the rest of
+the matching line as the token.  Only the lines up to and ending at
+the first blank line are scanned (see also I<-i> flag which can be
+used to override this).  A blank line is the separator used to
 separate the headers from the body of a mail message or USENET
 article.  This is meant to make it convenient to pipe a mail message
 or USENET article to hashcash on stdin.
@@ -450,9 +461,39 @@ unchecked on exit.
 =item I<-y>
 
 Returns success if the token is valid even if it is not fully checked.
-Use with I<-c> where not all of I<-b>, I<-d>, I<-r> are specified to
-get success exit code on valid but partially checked token.  Similarly
-can use with I<-n>, I<-l>, I<-w> with same effect.
+Use with I<-c> where not all of I<-d>, I<-r> are specified to get
+success exit code on valid but partially checked token.  Similarly can
+use with I<-n>, I<-l>, I<-w> with same effect.
+
+=item I<-W>
+
+When checking tokens, allow wildcards I<*> in the resource name to
+make it simpler to specify multiple email addresses and to allow
+matching catch-all addresses and addresses including subdomains.  This
+is the default.  See also I<-S>, I<-E> and I<-C>
+
+=item I<-S>
+
+When checking tokens use simple text compare to compare resource names
+to those in tokens.  See also I<-W>, <-E> and I<-C>.
+
+=item I<-E>
+
+When checking tokens use regular expressions to specify resource names
+to make it simpler to specify multiple email addresses, catch-all
+addresses, classes of extension addresses and addresses including
+subdomains.  Note regular expression syntax is POSIX style: special
+characters do not need to be quoted to have their special meaning; but
+they do have to be quoted with \ to that character in the searched
+string.  (Note even if BSD regular expressions are used POSIX style
+syntax is used; also note BSD regular expressions do not support
+ranges {}.)
+
+=item I<-C>
+
+By default resources are converted to lower case on minting and on
+checking.  The I<-C> flag overrides this so that resources are treated
+as case sensitive.
 
 =back
 
@@ -467,28 +508,33 @@ can use with I<-n>, I<-l>, I<-w> with same effect.
 Print timing information about how many collisions the machine can try
 per second.
 
+=item C<hashcash -s -b default>
+
+Print how long it would take the machine to compute a default sized
+collision (but don't actually compute a collision).
+
 =item C<hashcash -s -b 32>
 
 Print how long it would take the machine to compute a 32 bit collision
 (but don't actually compute a collision).
 
-=item C<hashcash>
+=item C<hashcash -m>
 
-Mint a token.  Will prompt for resource name and desired value (number
-of collision bits).
+Mint a token.  Will prompt for resource name and mint with default
+value (number of collision bits).
 
-=item C<hashcash foo>
+=item C<hashcash -m foo>
 
-Compute collision on resource foo.  Will prompt desired value (number
-of collision bits).
+Compute collision on resource foo.  Will mint with default value
+(number of collision bits).
 
-=item C<hashcash foo -b 10>
+=item C<hashcash -m foo -b 10>
 
 Compute 10 bit collision on resource foo.
 
 =item C<hashcash -a -3d>
 
-Subtract a random time of between 0 days and 3 days to to the token's
+Subtract a random time of between 0 days and 3 days from the token's
 creation time.  This is the same fuzz factor used by mixmaster to
 reduce risk of timing-correlations.
 
@@ -504,7 +550,7 @@ Report the value of the token (how many bits of collision) there are.
 The example is a 33 bit collision, which would take on average 13
 hours to create on a 400 Mhz Pentium-II.
 
-=item C<hashcash -q -b 10 foo | hashcash -w>
+=item C<hashcash -mq -b 10 foo | hashcash -w>
 
 Create a token in batch mode, pass to hashcash on stdin to verify,
 have it print how many bits there were.  Note: half of the time you
@@ -623,13 +669,13 @@ checked, if it is valid and all of the mandatory aspects of the token
 are verified (collision bits check, resource name check) then the
 token and it's expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
-the I<-e> option is forever (ie tokens do not expire).
+the I<-e> option is 28 days (ie tokens expire after 4 weeks).
 
 First mint and then add a token:
 
 =over 4
 
-=item C<hashcash -b 10 foo -e 1m E<gt> token>
+=item C<hashcash -m -b 10 foo -e 1m E<gt> token>
 
 Note: we specified an expiry on minting in this example, to ensure
 that the token creation time is given in high enough resolution in the
@@ -671,7 +717,8 @@ using the I<-p> option with the I<-c> option.
 
 =over 4
 
-=item C<hashcash -b 10 foo E<gt> token>
+=item C<hashcash -m -b 10 foo E<gt> token>
+
 =item C<hashcash -cd -p now -e 1 -b 10 -r foo E<lt> token>
 
 It may be inefficient to purge tokens on every use as the entire

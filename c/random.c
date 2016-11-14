@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #include <stdio.h>
 #include <limits.h>
@@ -89,8 +89,7 @@ int random_getbytes( void* rnd, size_t len )
     int use = 0;
 
     random_stir( state, state ); /* mix in the time, pid */
-    for ( ; len > 0; len -= use, rndp += CHUNK_LEN )
-    {
+    for ( ; len > 0; len -= use, rndp += CHUNK_LEN ) {
 	random_stir( state, output );
 	use = len > CHUNK_LEN ? CHUNK_LEN : len;
 	memcpy( rndp, output, use );
@@ -115,12 +114,10 @@ int random_rectangular( long top, long* resp )
 
     if ( top < 0 ) { neg = -1; top = -top; }
     mask = ~( LONG_MAX << count_bits( top ) );
-    do
-    {
+    do {
 	if ( !random_getbytes( &res, sizeof( long ) ) ) { return 0; }
 	res &= mask;
-    }
-    while ( res > top );
+    } while ( res > top );
     *resp = res * neg;
     return 1;
 }

@@ -1,11 +1,16 @@
-HC_VERS = 0.30
-INSTALL_PATH = /usr/local/bin
+HC_VERS = 0.31
+INSTALL_PATH = /usr/bin
 MAN_INSTALL_PATH = /usr/share/man/man1
 DOC_INSTALL_PATH = /usr/share/doc/hashcash-$(HC_VERS)
 MAKEDEPEND = makedepend
-COPT = -O3
+COPT = -O 
+OPT = -DREGEXP_POSIX
+# if no POSIX regexp support, try BSD
+# OPT = -DREGEXP_BSD
+# if no POSIX or BSD, disable, still have builtin basic wildcard support
+# OPT = -O
 LDFLAGS = $(CARCH)
-CFLAGS = $(COPT) $(CWARN) $(CARCH)
+CFLAGS = $(COPT) $(OPT) $(CWARN) $(CARCH)
 EXES = hashcash sha1 sha1test
 INSTALL = /usr/bin/install
 POD2MAN = pod2man
@@ -13,7 +18,7 @@ POD2HTML = pod2html
 POD2TEXT = pod2text
 DELETE = /bin/rm -f
 ETAGS = etags
-OBJS = hashcash.o libsha1.o libhc.o timer.o sdb.o utct.o random.o
+OBJS = hashcash.o libsha1.o libhc.o timer.o sdb.o utct.o random.o lock.o
 DIST = ../dist.csh
 
 build:	hashcash sha1
@@ -85,8 +90,9 @@ getopt.o: getopt.h
 hashcash.o: sdb.h utct.h random.h timer.h types.h hashcash.h sha1.h
 libhc.o: hashcash.h utct.h types.h sha1.h random.h timer.h
 libsha1.o: sha1.h types.h
+lock.o: lock.h
 random.o: random.h timer.h types.h sha1.h
-sdb.o: sdb.h types.h utct.h
+sdb.o: sdb.h types.h utct.h lock.h
 sha1.o: sha1.h types.h
 sha1test.o: sha1.h types.h timer.h
 timer.o: timer.h types.h

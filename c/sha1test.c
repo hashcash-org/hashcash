@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #include <stdio.h>
 #include <time.h>
@@ -47,17 +47,13 @@ int main( int argc, char* argv[] )
     SHA1_Final( &ctx, digest );
     printf( "SHA1(\"%s\") = \n\t", test1 );
     
-    for ( i = 0; i < 20 ; i++ )
-    {
+    for ( i = 0; i < 20 ; i++ ) {
 	printf( "%02x", digest[ i ] );
     }
     
-    if ( memcmp( digest, result1, SHA1_DIGEST_BYTES ) == 0 )
-    {
+    if ( memcmp( digest, result1, SHA1_DIGEST_BYTES ) == 0 ) {
 	printf( " test ok\n" );
-    }
-    else
-    {
+    } else {
 	printf( " test failed\n" );
     }
     printf( "\n" );
@@ -71,17 +67,13 @@ int main( int argc, char* argv[] )
     
     printf( "SHA1(\"%s\") = \n\t", test2 );
     
-    for ( i = 0; i < SHA1_DIGEST_BYTES ; i++ )
-    {
+    for ( i = 0; i < SHA1_DIGEST_BYTES ; i++ ) {
 	printf( "%02x", digest[ i ] );
     }
     
-    if ( memcmp( digest, result2, SHA1_DIGEST_BYTES ) == 0 )
-    {
+    if ( memcmp( digest, result2, SHA1_DIGEST_BYTES ) == 0 ) {
 	printf( " test ok\n" );
-    }
-    else
-    {
+    } else {
 	printf( " test failed\n" );
     }
     printf( "\n" );
@@ -96,8 +88,7 @@ int main( int argc, char* argv[] )
     
     SHA1_Init( &ctx );
     memset( test3 , 'a', 200 );	/* fill test3 with "a"s */
-    for( i = 0; i < 5000; i++ )	/* digest 5000 times */
-    {
+    for( i = 0; i < 5000; i++ )	{ /* digest 5000 times */
 	SHA1_Update( &ctx, test3, 200 );
     }
     SHA1_Final( &ctx, digest );
@@ -106,17 +97,13 @@ int main( int argc, char* argv[] )
     
     printf( "SHA1(\"a\" x 1,000,000) = \n\t" );
     
-    for ( i = 0; i < SHA1_DIGEST_BYTES ; i++ )
-    {
+    for ( i = 0; i < SHA1_DIGEST_BYTES ; i++ ) {
 	printf( "%02x", digest[ i ] );
     }
     
-    if ( memcmp( digest, result3, SHA1_DIGEST_BYTES ) == 0 )
-    {
+    if ( memcmp( digest, result3, SHA1_DIGEST_BYTES ) == 0 ) {
 	printf( " test ok\n" );
-    }
-    else
-    {
+    } else {
 	printf( " test failed\n" );
     }
     printf( "\n" );

@@ -129,17 +129,17 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2004-03-07" "0.30" "hashcash"
+.TH HASHCASH 1 "2004-04-02" "0.31" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-.Sh "Mint (create) token:"
-.IX Subsection "Mint (create) token:"
-\&\fBhashcash\fR [ \fIoptions\fR ] [ \fI\-b bits\fR ] [ \fIresource\fR ]>
-.Sh "Check token:"
-.IX Subsection "Check token:"
-\&\fBhashcash\fR \fI\-c\fR [ \fIoptions\fR ] \fI\-b bits\fR \fI\-r resource\fR [ \fItoken\fR ]
+.Sh "Mint (create) tokens:"
+.IX Subsection "Mint (create) tokens:"
+\&\fBhashcash\fR \fI\-m\fR [ [ \fIoptions\fR ] [ \fIresource\fR ... ] ... ]
+.Sh "Check tokens:"
+.IX Subsection "Check tokens:"
+\&\fBhashcash\fR \fI\-c\fR [ [ \fIoptions\fR ] \fI\-r resource\fR ... ] [ \fItoken\fR ... ] 
 .Sh "Speed estimates:"
 .IX Subsection "Speed estimates:"
 \&\fBhashcash\fR \fI\-s\fR [ \fIoptions\fR ] [ \fI\-b bits\fR ]
@@ -148,13 +148,13 @@ hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 \&\fBhashcash\fR \fI\-p now\fR [ \fI\-j resource\fR ] [ \fI\-k\fR ] [ \fI\-t time\fR ] [ \fI\-u\fR ]
 .Sh "Count collision bits:"
 .IX Subsection "Count collision bits:"
-\&\fBhashcash\fR \fI\-w\fR [ \fIoptions\fR ] [ \fItoken\fR ]
+\&\fBhashcash\fR \fI\-w\fR [ \fIoptions\fR ] [ \fItoken\fR ... ]
 .Sh "Get resource name:"
 .IX Subsection "Get resource name:"
-\&\fBhashcash\fR \fI\-n\fR [ \fIoptions\fR ] [ \fItoken\fR ]
+\&\fBhashcash\fR \fI\-n\fR [ \fIoptions\fR ] [ \fItoken\fR ... ]
 .Sh "Get time remaining until expiry"
 .IX Subsection "Get time remaining until expiry"
-\&\fBhashcash\fR \fI\-l\fR [ \fIoptions\fR ] \fI\-e period\fR [ \fItoken\fR ]
+\&\fBhashcash\fR \fI\-l\fR [ \fIoptions\fR ] \fI\-e period\fR [ \fItoken\fR ... ]
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 Hashcash is a denial-of-service counter measure tool.  It's main
@@ -190,17 +190,14 @@ the token is created for.  In the case of email, the resource name is
 the recipient's email address in the form user@domain.com.
 .Sh "Minting tokens"
 .IX Subsection "Minting tokens"
-If neither the \fI\-c\fR or \fI\-s\fR option are given, it is assumed that you
-want to mint a token.
+The \fI\-m\fR flag must be given to mint a token.
 .PP
-The resource name (recipient's email address) to mint the token
-against can be passed as an argument, or if omitted is read from
-stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
-resource name is just silently read.  The desired collision size can
-be specified with the \-b option.  If no collision size is specified,
-the default is 20 bits.  As a convenience, if stdin is a tty and no
-collision size is given with the \fI\-b\fR flag, the user is prompted for
-a collision size.
+The resource name (recipient's email address) to mint the token against can
+be passed as an argument, or if omitted is read from stdin.  If stdin is a
+tty the user is prompted, if stdin is a pipe the resource name is just
+silently read.  The desired collision size can be specified with the \-b
+option.  If no collision size is specified, the default is 20 bits.  \fI\-b
+default\fR can be used to get the default size.
 .Sh "Checking tokens"
 .IX Subsection "Checking tokens"
 The \fI\-c\fR flag must be given to check tokens.  The token to check can
@@ -243,12 +240,11 @@ unchecked (exit code 2) is returned on exit.  The \fI\-l\fR flag can be
 used to request the number of seconds until expiry of the token is
 output; exit code unchecked (exit code 2) is returned on exit.
 .PP
-The program will only return exit codes valid or invalid if the \fI\-c\fR
-flag is used, and all of the options \fI\-b bits\fR, \fI\-d\fR, \fI\-r resource\fR
-are used.  These are the minimum set of options necessary to fully
-check the validty of a token.  If these criteria are not met, the
-program will return exit code unchecked (exit code 2) on exit.  (See
-also the \fI\-y\fR flag.)
+The program will only return exit codes valid or invalid if the \fI\-c\fR flag
+is used, and both of the options, \fI\-d\fR, \fI\-r resource\fR are used.  These are
+the minimum set of options necessary to fully check the validty of a token. 
+If these criteria are not met, the program will return exit code unchecked
+(exit code 2) on exit.  (See also the \fI\-y\fR flag.)
 .Sh "Double Spending Protection"
 .IX Subsection "Double Spending Protection"
 If the \fI\-d\fR flag is used with the \fI\-c\fR flag a database of spent
@@ -283,7 +279,7 @@ affecting the validity of old tokens.
 To purge old tokens periodically while checking tokens use the \fI\-p
 period\fR option to purge no sooner than the given time period since the
 last purge.  Purging can be used with the \fI\-k\fR option to purge
-unexpired tokens also, and with the \fI\-r resource\fR flag to purge only
+unexpired tokens also, and with the \fI\-j resource\fR flag to purge only
 tokens for the given resource.
 .PP
 There are circumstances where it may be inconvenient to purge tokens
@@ -301,7 +297,8 @@ tested per second.  No token is minted, or verified.
 .PP
 If the \fI\-b\fR flag is used with this option, instead an estimate of how
 many seconds it would take to mint a token of the given size in bits
-is computed.
+is computed.  To find out how much time it will take to mint a default
+sized stamp use \fI\-s \-b default\fR.
 .Sh "Notes"
 .IX Subsection "Notes"
 All informational output is printed on stderr.  Minted tokens, and
@@ -316,24 +313,25 @@ when quiet mode is in effect the output is printed without description
 .IX Header "OPTIONS"
 .IP "\fI\-c\fR" 4
 .IX Item "-c"
-Check the token given as an argument or on stdin for validity.
+Check the tokens given as an argument or on stdin for validity.
 .IP "\fI\-m\fR" 4
 .IX Item "-m"
-Mint a token.  If none of \fI\-c\fR, \fI\-p\fR, \fI\-s\fR, \fI\-l\fR, \fI\-n\fR, \fI\-w\fR are
-given it is anyway assumed that the user wishes to mint a token.
+Mint tokens with the resources given as arguments or on stdin.
 .IP "\fI\-b bits\fR" 4
 .IX Item "-b bits"
 When minting a token, request a collision of this many bits.  When
 verifying a token require that it have a collision of at minimum this
-many bits, otherwise reject it.
+many bits, otherwise reject it.  If omitted the default is used.  Can
+also specify the default with \fI\-b default\fR which is useful for use
+with \fI\-s\fR.
 .IP "\fI\-r resource\fR" 4
 .IX Item "-r resource"
 When minting tokens, the resource name (recipient's email address) to
 mint the token against can be given either with \fI\-r resource\fR or as
 an argument to \f(CW\*(C`hashcash\*(C'\fR.
 .Sp
-When checking tokens, the resource name (your own email address) can
-be given with the \fI\-r\fR option.  If the resource name is given it is
+When checking tokens, the resource name (your own email address) is
+given with the \fI\-r\fR option.  If the resource name is given it is
 checked against the resource name in the token, and if they do not
 match the token is rejected.  Note if the resource name is not given,
 tokens for other resources would be accepted, and therefore hashcash
@@ -352,15 +350,17 @@ If used with the \fI\-d\fR option, the spent token and it's expiry period
 is recorded in the database.  See the \fI\-p\fR option for description of
 how to purge tokens from the database.
 .Sp
-The following \fI\-e\fR usage to give an implicit time resolution while minting
-is deprecated, use explicit \fI\-z\fR option instead.  (\fI\-z\fR overrides \fI\-e\fR if
-both are given.  \fI\-e\fR still works for backwards compatibility.  If neither
-are given the default is 6 chars (time format: \s-1YYMMDD\s0)).
-.Sp
 While minting tokens, the \fI\-e\fR flag can have an effect on the
 resolution of time created in the token.  Without the \fI\-e\fR option,
 the default resolution is days (time format: \s-1YYMMDD\s0).  Alternate
 formats based on range of expiry period are as follows:
+.Sp
+While minting you can also given an explicit time width with the \fI\-z\fR
+option instead.  (\fI\-z\fR overrides \fI\-e\fR if both are given.  If neither
+are given the default is 6 chars (time format: \s-1YYMMDD\s0)).
+.Sp
+The rules for automatically determining appropriate time width from
+\&\fI\-e\fR if no \fI\-z\fR option is given are:
 .RS 4
 .IP "* period >= 2 years then time format \s-1YY\s0 is used rounded down to the nearest year start;" 8
 .IX Item "period >= 2 years then time format YY is used rounded down to the nearest year start;"
@@ -386,11 +386,13 @@ understand if you use the \fI\-u\fR option.
 .RE
 .IP "\fI\-z width\fR" 4
 .IX Item "-z width"
-The \fI\-z\fR option is for use during minting and deprecates the \fI\-e\fR option
-given in combination with \fI\-m\fR to specify an implicit time field width. 
-Valid widths are 2,4,6,8,10 or 12 chars corresponding respectively to: \s-1YY\s0,
-\&\s-1YYMM\s0, \s-1YYMMDD\s0, YYMMDDhh, YYMMDDhhmm, and YYMMDDhhmmss rounded down to the
-nearest year, month, day, hour, minute respectively.
+The \fI\-z\fR option is for use during minting and allows user choice of
+width of time width field.  See also the \fI\-e\fR option given in
+combination with \fI\-m\fR to specify an implicit time field width under
+the description of the \fI\-e\fR flag.  Valid widths are 2,4,6,8,10 or 12
+chars corresponding respectively to: \s-1YY\s0, \s-1YYMM\s0, \s-1YYMMDD\s0, YYMMDDhh,
+YYMMDDhhmm, and YYMMDDhhmmss rounded down to the nearest year, month,
+day, hour, minute respectively.
 .Sp
 Note the rounding down is based on \s-1UTC\s0 time, not local time.  This can
 lead to initially suprising results when rounding down to eg days in
@@ -415,7 +417,10 @@ d = days, M = months, y = Y = years, and s = seconds).
 .IX Item "-d"
 Store tokens in a double spend database.  If token has been seen
 before it will be rejected even if it is otherwise valid.  The default
-database file is \fIdatabase.db\fR in the current directory.
+database file is \fIdatabase.db\fR in the current directory.  Only
+otherwise valid tokens will be stored in the database.  Only fully
+validated tokens will be stored in the database, unless the \fI\-y\fR
+option is given.
 .IP "\fI\-f dbname\fR" 4
 .IX Item "-f dbname"
 Use \fIdbname\fR instead of default filename for double spend database.  
@@ -443,12 +448,17 @@ resource name are to be purged, rather than the default which is to
 purge all expired tokens.  If the resource name is the empty string,
 all tokens are matched (this is equivalent to omitting the \fI\-j\fR
 option).
+.Sp
+Note the \fI\-E\fR, \fI\-W\fR and \fI\-S\fR type of match flags also apply to
+resources given with the \fI\-j resource\fR flag.
 .IP "\fI\-s\fR" 4
 .IX Item "-s"
 Print timing information only, and don't proceed to create a token.
-If combined with \fI\-b\fR flag print estimate of how long the requested
-collision size would take to compute, if \fI\-s\fR given by itself, just
-prints speed of the collision finder.
+If combined with \fI\-b bits\fR flag print estimate of how long the
+requested collision size would take to compute, if \fI\-s\fR given by
+itself, just prints speed of the collision finder.  To print an
+estimate of how long the default number of bits would take use \fI\-b
+default\fR.
 .IP "\fI\-h\fR" 4
 .IX Item "-h"
 Print short usage information.
@@ -466,10 +476,11 @@ overrides the \fI\-v\fR option.
 When minting, prints the hashcash email X\-header 'X\-Hashcash: ' before
 the token.  Without this option just the bare token is printed.  
 .Sp
-When checking, if no token is given as an argument, scans stdin for a
-line starting with the string 'X\-Hashcash:', and uses the rest of the
-matching line as the token.  Only the lines up to and ending at the
-first blank line are scanned.  A blank line is the separator used to
+When checking, after scanning tokens given as arguments, scans stdin
+for lines starting with the string 'X\-Hashcash:', and uses the rest of
+the matching line as the token.  Only the lines up to and ending at
+the first blank line are scanned (see also \fI\-i\fR flag which can be
+used to override this).  A blank line is the separator used to
 separate the headers from the body of a mail message or \s-1USENET\s0
 article.  This is meant to make it convenient to pipe a mail message
 or \s-1USENET\s0 article to hashcash on stdin.
@@ -534,9 +545,35 @@ unchecked on exit.
 .IP "\fI\-y\fR" 4
 .IX Item "-y"
 Returns success if the token is valid even if it is not fully checked.
-Use with \fI\-c\fR where not all of \fI\-b\fR, \fI\-d\fR, \fI\-r\fR are specified to
-get success exit code on valid but partially checked token.  Similarly
-can use with \fI\-n\fR, \fI\-l\fR, \fI\-w\fR with same effect.
+Use with \fI\-c\fR where not all of \fI\-d\fR, \fI\-r\fR are specified to get
+success exit code on valid but partially checked token.  Similarly can
+use with \fI\-n\fR, \fI\-l\fR, \fI\-w\fR with same effect.
+.IP "\fI\-W\fR" 4
+.IX Item "-W"
+When checking tokens, allow wildcards \fI*\fR in the resource name to
+make it simpler to specify multiple email addresses and to allow
+matching catch-all addresses and addresses including subdomains.  This
+is the default.  See also \fI\-S\fR, \fI\-E\fR and \fI\-C\fR
+.IP "\fI\-S\fR" 4
+.IX Item "-S"
+When checking tokens use simple text compare to compare resource names
+to those in tokens.  See also \fI\-W\fR, <\-E> and \fI\-C\fR.
+.IP "\fI\-E\fR" 4
+.IX Item "-E"
+When checking tokens use regular expressions to specify resource names
+to make it simpler to specify multiple email addresses, catch-all
+addresses, classes of extension addresses and addresses including
+subdomains.  Note regular expression syntax is \s-1POSIX\s0 style: special
+characters do not need to be quoted to have their special meaning; but
+they do have to be quoted with \e to that character in the searched
+string.  (Note even if \s-1BSD\s0 regular expressions are used \s-1POSIX\s0 style
+syntax is used; also note \s-1BSD\s0 regular expressions do not support
+ranges {}.)
+.IP "\fI\-C\fR" 4
+.IX Item "-C"
+By default resources are converted to lower case on minting and on
+checking.  The \fI\-C\fR flag overrides this so that resources are treated
+as case sensitive.
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
 .Sh "Creating tokens"
@@ -546,29 +583,34 @@ can use with \fI\-n\fR, \fI\-l\fR, \fI\-w\fR with same effect.
 .IX Item "hashcash -s"
 Print timing information about how many collisions the machine can try
 per second.
+.ie n .IP """hashcash \-s \-b default""" 4
+.el .IP "\f(CWhashcash \-s \-b default\fR" 4
+.IX Item "hashcash -s -b default"
+Print how long it would take the machine to compute a default sized
+collision (but don't actually compute a collision).
 .ie n .IP """hashcash \-s \-b 32""" 4
 .el .IP "\f(CWhashcash \-s \-b 32\fR" 4
 .IX Item "hashcash -s -b 32"
 Print how long it would take the machine to compute a 32 bit collision
 (but don't actually compute a collision).
-.ie n .IP """hashcash""" 4
-.el .IP "\f(CWhashcash\fR" 4
-.IX Item "hashcash"
-Mint a token.  Will prompt for resource name and desired value (number
-of collision bits).
-.ie n .IP """hashcash foo""" 4
-.el .IP "\f(CWhashcash foo\fR" 4
-.IX Item "hashcash foo"
-Compute collision on resource foo.  Will prompt desired value (number
-of collision bits).
-.ie n .IP """hashcash foo \-b 10""" 4
-.el .IP "\f(CWhashcash foo \-b 10\fR" 4
-.IX Item "hashcash foo -b 10"
+.ie n .IP """hashcash \-m""" 4
+.el .IP "\f(CWhashcash \-m\fR" 4
+.IX Item "hashcash -m"
+Mint a token.  Will prompt for resource name and mint with default
+value (number of collision bits).
+.ie n .IP """hashcash \-m foo""" 4
+.el .IP "\f(CWhashcash \-m foo\fR" 4
+.IX Item "hashcash -m foo"
+Compute collision on resource foo.  Will mint with default value
+(number of collision bits).
+.ie n .IP """hashcash \-m foo \-b 10""" 4
+.el .IP "\f(CWhashcash \-m foo \-b 10\fR" 4
+.IX Item "hashcash -m foo -b 10"
 Compute 10 bit collision on resource foo.
 .ie n .IP """hashcash \-a \-3d""" 4
 .el .IP "\f(CWhashcash \-a \-3d\fR" 4
 .IX Item "hashcash -a -3d"
-Subtract a random time of between 0 days and 3 days to to the token's
+Subtract a random time of between 0 days and 3 days from the token's
 creation time.  This is the same fuzz factor used by mixmaster to
 reduce risk of timing\-correlations.
 .Sh "Examining Tokens"
@@ -579,9 +621,9 @@ reduce risk of timing\-correlations.
 Report the value of the token (how many bits of collision) there are.
 The example is a 33 bit collision, which would take on average 13
 hours to create on a 400 Mhz Pentium\-II.
-.ie n .IP """hashcash \-q \-b 10 foo | hashcash \-w""" 4
-.el .IP "\f(CWhashcash \-q \-b 10 foo | hashcash \-w\fR" 4
-.IX Item "hashcash -q -b 10 foo | hashcash -w"
+.ie n .IP """hashcash \-mq \-b 10 foo | hashcash \-w""" 4
+.el .IP "\f(CWhashcash \-mq \-b 10 foo | hashcash \-w\fR" 4
+.IX Item "hashcash -mq -b 10 foo | hashcash -w"
 Create a token in batch mode, pass to hashcash on stdin to verify,
 have it print how many bits there were.  Note: half of the time you
 get a token 1 bit larger; similarly with decreasing probability you
@@ -682,12 +724,12 @@ checked, if it is valid and all of the mandatory aspects of the token
 are verified (collision bits check, resource name check) then the
 token and it's expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
-the \fI\-e\fR option is forever (ie tokens do not expire).
+the \fI\-e\fR option is 28 days (ie tokens expire after 4 weeks).
 .PP
 First mint and then add a token:
-.ie n .IP """hashcash \-b 10 foo \-e 1m > token""" 4
-.el .IP "\f(CWhashcash \-b 10 foo \-e 1m > token\fR" 4
-.IX Item "hashcash -b 10 foo -e 1m > token"
+.ie n .IP """hashcash \-m \-b 10 foo \-e 1m > token""" 4
+.el .IP "\f(CWhashcash \-m \-b 10 foo \-e 1m > token\fR" 4
+.IX Item "hashcash -m -b 10 foo -e 1m > token"
 Note: we specified an expiry on minting in this example, to ensure
 that the token creation time is given in high enough resolution in the
 token that the token will not be considered expired at time of
@@ -722,9 +764,14 @@ subsequently purged due to expiry.
 .IX Subsection "Purging old tokens on Demand"
 As a convenience you can purge at the same time as checking tokens by
 using the \fI\-p\fR option with the \fI\-c\fR option.
-.ie n .IP """hashcash \-b 10 foo > token""\fR =item \f(CW""hashcash \-cd \-p now \-e 1 \-b 10 \-r foo < token""" 4
-.el .IP "\f(CWhashcash \-b 10 foo > token\fR =item \f(CWhashcash \-cd \-p now \-e 1 \-b 10 \-r foo < token\fR" 4
-.IX Item "hashcash -b 10 foo > token =item hashcash -cd -p now -e 1 -b 10 -r foo < token"
+.ie n .IP """hashcash \-m \-b 10 foo > token""" 4
+.el .IP "\f(CWhashcash \-m \-b 10 foo > token\fR" 4
+.IX Item "hashcash -m -b 10 foo > token"
+.PD 0
+.ie n .IP """hashcash \-cd \-p now \-e 1 \-b 10 \-r foo < token""" 4
+.el .IP "\f(CWhashcash \-cd \-p now \-e 1 \-b 10 \-r foo < token\fR" 4
+.IX Item "hashcash -cd -p now -e 1 -b 10 -r foo < token"
+.PD
 It may be inefficient to purge tokens on every use as the entire
 database has to be scanned for expired tokens.  By giving a time
 period to the \fI\-p\fR option, you can tell \f(CW\*(C`hashcash\*(C'\fR to purge no more

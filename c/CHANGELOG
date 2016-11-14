@@ -1,3 +1,100 @@
+hashcash-0.31 - 01-Apr-2004 - Adam Back <adam@cypherspace.org>
+
+	* final 0.x version (v0 format) release before 1.x version (v1
+	  format) (bug fixes / maintenance only afterwards on 0.x version)
+	
+	* remove -O3 from Makefile, use -O instead as fails on HPUX or
+	  sun.
+ 
+	* fix some out of date usage stuff in hashcash man page.
+
+	* disable timing loop unless timing needed
+
+	* fix multiple reciept bug in -cX/-cx reported by Junior Ang
+	  <junior@chrysant.com>.  If you receive a mail multiple times
+	  because you are on the receipt list multiple times, there will
+	  be multiple hashcash headers for you.  In this case it is
+	  necessary to examine the first matching, non-spent stamp.  The
+	  bug was previous versions stopped on the first matching stamp
+	  and then failed because it was spent.  Need to keep going and
+	  check later also matching stamps until find one which is not
+	  spent.
+
+	* rationalize command line args further.  No implied -m , more
+	  things that are awkward to implement but not that useful are
+	  disallowed.
+
+	* change purge operation to use read-write operations in the same
+	  sdb file rather than creating a temporary file.  This makes
+	  locking easier and is also aesthetically nicer.
+
+	* add flock(2) database file write locking, and change creation
+	  logic to use open(2) to avoid creation db race-condition also.
+
+	* make resource string case insensitive by default to match email
+	  semantics; add -C option to force case sensitivity if desired
+	  (email addresses are converted to and stored in lower case, so
+	  you have to both mint and verify with case sensitivity turned on
+	  to make use of case sensitivity)
+
+	* support minting multiple resources with multiple command line
+	  args.  Also if no resources given on command line, read
+	  resources from stdin.
+	
+	* support supplying multiple email addresses, for people who want
+	  to accept as multiple addresses.
+
+	* support multiple resources on purging also.
+
+	* support multiple tokens with check mode as cmd line args, if
+	  none given as args, read tokens from stdin; if -X/-x read from
+	  cmd line args, then from stdin as email (matching stamp headers
+	  skipping stamp headers)
+ 	
+	* rename default simple database to hashcash.sdb (.sdb extension),
+	  to distinguish from planned support for better database.
+	
+	* fix bug in PPUTS didn't match PPRINTF
+
+	* fixup -l, -w, -n so they support multiple tokens also
+	
+	* made use of -b optional (get the default on mint & check)
+
+	* added "-b default" to specify default number of bits with -s
+	  (otherwise no way to measure the default speed without
+	  specifying the number of bits -- and when this can change over
+	  time it would be inconvenient for scripting to have to
+	  separately obtain this)
+	
+	* added support for wildcard email addresses with '*' wildcard
+	  marker.  '*' before '@' does not match '@', '*' after '@' does
+	  not match '.'.  And both email addresses must contain @ sign and
+	  same number of '.' separated sub domains as wildcard address.
+	  Wildcard matching is the new default.  Use -S to get plain
+	  string match.  Can turn back on with -W.
+
+	* increased size of random string to reduce chance of collisions
+	  between users.  Now negligible chance of collision with typical
+	  token sizes.
+	
+	* added support for regexps.  Can work from POSIX library or BSD
+	  regexp library.  Use -E to get regexps.  Input is always in
+	  POSIX syntax (specials are not quoted to have special action;
+	  are quoted to have plain meaning).  If using BSD library still
+	  give input in POSIX syntax, it's converted to BSD internally.
+	
+	* implement highest matching semantics.  Ensures that eg -c -b10
+	  *@bar.invalid -b15 adam@bar.invalid will not accept a 10 bit
+	  token for adam@bar.invalid.  (This is done by sorting resources
+	  highest bits required first and accepting only the first highest
+	  matching resource.)
+	
+	* change arg parsing so -b, -e, -g, -z, -E, -W, -S, apply to the
+	  following resources and tokens, and can be changed for later
+	  resources/tokens with tokens and args interspersed.  Means you
+	  have to give these args before the resource/token or you will
+	  get defaults.
+	
 hashcash-0.30 - 04-Mar-2004 - Adam Back <adam@cypherspace.org>
 
 	* make -cX check multiple X-Hashcash lines until it finds the

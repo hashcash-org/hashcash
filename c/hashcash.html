@@ -16,8 +16,8 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<ul>
 
-		<li><a href="#mint__create__token_">Mint (create) token:</a></li>
-		<li><a href="#check_token_">Check token:</a></li>
+		<li><a href="#mint__create__tokens_">Mint (create) tokens:</a></li>
+		<li><a href="#check_tokens_">Check tokens:</a></li>
 		<li><a href="#speed_estimates_">Speed estimates:</a></li>
 		<li><a href="#purge_database_">Purge database:</a></li>
 		<li><a href="#count_collision_bits_">Count collision bits:</a></li>
@@ -69,12 +69,12 @@
 <h1><a name="synopsis">SYNOPSIS</a></h1>
 <p>
 </p>
-<h2><a name="mint__create__token_">Mint (create) token:</a></h2>
-<p><strong>hashcash</strong> [ <em>options</em> ] [ <em>-b bits</em> ] [ <em>resource</em> ]&gt;</p>
+<h2><a name="mint__create__tokens_">Mint (create) tokens:</a></h2>
+<p><strong>hashcash</strong> <em>-m</em> [ [ <em>options</em> ] [ <em>resource</em> ... ] ... ]</p>
 <p>
 </p>
-<h2><a name="check_token_">Check token:</a></h2>
-<p><strong>hashcash</strong> <em>-c</em> [ <em>options</em> ] <em>-b bits</em> <em>-r resource</em> [ <em>token</em> ]</p>
+<h2><a name="check_tokens_">Check tokens:</a></h2>
+<p><strong>hashcash</strong> <em>-c</em> [ [ <em>options</em> ] <em>-r resource</em> ... ] [ <em>token</em> ... ]</p>
 <p>
 </p>
 <h2><a name="speed_estimates_">Speed estimates:</a></h2>
@@ -86,15 +86,15 @@
 <p>
 </p>
 <h2><a name="count_collision_bits_">Count collision bits:</a></h2>
-<p><strong>hashcash</strong> <em>-w</em> [ <em>options</em> ] [ <em>token</em> ]</p>
+<p><strong>hashcash</strong> <em>-w</em> [ <em>options</em> ] [ <em>token</em> ... ]</p>
 <p>
 </p>
 <h2><a name="get_resource_name_">Get resource name:</a></h2>
-<p><strong>hashcash</strong> <em>-n</em> [ <em>options</em> ] [ <em>token</em> ]</p>
+<p><strong>hashcash</strong> <em>-n</em> [ <em>options</em> ] [ <em>token</em> ... ]</p>
 <p>
 </p>
 <h2><a name="get_time_remaining_until_expiry">Get time remaining until expiry</a></h2>
-<p><strong>hashcash</strong> <em>-l</em> [ <em>options</em> ] <em>-e period</em> [ <em>token</em> ]</p>
+<p><strong>hashcash</strong> <em>-l</em> [ <em>options</em> ] <em>-e period</em> [ <em>token</em> ... ]</p>
 <p>
 </p>
 <hr />
@@ -131,21 +131,18 @@ the recipient's email address in the form <a href="mailto:user@domain.com.">user
 <p>
 </p>
 <h2><a name="minting_tokens">Minting tokens</a></h2>
-<p>If neither the <em>-c</em> or <em>-s</em> option are given, it is assumed that you
-want to mint a token.</p>
-<p>The resource name (recipient's email address) to mint the token
-against can be passed as an argument, or if omitted is read from
-stdin.  If stdin is a tty the user is prompted, if stdin is a pipe the
-resource name is just silently read.  The desired collision size can
-be specified with the -b option.  If no collision size is specified,
-the default is 20 bits.  As a convenience, if stdin is a tty and no
-collision size is given with the <em>-b</em> flag, the user is prompted for
-a collision size.</p>
+<p>The <em>-m</em> flag must be given to mint a token.</p>
+<p>The resource name (recipient's email address) to mint the token against can
+be passed as an argument, or if omitted is read from stdin.  If stdin is a
+tty the user is prompted, if stdin is a pipe the resource name is just
+silently read.  The desired collision size can be specified with the -b
+option.  If no collision size is specified, the default is 20 bits.  <em>-b
+default</em> can be used to get the default size.</p>
 <p>
 </p>
 <h2><a name="checking_tokens">Checking tokens</a></h2>
 <p>The <em>-c</em> flag must be given to check tokens.  The token to check can
-be given as an argument to <a href="#item_hashcash"><code>hashcash</code></a>.  If no token is given the
+be given as an argument to <code>hashcash</code>.  If no token is given the
 token is read from stdin.  If stdin is a tty the user will be
 prompted, if stdin is a pipe the token is just silently read.  A
 resource name (the recipient's email address) can be given with the
@@ -177,12 +174,11 @@ resource name in the token is parsed out and displayed; exit code
 unchecked (exit code 2) is returned on exit.  The <em>-l</em> flag can be
 used to request the number of seconds until expiry of the token is
 output; exit code unchecked (exit code 2) is returned on exit.</p>
-<p>The program will only return exit codes valid or invalid if the <em>-c</em>
-flag is used, and all of the options <em>-b bits</em>, <em>-d</em>, <em>-r resource</em>
-are used.  These are the minimum set of options necessary to fully
-check the validty of a token.  If these criteria are not met, the
-program will return exit code unchecked (exit code 2) on exit.  (See
-also the <em>-y</em> flag.)</p>
+<p>The program will only return exit codes valid or invalid if the <em>-c</em> flag
+is used, and both of the options, <em>-d</em>, <em>-r resource</em> are used.  These are
+the minimum set of options necessary to fully check the validty of a token. 
+If these criteria are not met, the program will return exit code unchecked
+(exit code 2) on exit.  (See also the <em>-y</em> flag.)</p>
 <p>
 </p>
 <h2><a name="double_spending_protection">Double Spending Protection</a></h2>
@@ -215,7 +211,7 @@ affecting the validity of old tokens.</p>
 <p>To purge old tokens periodically while checking tokens use the <em>-p
 period</em> option to purge no sooner than the given time period since the
 last purge.  Purging can be used with the <em>-k</em> option to purge
-unexpired tokens also, and with the <em>-r resource</em> flag to purge only
+unexpired tokens also, and with the <em>-j resource</em> flag to purge only
 tokens for the given resource.</p>
 <p>There are circumstances where it may be inconvenient to purge tokens
 on the next access, for example if there is a large double spend
@@ -232,7 +228,8 @@ low.</p>
 tested per second.  No token is minted, or verified.</p>
 <p>If the <em>-b</em> flag is used with this option, instead an estimate of how
 many seconds it would take to mint a token of the given size in bits
-is computed.</p>
+is computed.  To find out how much time it will take to mint a default
+sized stamp use <em>-s -b default</em>.</p>
 <p>
 </p>
 <h2><a name="notes">Notes</a></h2>
@@ -252,14 +249,13 @@ when quiet mode is in effect the output is printed without description
 <dt><strong><a name="item__2dc"><em>-c</em></a></strong><br />
 </dt>
 <dd>
-Check the token given as an argument or on stdin for validity.
+Check the tokens given as an argument or on stdin for validity.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dm"><em>-m</em></a></strong><br />
 </dt>
 <dd>
-Mint a token.  If none of <em>-c</em>, <em>-p</em>, <em>-s</em>, <em>-l</em>, <em>-n</em>, <em>-w</em> are
-given it is anyway assumed that the user wishes to mint a token.
+Mint tokens with the resources given as arguments or on stdin.
 </dd>
 <p></p>
 <dt><strong><a name="item__2db_bits"><em>-b bits</em></a></strong><br />
@@ -267,7 +263,9 @@ given it is anyway assumed that the user wishes to mint a token.
 <dd>
 When minting a token, request a collision of this many bits.  When
 verifying a token require that it have a collision of at minimum this
-many bits, otherwise reject it.
+many bits, otherwise reject it.  If omitted the default is used.  Can
+also specify the default with <em>-b default</em> which is useful for use
+with <em>-s</em>.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dr_resource"><em>-r resource</em></a></strong><br />
@@ -275,11 +273,11 @@ many bits, otherwise reject it.
 <dd>
 When minting tokens, the resource name (recipient's email address) to
 mint the token against can be given either with <em>-r resource</em> or as
-an argument to <a href="#item_hashcash"><code>hashcash</code></a>.
+an argument to <code>hashcash</code>.
 </dd>
 <dd>
-<p>When checking tokens, the resource name (your own email address) can
-be given with the <em>-r</em> option.  If the resource name is given it is
+<p>When checking tokens, the resource name (your own email address) is
+given with the <em>-r</em> option.  If the resource name is given it is
 checked against the resource name in the token, and if they do not
 match the token is rejected.  Note if the resource name is not given,
 tokens for other resources would be accepted, and therefore hashcash
@@ -303,16 +301,19 @@ is recorded in the database.  See the <em>-p</em> option for description of
 how to purge tokens from the database.</p>
 </dd>
 <dd>
-<p>The following <em>-e</em> usage to give an implicit time resolution while minting
-is deprecated, use explicit <em>-z</em> option instead.  (<em>-z</em> overrides <em>-e</em> if
-both are given.  <em>-e</em> still works for backwards compatibility.  If neither
-are given the default is 6 chars (time format: YYMMDD)).</p>
-</dd>
-<dd>
 <p>While minting tokens, the <em>-e</em> flag can have an effect on the
 resolution of time created in the token.  Without the <em>-e</em> option,
 the default resolution is days (time format: YYMMDD).  Alternate
 formats based on range of expiry period are as follows:</p>
+</dd>
+<dd>
+<p>While minting you can also given an explicit time width with the <em>-z</em>
+option instead.  (<em>-z</em> overrides <em>-e</em> if both are given.  If neither
+are given the default is 6 chars (time format: YYMMDD)).</p>
+</dd>
+<dd>
+<p>The rules for automatically determining appropriate time width from
+<em>-e</em> if no <em>-z</em> option is given are:</p>
 </dd>
 <ul>
 <li><strong><a name="item_period__3e_3d_2_years_then_time_format_yy_is_used_">period &gt;= 2 years then time format YY is used rounded down
@@ -341,11 +342,13 @@ understand if you use the <em>-u</em> option.</p>
 <dt><strong><a name="item__2dz_width"><em>-z width</em></a></strong><br />
 </dt>
 <dd>
-The <em>-z</em> option is for use during minting and deprecates the <em>-e</em> option
-given in combination with <em>-m</em> to specify an implicit time field width. 
-Valid widths are 2,4,6,8,10 or 12 chars corresponding respectively to: YY,
-YYMM, YYMMDD, YYMMDDhh, YYMMDDhhmm, and YYMMDDhhmmss rounded down to the
-nearest year, month, day, hour, minute respectively.
+The <em>-z</em> option is for use during minting and allows user choice of
+width of time width field.  See also the <em>-e</em> option given in
+combination with <em>-m</em> to specify an implicit time field width under
+the description of the <em>-e</em> flag.  Valid widths are 2,4,6,8,10 or 12
+chars corresponding respectively to: YY, YYMM, YYMMDD, YYMMDDhh,
+YYMMDDhhmm, and YYMMDDhhmmss rounded down to the nearest year, month,
+day, hour, minute respectively.
 </dd>
 <dd>
 <p>Note the rounding down is based on UTC time, not local time.  This can
@@ -378,7 +381,10 @@ d = days, M = months, y = Y = years, and s = seconds).</p>
 <dd>
 Store tokens in a double spend database.  If token has been seen
 before it will be rejected even if it is otherwise valid.  The default
-database file is <em>database.db</em> in the current directory.
+database file is <em>database.db</em> in the current directory.  Only
+otherwise valid tokens will be stored in the database.  Only fully
+validated tokens will be stored in the database, unless the <em>-y</em>
+option is given.
 </dd>
 <p></p>
 <dt><strong><a name="item__2df_dbname"><em>-f dbname</em></a></strong><br />
@@ -421,14 +427,20 @@ purge all expired tokens.  If the resource name is the empty string,
 all tokens are matched (this is equivalent to omitting the <em>-j</em>
 option).
 </dd>
+<dd>
+<p>Note the <em>-E</em>, <em>-W</em> and <em>-S</em> type of match flags also apply to
+resources given with the <em>-j resource</em> flag.</p>
+</dd>
 <p></p>
 <dt><strong><a name="item__2ds"><em>-s</em></a></strong><br />
 </dt>
 <dd>
 Print timing information only, and don't proceed to create a token.
-If combined with <em>-b</em> flag print estimate of how long the requested
-collision size would take to compute, if <em>-s</em> given by itself, just
-prints speed of the collision finder.
+If combined with <em>-b bits</em> flag print estimate of how long the
+requested collision size would take to compute, if <em>-s</em> given by
+itself, just prints speed of the collision finder.  To print an
+estimate of how long the default number of bits would take use <em>-b
+default</em>.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dh"><em>-h</em></a></strong><br />
@@ -459,10 +471,11 @@ When minting, prints the hashcash email X-header 'X-Hashcash: ' before
 the token.  Without this option just the bare token is printed.
 </dd>
 <dd>
-<p>When checking, if no token is given as an argument, scans stdin for a
-line starting with the string 'X-Hashcash:', and uses the rest of the
-matching line as the token.  Only the lines up to and ending at the
-first blank line are scanned.  A blank line is the separator used to
+<p>When checking, after scanning tokens given as arguments, scans stdin
+for lines starting with the string 'X-Hashcash:', and uses the rest of
+the matching line as the token.  Only the lines up to and ending at
+the first blank line are scanned (see also <em>-i</em> flag which can be
+used to override this).  A blank line is the separator used to
 separate the headers from the body of a mail message or USENET
 article.  This is meant to make it convenient to pipe a mail message
 or USENET article to hashcash on stdin.</p>
@@ -558,9 +571,47 @@ unchecked on exit.
 </dt>
 <dd>
 Returns success if the token is valid even if it is not fully checked.
-Use with <em>-c</em> where not all of <em>-b</em>, <em>-d</em>, <em>-r</em> are specified to
-get success exit code on valid but partially checked token.  Similarly
-can use with <em>-n</em>, <em>-l</em>, <em>-w</em> with same effect.
+Use with <em>-c</em> where not all of <em>-d</em>, <em>-r</em> are specified to get
+success exit code on valid but partially checked token.  Similarly can
+use with <em>-n</em>, <em>-l</em>, <em>-w</em> with same effect.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dw"><em>-W</em></a></strong><br />
+</dt>
+<dd>
+When checking tokens, allow wildcards <em>*</em> in the resource name to
+make it simpler to specify multiple email addresses and to allow
+matching catch-all addresses and addresses including subdomains.  This
+is the default.  See also <em>-S</em>, <em>-E</em> and <em>-C</em>
+</dd>
+<p></p>
+<dt><strong><a name="item__2ds"><em>-S</em></a></strong><br />
+</dt>
+<dd>
+When checking tokens use simple text compare to compare resource names
+to those in tokens.  See also <em>-W</em>, &lt;-E&gt; and <em>-C</em>.
+</dd>
+<p></p>
+<dt><strong><a name="item__2de"><em>-E</em></a></strong><br />
+</dt>
+<dd>
+When checking tokens use regular expressions to specify resource names
+to make it simpler to specify multiple email addresses, catch-all
+addresses, classes of extension addresses and addresses including
+subdomains.  Note regular expression syntax is POSIX style: special
+characters do not need to be quoted to have their special meaning; but
+they do have to be quoted with \ to that character in the searched
+string.  (Note even if BSD regular expressions are used POSIX style
+syntax is used; also note BSD regular expressions do not support
+ranges {}.)
+</dd>
+<p></p>
+<dt><strong><a name="item__2dc"><em>-C</em></a></strong><br />
+</dt>
+<dd>
+By default resources are converted to lower case on minting and on
+checking.  The <em>-C</em> flag overrides this so that resources are treated
+as case sensitive.
 </dd>
 <p></p></dl>
 <p>
@@ -578,6 +629,13 @@ Print timing information about how many collisions the machine can try
 per second.
 </dd>
 <p></p>
+<dt><strong><a name="item_hashcash__2ds__2db_default"><code>hashcash -s -b default</code></a></strong><br />
+</dt>
+<dd>
+Print how long it would take the machine to compute a default sized
+collision (but don't actually compute a collision).
+</dd>
+<p></p>
 <dt><strong><a name="item_hashcash__2ds__2db_32"><code>hashcash -s -b 32</code></a></strong><br />
 </dt>
 <dd>
@@ -585,21 +643,21 @@ Print how long it would take the machine to compute a 32 bit collision
 (but don't actually compute a collision).
 </dd>
 <p></p>
-<dt><strong><a name="item_hashcash"><code>hashcash</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dm"><code>hashcash -m</code></a></strong><br />
 </dt>
 <dd>
-Mint a token.  Will prompt for resource name and desired value (number
-of collision bits).
+Mint a token.  Will prompt for resource name and mint with default
+value (number of collision bits).
 </dd>
 <p></p>
-<dt><strong><a name="item_hashcash_foo"><code>hashcash foo</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dm_foo"><code>hashcash -m foo</code></a></strong><br />
 </dt>
 <dd>
-Compute collision on resource foo.  Will prompt desired value (number
-of collision bits).
+Compute collision on resource foo.  Will mint with default value
+(number of collision bits).
 </dd>
 <p></p>
-<dt><strong><a name="item_hashcash_foo__2db_10"><code>hashcash foo -b 10</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dm_foo__2db_10"><code>hashcash -m foo -b 10</code></a></strong><br />
 </dt>
 <dd>
 Compute 10 bit collision on resource foo.
@@ -608,7 +666,7 @@ Compute 10 bit collision on resource foo.
 <dt><strong><a name="item_hashcash__2da__2d3d"><code>hashcash -a -3d</code></a></strong><br />
 </dt>
 <dd>
-Subtract a random time of between 0 days and 3 days to to the token's
+Subtract a random time of between 0 days and 3 days from the token's
 creation time.  This is the same fuzz factor used by mixmaster to
 reduce risk of timing-correlations.
 </dd>
@@ -625,7 +683,7 @@ The example is a 33 bit collision, which would take on average 13
 hours to create on a 400 Mhz Pentium-II.
 </dd>
 <p></p>
-<dt><strong><a name="item_hashcash__2dq__2db_10_foo__7c_hashcash__2dw"><code>hashcash -q -b 10 foo | hashcash -w</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dmq__2db_10_foo__7c_hashcash__2dw"><code>hashcash -mq -b 10 foo | hashcash -w</code></a></strong><br />
 </dt>
 <dd>
 Create a token in batch mode, pass to hashcash on stdin to verify,
@@ -755,10 +813,10 @@ checked, if it is valid and all of the mandatory aspects of the token
 are verified (collision bits check, resource name check) then the
 token and it's expiry period is written to the database file.  The
 default expiry period if an expiry period is not given explicitly with
-the <em>-e</em> option is forever (ie tokens do not expire).</p>
+the <em>-e</em> option is 28 days (ie tokens expire after 4 weeks).</p>
 <p>First mint and then add a token:</p>
 <dl>
-<dt><strong><a name="item_hashcash__2db_10_foo__2de_1m__3e_token"><code>hashcash -b 10 foo -e 1m &gt; token</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dm__2db_10_foo__2de_1m__3e_token"><code>hashcash -m -b 10 foo -e 1m &gt; token</code></a></strong><br />
 </dt>
 <dd>
 Note: we specified an expiry on minting in this example, to ensure
@@ -808,13 +866,14 @@ subsequently purged due to expiry.
 <p>As a convenience you can purge at the same time as checking tokens by
 using the <em>-p</em> option with the <em>-c</em> option.</p>
 <dl>
-<dt><strong><a name="item_hashcash__2db_10_foo__3e_token__3ditem_c_3chashcas"><code>hashcash -b 10 foo &gt; token</code>
-=item <code>hashcash -cd -p now -e 1 -b 10 -r foo &lt; token</code></a></strong><br />
+<dt><strong><a name="item_hashcash__2dm__2db_10_foo__3e_token"><code>hashcash -m -b 10 foo &gt; token</code></a></strong><br />
+</dt>
+<dt><strong><a name="item_hashcash__2dcd__2dp_now__2de_1__2db_10__2dr_foo__3"><code>hashcash -cd -p now -e 1 -b 10 -r foo &lt; token</code></a></strong><br />
 </dt>
 <dd>
 It may be inefficient to purge tokens on every use as the entire
 database has to be scanned for expired tokens.  By giving a time
-period to the <em>-p</em> option, you can tell <a href="#item_hashcash"><code>hashcash</code></a> to purge no more
+period to the <em>-p</em> option, you can tell <code>hashcash</code> to purge no more
 frequently than that time period since the previous purge.
 </dd>
 <dd>
@@ -824,21 +883,21 @@ frequently than that time period since the previous purge.
 <dt><strong><a name="item_hashcash__2dcd__2dp_1d__2de_1__2db_10__2dr_foo__3c"><code>hashcash -cd -p 1d -e 1 -b 10 -r foo &lt; token</code></a></strong><br />
 </dt>
 <dd>
-tells <a href="#item_hashcash"><code>hashcash</code></a> to purge any expired tokens no more than once per
+tells <code>hashcash</code> to purge any expired tokens no more than once per
 day.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dp_1m__2dj_foo"><code>hashcash -p 1M -j foo</code></a></strong><br />
 </dt>
 <dd>
-tells <a href="#item_hashcash"><code>hashcash</code></a> to purge only expired tokens matching resource foo
+tells <code>hashcash</code> to purge only expired tokens matching resource foo
 once per month.
 </dd>
 <p></p>
 <dt><strong><a name="item_hashcash__2dp_now__2dk"><code>hashcash -p now -k</code></a></strong><br />
 </dt>
 <dd>
-tells <a href="#item_hashcash"><code>hashcash</code></a> to purge all tokens (expired and unexpired) now.
+tells <code>hashcash</code> to purge all tokens (expired and unexpired) now.
 </dd>
 <p></p></dl>
 <p>
@@ -881,12 +940,12 @@ default temporary double spend database used when purging tokens.
 </p>
 <hr />
 <h1><a name="exit_status">EXIT STATUS</a></h1>
-<p><a href="#item_hashcash"><code>hashcash</code></a> returns success (exit code 0) after successfully minting a
+<p><code>hashcash</code> returns success (exit code 0) after successfully minting a
 token, after fully checking a token and finding it valid, and after a
 timing test.</p>
 <p>If when checking a token it is found to be invalid (due to being
 malformed, being expired, having insufficient value, having a date in
-the future, or being double spent), <a href="#item_hashcash"><code>hashcash</code></a> returns failure (exit
+the future, or being double spent), <code>hashcash</code> returns failure (exit
 code 1).</p>
 <p>If insufficient options are given to fully check a token, or if using
 the <em>-n</em>, <em>-l</em>, or <em>-w</em> options, if the token is otherwise valid

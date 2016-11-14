@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 /*  hashcash mint and verification 
  * 
@@ -35,12 +35,12 @@
 #include "hashcash.h"
 
 #if defined( OPENSSL )
-    #include <openssl/sha.h>
-    #define SHA1_ctx SHA_CTX
-    #define SHA1_Final( x, digest ) SHA1_Final( digest, x )
-    #define SHA1_DIGEST_BYTES SHA_DIGEST_LENGTH
+#include <openssl/sha.h>
+#define SHA1_ctx SHA_CTX
+#define SHA1_Final( x, digest ) SHA1_Final( digest, x )
+#define SHA1_DIGEST_BYTES SHA_DIGEST_LENGTH
 #else
-    #include "sha1.h"
+#include "sha1.h"
 #endif
 
 #define EOK 0			/* no error */
@@ -66,7 +66,7 @@
 #define VPRINTF if (verbose_flag) fprintf
 
 #define QPUTS(f,str) if (!quiet_flag) { fputs(str,f); }
-#define PPUTS(f,str) if (!out_is_tty) { fputs(str,f); }
+#define PPUTS(f,str) if (!out_is_tty||quiet_flag) { fputs(str,f); }
 #define VPUTS(f,str) if (verbose_flag) { fputs(str,f); }
 
 void chomplf( char* token );
@@ -75,137 +75,151 @@ void die( int err );
 void die_msg( const char* );
 void usage( const char* );
 int parse_period( const char* aperiod, long* resp );
+double report_speed( int bits, double* time_est );
 
+typedef struct {
+    char* str;
+    void* regexp;		/* compiled regexp */
+    int type;
+    long validity;
+    long grace;
+    long anon;
+    int width;
+    int bits;
+} ELEMENT;
+
+typedef struct {
+    int num;
+    int max;
+    ELEMENT* elt;
+} ARRAY;
+
+void db_open( DB* db, const char* db_filename );
+void db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
+	       long purge_period, time_t now_time, time_t real_time );
+int db_in( DB* db, char* token, char *period );
+void db_add( DB* db, char* token, char *token_utime );
+void db_close( DB* db ) ;
+
+void array_alloc( ARRAY* array, int num );
+void array_push( ARRAY* array, char *str, int type, long validity, 
+		 long grace, long anon, int width, int bits );
+#define array_num( a ) ( (a)->num )
+int bit_cmp( const void* ap, const void* bp );
+void array_sort( ARRAY* array, int(*cmp)(const void*, const void*) );
+
+
+void stolower( char* str );
+
+long per_sec = 0;		/* cache calculation */
+#define hc_per_sec() ( per_sec ? per_sec : ( per_sec = hashcash_per_sec() ) )
+#define hc_est_time(b) ( hashcash_expected_tries(b) / (double)hc_per_sec() )
 int quiet_flag;
 int verbose_flag;
+int out_is_tty;
 int in_is_tty;
-
-int do_purge( DB* db, time_t expires_before, time_t now, int all, 
-	      char* purge_resource, int* err );
 
 #define PURGED_KEY "last_purged"
 
-int main( int argc, char* argv[] )
+int main( int argc, char* argv[] ) 
 {
     long validity_period = 28*TIME_DAY; /* default validity period: 28 days */
     long grace_period = 2*TIME_DAY; /* default grace period: 2 days */
 
-    char period[ MAX_PERIOD+1 ];
-    const char* db_filename = "hashcash.db";
-    int db_exists = 0;
-    int boundary;
-    int found;
-    int err;
-    int non_opt_argc = 0;
-    int anon_flag = 0;
-    long anon_period = 0;
-    long anon_random;
-    int bits = 0;
-    int collision_bits;
-    int check_flag = 0;
-    int hdr_flag = 0;
-    int left_flag = 0;
-    int speed_flag = 0;
-    int utc_flag = 0;
-    int bits_flag = 0;
-    int validity_flag = 0;
-    int database_flag = 0;
-    int yes_flag = 0;
-    int width_flag = 0;
-    int purge_flag = 0;
-    int mint_flag = 0;
-    int ignore_boundary_flag = 0;
-    int name_flag = 0;
-    int res_flag = 0;
-    int auto_version = 0;
-    int version_flag = 0;
-    int checked = 0;
-    int comma = 0;
-    int in_db;
+    char period[ MAX_PERIOD+1 ], utcttime[ MAX_UTC+1 ];
+    const char* db_filename = "hashcash.sdb";
+    int boundary, err, anon_flag = 0;
+    long anon_period = 0, anon_random;
+    int default_bits = 20;
+    int count_bits, bits = default_bits; /* default 20 bits */
+    int collision_bits, check_flag = 0, case_flag = 0, hdr_flag = 0;
+    int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0;
+    int bits_flag = 0, str_type = TYPE_WILD; /* default to wildcard match */
+    int validity_flag = 0, db_flag = 0, yes_flag = 0, purge_flag = 0;
+    int mint_flag = 0, ignore_boundary_flag = 0, name_flag = 0, res_flag = 0;
+    int auto_version = 0, version_flag = 0, checked = 0, comma = 0;
     char header[ MAX_HDR+1 ];
-    int header_len;
-    int header_found = 0;
-    int headers_found = 0;
-    int resource_found = 0;
-    char token[ MAX_TOK+1 ];
-    char line[ MAX_LINE+1 ];
-    char token_resource[ MAX_RES+1 ];
-    char resource[ MAX_RES+1 ];
+    int header_len, token_found = 0, headers_found = 0, resource_found = 0;
+    char token[ MAX_TOK+1 ], line[ MAX_LINE+1 ], token_resource[ MAX_RES+1 ];
+    ARRAY purge_resource, resource, tokens, args;
 
-    long purge_period = 0;
-    char purge_utime[ MAX_UTC+1 ];	/* time token created */
-    int purge_all = 0;
-    int just_flag = 0;
-    char purge_resource[ MAX_RES+1 ];
-    time_t last_time;
-    long valid_for = 0;
-
+    long purge_period = 0, valid_for = HASHCASH_INVALID, time_period;
+    int purge_all = 0, just_flag = 0, re_flag = 0, wild_flag = 0;
+    int multiple_validity = 0, multiple_bits = 0, multiple_resources = 0;
 
     char token_utime[ MAX_UTC+1 ];	/* time token created */
-    time_t token_time;
     time_t real_time = time(0); /* now, in UTCTIME */
     time_t now_time = real_time;
     int time_width_flag = 0;	/* -z option, default 6 YYMMDD */
-    int time_width = 6;		/* default YYMMDD */
-    long time_period;
+    int inferred_time_width, time_width = 6; /* default YYMMDD */
 
-    long per_sec;
-    double tries_expected = 1;	/* suppress dumb warning */
-    double tries_taken;
-    double time_estimated;
-    double taken;
-    int isopen;
-    int out_is_tty = isatty( fileno( stdout ) );
-    int opt;
-    int vers;
+    double tries_taken, taken, tries_expected, time_est;
+    int opt, vers, db_opened = 0, i, t, tty_info, in_headers, done;
+    char* re_err = NULL;
+    ELEMENT* ent;
     DB db;
 
 #if defined( THINK_C )
     argc = ccommand(&argv);
 #endif
 
+    out_is_tty = isatty( fileno( stdout ) );
     in_is_tty = isatty( fileno( stdin ) ) && !feof( stdin );
     quiet_flag = 0;
     verbose_flag = 0;
 
-    purge_resource[0] = '\0';
     token_resource[0] = '\0';
+    token[0] = '\0';
     opterr = 0;
 
-    while ( ( opt = getopt( argc, argv, 
-			    "a:b:cde:f:g:hij:klmnp:qr:st:uvwx:yz:VX" ) ) > 0 )
-    {
-	switch ( opt )
-	{
+    array_alloc( &resource, 32 );
+    array_alloc( &purge_resource, 32 );
+    array_alloc( &tokens, 32 );
+    array_alloc( &args, 32 );
+
+    while ( (opt=getopt(argc, argv, 
+			"-a:b:cde:Ef:g:hij:klmnp:qr:sSt:uvwx:yz:CVWX" )) > 0 ) {
+	switch ( opt ) {
 	case 'a': anon_flag = 1; 
-	    if ( !parse_period( optarg, &anon_period ) )
-	    {
+	    if ( !parse_period( optarg, &anon_period ) ) {
 		usage( "error: -a invalid period arg\n\n" );
 	    }
 	    break;
 	case 'b':
+	    if ( bits_flag ) { multiple_bits = 1; }
 	    bits_flag = 1;
-	    bits = atoi( optarg );
-	    if ( bits < 0 ) { usage( "error: -b invalid bits arg\n\n" ); }
+
+	    if ( strcmp( optarg, "default" ) == 0 ) { 
+		bits = default_bits; 
+	    } else {
+		bits = atoi( optarg );
+		if ( bits < 0 ) { usage( "error: -b invalid bits arg\n\n" ); }
+		if ( bits > SHA1_DIGEST_BYTES * 8 ) {
+		    usage( "error: max collision with sha1 is 160 bits\n\n" );
+		}
+	    }
 	    break;
+	case 'C': case_flag = 1; break;
 	case 'c': check_flag = 1; break;
-	case 'd': database_flag = 1; break;
+	case 'd': db_flag = 1; break;
 	case 'e': 
+	    if ( validity_flag ) { multiple_validity = 1; }
 	    validity_flag = 1; 
 	    if ( !parse_period( optarg, &validity_period ) ||
-		 validity_period < 0 )
-	    {
+		 validity_period < 0 ) {
 		usage( "error: -e invalid validity period\n\n" ); 
 	    }
 	    break;
+	case 'E': 
+	    re_flag = 1;
+	    str_type = TYPE_REGEXP; 
+	    break;
 	case 'f': db_filename = strdup( optarg ); break;
 	case 'g': 
-	    if ( optarg[0] == '-' ) 
-	    {
+	    if ( optarg[0] == '-' ) {
 		usage( "error: -g -ve grace period not valid\n\n" );
 	    }
-	    if ( !parse_period( optarg, &grace_period ) )
-	    {
+	    if ( !parse_period( optarg, &grace_period ) ) {
 		usage( "error: -g invalid grace period format\n\n" );
 	    }
 	    break;
@@ -213,7 +227,7 @@ int main( int argc, char* argv[] )
 	case 'i': ignore_boundary_flag = 1; break;
 	case 'j': 
 	    just_flag = 1;
-	    sstrncpy( purge_resource, optarg, MAX_RES );
+	    array_push( &purge_resource, optarg, str_type, 0, 0, 0, 0, 0 );
 	    break;
 	case 'k': purge_all = 1; break;
 	case 'l': left_flag = 1; break;
@@ -223,31 +237,50 @@ int main( int argc, char* argv[] )
 	    purge_flag = 1;
 	    if ( strcmp( optarg, "now" ) == 0 ) { purge_period = 0; }
 	    else if ( !parse_period( optarg, &purge_period ) ||
-		      purge_period < 0 )
-	    {
+		      purge_period < 0 ) {
 		usage( "error: -p invalid purge interval\n\n" ); 
 	    }
 	    break;
 	case 'q': quiet_flag = 1; break;
+	case 1:
 	case 'r':
-	    res_flag = 1;
-	    sstrncpy( resource, optarg, MAX_RES );
+	    if ( opt == 'r' ) { 
+		if ( res_flag ) { multiple_resources = 1; }
+		res_flag = 1; 
+	    }
+
+	    /* infer appropriate time_width from validity period */
+	    if ( validity_flag && !time_width_flag && !inferred_time_width ) {
+		time_width = validity_to_width( validity_period );
+		if ( !time_width ) { 
+		    die_msg( "error: -ve validity period" ); 
+		}
+		inferred_time_width = time_width;
+	    }
+
+	    array_push( &args, optarg, str_type, validity_period, 
+			grace_period, anon_period, time_width, bits );
+
+	    if ( opt == 'r' ) {
+		array_push( &resource, optarg, str_type, validity_period, 
+			    grace_period, anon_period, time_width, bits );
+	    } else if ( opt == 1 ) {
+		array_push( &tokens, optarg, str_type, validity_period, 
+			    grace_period, anon_period, time_width, bits );
+	    }
+
 	    break;
 	case 's': speed_flag = 1; break;
+	case 'S': str_type = TYPE_STR; break;
 	case 't':
-	    if ( optarg[0] == '-' || optarg[0] == '+' ) 
-	    {
-		if ( !parse_period( optarg, &time_period ) )
-		{
+	    if ( optarg[0] == '-' || optarg[0] == '+' ) {
+		if ( !parse_period( optarg, &time_period ) ) {
 		    usage( "error: -t invalid relative time format\n\n" );
 		}
 		now_time += time_period;
-	    }
-	    else 
-	    {
+	    } else {
 		now_time = from_utctimestr( optarg, utc_flag );
-		if ( now_time == (time_t)-1 ) 
-		{ 
+		if ( now_time == (time_t)-1 ) { 
 		    usage( "error: -t invalid time format\n\n" ); 
 		}
 	    }
@@ -256,6 +289,10 @@ int main( int argc, char* argv[] )
 	case 'v': verbose_flag = 1; break;
         case 'V': version_flag = 1; break;
 	case 'w': width_flag = 1; break;
+	case 'W': 
+	    wild_flag = 1;
+	    str_type = TYPE_WILD; 
+	    break;
 	case 'x':
 	    hdr_flag = 1;
 	    sstrncpy( header, optarg, MAX_HDR );
@@ -268,8 +305,7 @@ int main( int argc, char* argv[] )
 	case 'z': 
 	    time_width_flag = 1; 
 	    time_width = atoi( optarg );
-	    if ( time_width <= 0 || time_width % 2 || time_width > 12)
-	    {
+	    if ( time_width <= 0 || time_width % 2 || time_width > 12) {
 	        usage( "error: -z invalid time width: must be 2,4,6,8,10 or 12\n\n" );
 	    }
 	    break;
@@ -287,560 +323,442 @@ int main( int argc, char* argv[] )
 	}
     }
 
-    non_opt_argc = argc - optind; /* how many args */
+    if ( validity_flag && !time_width_flag && !inferred_time_width ) {
+	time_width = validity_to_width( resource.elt[i].validity );
+	if ( !time_width ) { 
+	    die_msg( "error: -ve validity period" ); 
+	}
+	inferred_time_width = time_width;
+    }
 
-    if ( non_opt_argc == 0 && verbose_flag && 
+    if ( array_num( &args ) == 0 && verbose_flag && 
 	 name_flag + left_flag + width_flag + check_flag +
-	 mint_flag + purge_flag + speed_flag < 1 )
-    {
+	 mint_flag + purge_flag + speed_flag < 1 ) {
 	auto_version = 1;
         version_flag = 1; verbose_flag = 0;
     }
 
-    if ( version_flag ) 
-    {
+    if ( version_flag ) {
         QPRINTF( stderr, "Version: hashcash-%s\n", 
 		 HASHCASH_VERSION_STRING );
 	PPRINTF( stdout, "%s\n", HASHCASH_VERSION_STRING );
-	if ( auto_version ) { exit(EXIT_FAILURE); }
+	if ( auto_version ) { exit( EXIT_FAILURE ); }
     }
 
-    if ( name_flag + left_flag + width_flag + check_flag > 1 )
-    {
-	usage( "can only specify one of -n, -l, -w and -c\n\n" );
+    if ( mint_flag + check_flag > 1 ) {
+	usage( "can only specify one of -m, -c\n\n" );
     }
 
-    if ( check_flag && mint_flag )
-    {
-	usage( "can only specify one of -c -m\n\n" );
-    }
-
-    if ( name_flag + left_flag + width_flag + check_flag +
-	mint_flag + version_flag + purge_flag + speed_flag < 1 ) {
-	usage( "must specify at least one of -m, -c, -n, -l, -w, -V\n\n" );
+    if ( mint_flag && ( name_flag || width_flag || left_flag ) ) {
+	usage( "can not use -n, -w or -l with -m\n\n" );
     }
 
     if ( name_flag + left_flag + width_flag + check_flag +
-	 mint_flag + purge_flag < 1 && !version_flag ) {
-	mint_flag = 1;		/* auto mint unless version asked for */
+	 mint_flag + version_flag + purge_flag + speed_flag < 1 ) {
+	usage( "must specify one of -m, -c, -n, -l, -w, -p, -s\n\n" );
     }
 
-    db_exists = file_exists( db_filename, &err );
-    if ( err ) { die( err ); }
-    if ( purge_flag && db_exists )
-    {
-	if ( !( isopen = sdb_open( &db, db_filename, &err ) &&
-		sdb_lookup( &db, PURGED_KEY, purge_utime, 
-			    MAX_UTC, &err ) ) )
-	{
-	    goto dbleave;	/* should always be there */
-	}
-
-	last_time = from_utctimestr( purge_utime, 1 );
-	if ( last_time < 0 ) /* not first time, but corrupted */
-	{ 
-	    purge_period = 0; /* purge now */
-	}
-
-	if ( now_time < 0 )
-	{
-	    die_msg( "error: outside unix time Epoch\n" );
-	}
-
-	if ( purge_period == 0 || now_time >= last_time + purge_period )
-	{
-	    if ( !do_purge( &db, now_time, real_time, purge_all, 
-			    just_flag ? purge_resource : NULL , &err ) ) 
-	    { 
-		goto dbleave;
-	    }
-	}
-	if ( !sdb_close( &db, &err ) ) { isopen = 0; goto dbleave; }
-    dbleave:
-	if ( err )
-	{
-	    if ( isopen ) { sdb_close( &db, &err ); }
-	    die( err );
-	}
+    if ( check_flag && hdr_flag && name_flag + left_flag + width_flag > 0 ) {
+	usage( "must not specify -n, -l, or -w with -cx or -cX\n\n" );
     }
 
-    if ( purge_flag && !mint_flag && !check_flag ) /* just -p we're done */
-    {
-	exit( EXIT_SUCCESS );
+    if ( check_flag && hdr_flag && !res_flag ) {
+	usage( "must give -r resource with -cx or -cX\n\n" );
     }
 
     if ( quiet_flag ) {	verbose_flag = 0; } /* quiet overrides verbose */
-
     if ( name_flag && !check_flag ) { check_flag = 1; }
     if ( left_flag && !check_flag ) { check_flag = 1; }
     if ( width_flag && !check_flag ) { check_flag = 1; }
     if ( speed_flag && check_flag ) { speed_flag = 0; }	/* ignore speed */
-    if ( width_flag && bits_flag ) 
-    {
-	usage( "error: only one of -b and -w can be used\n\n" );
+    if ( speed_flag && mint_flag ) { mint_flag = 0; } /* ignore mint */
+    if ( name_flag + left_flag + width_flag > 0 ) {
+	db_flag = 0;		/* ignore db stuff */
     }
-    if ( res_flag && name_flag ) { 
-	usage( "error: only one of -r and -n can be used\n\n" );
+
+    if ( purge_flag ) {
+	db_open( &db, db_filename );
+	db_opened = 1;
+
+	if ( !case_flag ) {
+	    for ( i = 0; i < array_num( &purge_resource ); i++ ) {
+		stolower( purge_resource.elt[i].str );
+	    }
+	}
+
+	db_purge( &db, &purge_resource, purge_all, purge_period, 
+		  now_time, real_time );
+
+	if ( !mint_flag && !check_flag ) { /* just -p we're done */
+	    db_close( &db );
+	    exit( EXIT_SUCCESS );
+	}
     }
-    if ( mint_flag ) /* mint token */
-    {
-	if ( non_opt_argc > 1 ) 
-	{ 
-	    usage( "error: only one argument should be given\n\n" ); 
-	}
-	if ( res_flag && non_opt_argc > 0 )
-	{
-	    usage( "error: two resource names given\n\n" );
-	}
-	if ( !speed_flag )
-	{
-	    if ( !res_flag )
-	    {
-		if ( non_opt_argc == 1 ) 
-		{
-		    sstrncpy( token, argv[optind++], MAX_TOK ); 
-		} 
-		else 
-		{
-		    if ( in_is_tty )
-		    {
-			QPRINTF( stderr, "resource name to mint: " );
+
+    if ( mint_flag || speed_flag ) { /* mint stamp */
+
+	if ( mint_flag ) {
+
+	    /* no resources given, read them from stdin */
+	    if ( array_num( &args ) == 0 ) {
+		if ( in_is_tty ) {
+		    fprintf( stderr, "enter resources to mint stamps for one per line:\n" );
+		}
+		while ( !feof(stdin) ) {
+		    line[0] = '\0';
+		    fgets( line, MAX_LINE, stdin );
+		    chomplf( line );
+		    trimspace( line );
+		    if ( line[0] != '\0' ) {
+			array_push( &resource, line, 0,validity_period, 
+				    grace_period, anon_period, time_width, 
+				    bits );
 		    }
-		    fgets( token, MAX_TOK, stdin );
-		    chomplf( token );
 		}
 	    }
 
-	    if ( in_is_tty && out_is_tty && !bits_flag )
-	    {
-		QPRINTF( stderr, "required token value (bits): " );
-		scanf( "%3d", &bits );
-		bits_flag = 1;
-	    }
-
-	    if ( !bits_flag ) 
-	    {
-		usage( "must use -b option when minting a token\n\n" ); 
-	    }
-
-	    if ( !res_flag )
-	    {
-		sstrncpy( resource, token, MAX_RES );
+	    if ( !case_flag ) { 
+		for ( i = 0; i < array_num( &args ); i++ ) {
+		    stolower( args.elt[i].str );
+		}
 	    }
 	}
 
-	trimspace( token );
-	trimspace( resource );
-
-	if ( bits_flag && bits > SHA1_DIGEST_BYTES * 8 ) 
-	{
-	    usage( "error: maximum collision with sha1 is 160 bits\n\n" );
-	}
-
-	if ( ( speed_flag && !bits_flag ) || verbose_flag )
-	{
-	    per_sec = hashcash_per_sec();
+	if ( verbose_flag || ( speed_flag && !bits_flag ) ) {
 	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
-		     per_sec );
-	    if ( speed_flag && !bits_flag )
-	    {
-		PPRINTF( stdout, "%ld\n", per_sec );
-	    }
-	}
-
-	if ( bits_flag || verbose_flag || speed_flag )
-	{
-	    time_estimated = hashcash_estimate_time( bits );
-	    tries_expected = hashcash_expected_tries( bits );
-	    VPRINTF( stderr, "mint: %d bit partial hash collision\n", 
-		     bits );
-	    VPRINTF( stderr, "expected: %.0f tries (= 2^%d tries)\n",
-		     tries_expected, bits );
-	    if ( bits_flag && ( verbose_flag || speed_flag ) )
-	    {
-		QPRINTF( stderr, "time estimate: %.0f seconds", 
-			 time_estimated ); 
-		if ( time_estimated > TIME_AEON ) 
-		{
-		    QPRINTF( stderr, " (%.0f aeons)", 
-			     time_estimated / TIME_AEON );
-		} 
-		else if ( time_estimated > TIME_YEAR * 10 ) 
-		{
-		    QPRINTF( stderr, " (%.0f years)", 
-			     time_estimated / TIME_YEAR );
-		}
-		else if ( time_estimated > TIME_YEAR ) 
-		{
-		    QPRINTF( stderr, " (%.1f years)", 
-			     time_estimated / TIME_YEAR );
-		}
-		else if ( time_estimated > TIME_MONTH )
-		{
-		    QPRINTF( stderr, " (%.1f months)", 
-			     time_estimated / TIME_MONTH );
-		}
-		else if ( time_estimated > TIME_DAY * 10 )
-		{
-		    QPRINTF( stderr, " (%.0f days)", 
-			     time_estimated / TIME_DAY );
-		}
-		else if ( time_estimated > TIME_DAY )
-		{
-		    QPRINTF( stderr, " (%.1f days)", 
-			     time_estimated / TIME_DAY );
-		}
-		else if ( time_estimated > TIME_HOUR ) 
-		{
-		    QPRINTF( stderr, " (%.0f hours)", 
-			     time_estimated / TIME_HOUR );
-		}
-		else if ( time_estimated > TIME_MINUTE )
-		{
-		    QPRINTF( stderr, " (%.0f minutes)", 
-			     time_estimated / TIME_MINUTE );
-		}
-		else if ( time_estimated > 1 )
-		{
-		    /* already printed seconds */
-		}
-		else if ( time_estimated > TIME_MILLI_SECOND )
-		{
-		    QPRINTF( stderr, " (%.0f milli-seconds)", 
-			     time_estimated / TIME_MILLI_SECOND );
-		}
-		else if ( time_estimated > TIME_MICRO_SECOND )
-		{
-		    QPRINTF( stderr, " (%.0f micro-seconds)", 
-			     time_estimated / TIME_MICRO_SECOND );
-		}
-		else if ( time_estimated > TIME_NANO_SECOND )
-		{
-		    QPRINTF( stderr, " (%.0f nano-seconds)", 
-			     time_estimated / TIME_NANO_SECOND );
-		}
-		QPUTS( stderr, "\n" );
-	    }
-	    if ( speed_flag )
-	    {
-		PPRINTF( stdout, "%.0f", time_estimated ); 
+		     hc_per_sec() );
+	    if ( speed_flag && !bits_flag ) {
+		PPRINTF( stdout, "%ld\n", hc_per_sec() );
 		exit( EXIT_SUCCESS ); /* don't actually calculate it */
 	    }
 	}
 
+	if ( speed_flag && bits_flag ) {
+	    tries_expected = report_speed( bits, &time_est );
+	    PPRINTF( stdout, "%.0f\n", time_est );
+	    exit( EXIT_SUCCESS ); /* don't actually calculate it */
+
+	}
+
 	timer_start();
-	if ( validity_flag && !time_width_flag )
-	{
-	    time_width = validity_to_width( validity_period );
-	    switch ( time_width )
-	    {
+
+	for ( i = 0; i < array_num( &args ); i++ ) {
+
+	    ent = &(args.elt[i]);
+
+	    tries_expected = report_speed( ent->bits, &time_est );
+
+	    err = hashcash_mint( now_time, ent->width, ent->str, ent->bits, 
+				 ent->anon, token, MAX_TOK, &anon_random, 
+				 &tries_taken );
+
+	    switch ( err ) {
+	    case HASHCASH_INVALID_TOK_LEN:
+		die_msg( "error: maximum collision with sha1 is 160 bits" );
+	    case HASHCASH_RNG_FAILED:
+		die_msg( "error: random number generator failed" );
+	    case HASHCASH_INVALID_TIME:
+		die_msg( "error: outside unix time Epoch" );
+	    case HASHCASH_TOO_MANY_TRIES:
+		die_msg( "error: failed to find collision in 2^96 tries!" );
+	    case HASHCASH_EXPIRED_ON_CREATION:
+		die_msg( "error: -a token may expire on creation" );
 	    case HASHCASH_INVALID_VALIDITY_PERIOD:
-		die_msg( "error: negative validity period\n" );
+		die_msg( "error: negative validity period" );
+	    case HASHCASH_INVALID_TIME_WIDTH:
+		die_msg( "error: invalid time width" );
+	    case HASHCASH_INTERNAL_ERROR:
+		die_msg( "error: internal error" );
+	    case HASHCASH_OK:
+		break;
+	    default:
+		die_msg( "error: unknown failure" );
 	    }
-	    if ( time_width < 0 ) { die_msg( "error: unknown failure\n" ); }
-	}
-	err = hashcash_mint( now_time, time_width, resource, bits, 
-			     validity_period, anon_period, 
-			     token, MAX_TOK, &anon_random, &tries_taken );
-	switch ( err )
-	{
-	case HASHCASH_INVALID_TOK_LEN:
-	    die_msg( "error: maximum collision with sha1 is 160 bits\n" );
-	case HASHCASH_RNG_FAILED:
-	    die_msg( "error: random number generator failed\n" );
-	case HASHCASH_INVALID_TIME:
-	    die_msg( "error: outside unix time Epoch\n" );
-	case HASHCASH_TOO_MANY_TRIES:
-	    die_msg( "error: failed to find collision in 2^64 tries!\n" );
-	case HASHCASH_EXPIRED_ON_CREATION:
-	    die_msg( "error: -a token may expire on creation\n" );
-	case HASHCASH_INVALID_VALIDITY_PERIOD:
-	    die_msg( "error: negative validity period\n" );
-	case HASHCASH_INVALID_TIME_WIDTH:
-	    die_msg( "error: invalid time width\n" );
-	case HASHCASH_NULL_ARG:
-	    die_msg( "error: internal error\n" );
-	case HASHCASH_OK:
-	    break;
-	default:
-	    die_msg( "error: unknown failure\n" );
-	}
    
-	if ( anon_flag )
-	{
-	    VPRINTF( stderr, "anon period: %ld seconds\n", (long)anon_period );
-	    VPRINTF( stderr, "adding: %ld seconds\n", anon_random );
+	    if ( anon_flag ) {
+		VPRINTF( stderr, "anon period: %ld seconds\n", 
+			 (long)anon_period );
+		VPRINTF( stderr, "adding: %ld seconds\n", anon_random );
+	    }
+
+	    VPRINTF( stderr, "tries: %.0f", tries_taken );
+	    VPRINTF( stderr, " %.2f x expected\n", 
+		     tries_taken / tries_expected );
+
+	    timer_stop();
+	    taken = timer_time() / 1000000.0;
+	    VPRINTF( stderr, "time: %.0f seconds\n", taken );
+	    if ( hdr_flag ) { QPRINTF( stderr, "%s%s\n", header, token ); }
+	    else { QPRINTF( stderr, "hashcash token: %s\n", token ); }
+	    if ( hdr_flag ) { PPUTS( stdout, header ); } 
+	    PPRINTF( stdout, "%s\n", token );
 	}
-
-	VPRINTF( stderr, "tries: %.0f", tries_taken );
-	VPRINTF( stderr, " %.2f x expected\n", tries_taken / tries_expected );
-
-	timer_stop();
-	taken = timer_time() / 1000000.0;
-	VPRINTF( stderr, "time: %.0f seconds\n", taken );
-	if ( hdr_flag ) { QPRINTF( stderr, "%s%s\n", header, token ); }
-	else { QPRINTF( stderr, "hashcash token: %s\n", token ); }
-	if ( hdr_flag ) { PPUTS( stdout, header ); } 
-	PPRINTF( stdout, "%s\n", token );
 	exit( EXIT_SUCCESS );
-    }
-    else if ( check_flag )	/* check token is valid */
-    {
-	if ( non_opt_argc > 0 ) 
-	{
-	    sstrncpy( token, argv[optind++], MAX_TOK );
-	}
-	else
-	{
-	    if ( hdr_flag )
-	    {
-		trimspace(header); /* be forgiving about missing space */
-		header_len = strlen( header );
-		headers_found = 0;
-		for ( header_found = 0,	boundary = 0, resource_found = 0;
-		      !resource_found && !boundary && !feof( stdin ) && 
-		      fgets( line, MAX_LINE, stdin ); )
-		{
-		    chomplf( line );
-		    header_found = (strncmp( line, header, header_len ) == 0);
-		    if ( header_found ) {
-			if ( !headers_found ) { headers_found = 1; }
-			sstrncpy( token, line+header_len, MAX_TOK );
-			trimspace( token );
-			if ( !hashcash_parse( token, &vers, token_utime, 
-					      MAX_UTC, token_resource, 
-					      MAX_RES ) ) 
-			{
-			    VPRINTF( stderr, "rejected: malformed token: %s",
-				     token );
-			}
-			trimspace( token_resource );
+    } else if ( check_flag ) {	/* check token is valid */
+	trimspace(header);	/* be forgiving about missing space */
+	header_len = strlen( header );
 
-			if ( res_flag ) 
-			{
-			    trimspace( resource );
-			    if ( strcmp( resource, token_resource ) == 0 ) 
-			    {
-				resource_found = 1;
+	/* if no resources given create a kind of NULL entry to carry */
+	/* the other options along; hashcash_check knows to not check */
+	/* resource name if resource given is NULL */
+
+	if ( array_num( &resource ) == 0 ) {
+	    array_push( &resource, NULL, str_type, validity_period, 
+			grace_period, anon_period, time_width, bits );
+	}
+
+	array_sort( &resource, bit_cmp );
+
+	headers_found = 0;
+	tty_info = 0;
+	in_headers = 0;
+	for ( t = 0, token_found = 0, boundary = 0, resource_found = 0;
+	      !resource_found && !boundary; ) {
+	    /* read tokens from cmd line args 1st */
+	    if ( t < array_num( &tokens ) ) {
+		sstrncpy( token, tokens.elt[t].str, MAX_TOK );
+		t++;
+		token_found = 1;
+	    }
+	    /* if no hdr flag, and were cmd line tokens, we're done */
+	    else if ( !hdr_flag && array_num( &tokens ) > 0 ) { break; }
+	    else {
+		if ( !in_headers ) { in_headers = 1; }
+		if ( in_is_tty && !tty_info ) {
+		    if ( hdr_flag ) {
+			QPRINTF( stderr, "enter email headers:\n" );
+		    } else {
+			QPRINTF( stderr, 
+				 "enter stamps to check one per line:\n" );
+		    }
+		    tty_info = 1;
+		}
+		if ( feof( stdin ) ) { break; } 
+		line[0] = '\0';
+		fgets( line, MAX_LINE, stdin );
+		chomplf( line );
+		if ( line[0] == '\0' ) { continue; }
+		if ( hdr_flag )	{
+		    token_found = (strncmp( line, header, header_len ) == 0);
+		    sstrncpy( token, line+header_len, MAX_TOK );
+		    if ( token_found ) { headers_found = 1; }
+		} else { 
+		    token_found = 1; 
+		    sstrncpy( token, line, MAX_TOK );
+		}
+		trimspace( token );
+	    }
+
+	    /* end of stamp finder which results in clean stamp in token */
+
+	    if ( token_found ) {
+		VPRINTF( stderr, "examining token: %s\n", token );
+
+		done = 0;
+		for ( i = 0; i < array_num( &resource ) && !done; i++ ) {
+		    ent = &resource.elt[i];
+		    valid_for = hashcash_check( token, ent->str, 
+						&(ent->regexp), &re_err,
+						ent->type, now_time, 
+						ent->validity, ent->grace, 
+						width_flag ? 0 : ent->bits );
+
+		    if ( valid_for < 0 ) {
+			switch ( valid_for ) {
+		    /* reasons token is broken, give up */
+
+			case HASHCASH_INVALID:
+			case HASHCASH_UNSUPPORTED_VERSION:
+			case HASHCASH_VALID_IN_FUTURE:
+			    done = 1;
+			    continue;
+
+			    /* avoid plural reporting if one of something */
+			    /* not possible for match with */
+			    /* other resources in these situations */
+			    /* as will just fail for same reason again */
+
+			case HASHCASH_INSUFFICIENT_BITS:
+			    if ( !multiple_bits ) {
+			        QPRINTF( stderr, 
+					 "skipped: token has insufficient bits\n" );
+				done = 1;
+				continue;
 			    }
-			}
-			else
-			{
-			    resource_found = 1; /* any resource will do */
+			    break;
+			    
+			case HASHCASH_EXPIRED:
+			    if ( !multiple_validity ) {
+				QPRINTF( stderr, "skipped: token expired\n" );
+				done = 1;
+				continue;
+			    }
+			    break;
+			    
+			case HASHCASH_WRONG_RESOURCE:
+			    if ( !multiple_resources ) {
+				QPRINTF( stderr, "skipped: token with wrong resource\n" );
+				done = 1;
+				continue;
+			    }
+			    break;
+			    
 			}
 		    }
 
-		    if ( !ignore_boundary_flag )
-		    {
-			if ( line[0] == '\0' ) { boundary = 1; }
+		    if ( multiple_resources && done ) {
+			VPRINTF( stderr, "checking against resource: %s\n", 
+				 ent->str );
+		    }
+
+		    /* first successful resource is taken */
+
+		    /* combined with sort by decreasing bits required */
+		    /* this assures don't accept tokens with cheaper */
+		    /* alternative regexps, wildcards, or same string */
+
+		    if ( valid_for >= 0 ) { break; }
+
+		    switch ( valid_for ) {
+
+			/* reason token failed for this resource  */
+			/* but may succeed with diff resource */
+
+		    case HASHCASH_INSUFFICIENT_BITS:
+			QPRINTF( stderr, 
+				 "no match: token has insufficient bits\n" );
+			break;
+		    case HASHCASH_EXPIRED:
+			QPRINTF( stderr, "no match: token expired\n" );
+			break;
+		    case HASHCASH_WRONG_RESOURCE:
+			QPRINTF( stderr, "no match: wrong resource\n" );
+			
+			break;
+
+		     /* fatal error stop */
+
+		    case HASHCASH_REGEXP_ERROR:
+			fprintf( stderr, "regexp error: " );
+			die_msg( re_err );
+			break;
+			
+		    default:
+			die_msg( "internal error" );
+			break;
 		    }
 		}
-		if ( !headers_found )
-		{
-		    QPRINTF( stderr, 
-			     "error: no line matching %s found in input\n",
-			     header );
-		    exit( EXIT_ERROR );
+
+		if ( valid_for < 0 ) {
+		    switch ( valid_for ) { 
+		    /* reasons token was bad and gave up */
+
+		    case HASHCASH_INVALID:
+			QPRINTF( stderr, "skipped: invalid token\n" );
+			break;
+		    case HASHCASH_UNSUPPORTED_VERSION:
+			QPRINTF( stderr, 
+				 "skipped: token with unsupported version\n" );
+			break;
+		    case HASHCASH_VALID_IN_FUTURE:
+			QPRINTF( stderr, 
+				 "skipped: token with futuristic creation date\n" );
+			break;
+		    }
+		} else { 
+		    if ( db_flag ) {
+			if ( !db_opened ) {
+			    db_open( &db, db_filename );
+			    db_opened = 1;
+			}
+			if ( db_in( &db, token, token_utime ) ) {
+			    VPRINTF( stderr, "skipped: spent token\n" );
+			    valid_for = HASHCASH_SPENT;
+			    continue; /* to next token */
+			}
+		    }
+
+		    QPRINTF( stderr, "matched token: %s\n", token );
+
+		    if ( name_flag || verbose_flag ) {
+			hashcash_parse( token, &vers, utcttime, MAX_UTC,
+					token_resource, MAX_RES );
+			QPRINTF( stderr, "token resource name: %s\n", 
+				 token_resource );
+			PPRINTF( stdout, "%s", token_resource );
+		    }
+
+		    if ( width_flag || verbose_flag ) {
+			count_bits = hashcash_count( token );
+			QPRINTF( stderr, "token value: %d\n", count_bits );
+			if ( name_flag ) { PPUTS( stdout, " " ); }
+			PPRINTF( stdout, "%d", count_bits );
+		    } 
+
+		    if ( left_flag || verbose_flag ) {
+			QPRINTF( stderr, "valid for: " );
+			if ( valid_for > 0 ) {
+			    QPRINTF( stderr, "%ld seconds remaining\n",
+				     (long)valid_for );
+			    if ( name_flag || width_flag ) {
+				PPUTS( stdout, " " );
+			    }
+			    PPRINTF( stdout, "%ld", (long)valid_for );
+			} else { 
+			    QPUTS( stderr, "forever\n" );
+			    if ( name_flag || width_flag ) {
+				PPUTS( stdout, " " );
+			    }
+			    PPUTS( stdout, "0" );
+			}
+		    }
+
+		    if ( name_flag || width_flag || left_flag ) {
+			PPUTS( stdout, "\n" );
+			continue; /* to next token */
+		    }
+
+		    if ( db_flag ) {
+			VPUTS( stderr, 
+			       "database: not double spent\n" );
+			checked = yes_flag || res_flag;
+			if ( checked ) {
+			    sprintf( period, "%ld", (long)validity_period );
+			    db_add( &db, token, period );
+			}
+		    } else {
+			checked = yes_flag;
+		    }
+		    goto leave;	/* matched so leave */
 		}
-		else
-		{ 
-		    QPRINTF( stderr, "input text contained:\n%s %s\n", 
-			     header, token );
-		    VPRINTF( stderr, "token: %s\n", token );
-		}
-	    }
-	    else 
-	    {
-		if ( in_is_tty )
-		{ 
-		    fputs ( "input token to check: ", stderr ); 
-		}
-		fgets( token, MAX_TOK, stdin );
-		chomplf( token );
+	    } else if ( hdr_flag && in_headers && !ignore_boundary_flag  ) {
+		if ( line[0] == '\0' ) { boundary = 1; }
 	    }
 	}
-
-	if ( !hdr_flag || non_opt_argc > 0 )  
-	{
-	    trimspace( token );
-	    if ( !hashcash_parse( token, &vers, token_utime, MAX_UTC,
-				  token_resource, MAX_RES ) ) 
-	    { 
-		QPUTS( stderr, "rejected: malformed token\n" );
-		valid_for = HASHCASH_INVALID;
-		goto leave;
-	    }
-	    trimspace( token_resource );
+	if ( !width_flag && !left_flag && !name_flag ) {
+	    if ( hdr_flag && !headers_found ) {
+		QPRINTF( stderr, "warning: no line matching %s found in input\n",
+			 header );
+	    } 
+	    QPUTS( stderr, "rejected: no valid tokens found\n" );
+	    valid_for = HASHCASH_NO_TOKEN;
 	}
 
-	if ( res_flag ) 
-	{
-	    trimspace( resource );
-	    if ( strcmp( resource, token_resource ) != 0 ) 
-	    {
-		if ( headers_found ) {
-		    QPUTS( stderr, "rejected: no matching resource found\n" );
-		} 
-		else
-		{
-		    VPRINTF( stderr, "found resource name: %s\n", 
-			     token_resource );
-		    QPUTS( stderr, "rejected: wrong resource name\n" );
-		}
-		valid_for = HASHCASH_INVALID;
-		goto leave;
-	    }
-	} 
-	
-	if ( vers != 0 ) 
-	{
-	    QPUTS( stderr, "rejected: unsupported version\n" );
-	    valid_for = HASHCASH_INVALID;
-	    goto leave;
-	}
-
-	VPRINTF( stderr, "current time: %s\n", strtime(&now_time, utc_flag) );
-
-	token_time = from_utctimestr( token_utime, 1 );
-	if ( token_time == -1 ) 
-	{ 
-	    QPUTS( stderr, "rejected: malformed token\n" );
-	    valid_for = HASHCASH_INVALID;
-	    goto leave;
-	}
-
-	VPRINTF( stderr, "token created: %s\n",strtime(&token_time,utc_flag) );
-
-	valid_for = hashcash_valid_for( token_time, validity_period, 
-					grace_period, now_time );
-	switch( valid_for )
-	{
-	case HASHCASH_VALID_IN_FUTURE:
-	    QPUTS( stderr, "rejected: not yet valid\n" );
-	    goto leave;
-	    break;
-	case HASHCASH_EXPIRED:
-	    QPUTS( stderr, "rejected: expired\n" );
-	    goto leave;
-	    break;
-	case HASHCASH_VALID_FOREVER:
-	default: /* days left */
-	    if ( verbose_flag || left_flag )
-	    {
-		QPUTS( stderr, "valid for: " );
-		if ( valid_for > 0 )
-		{
-		    QPRINTF( stderr, "%ld seconds remaining\n", 
-			     (long)valid_for );
-		    PPRINTF( stdout, "%ld\n", (long)valid_for ); 
-		} 
-		else
-		{
-		    QPUTS( stderr, "forever\n" );
-		    PPUTS( stdout, "-1\n" );
-		}
-	    }
-	    break;
-	}
-
-	collision_bits = hashcash_count( token_resource, token );
-
-	if ( bits_flag && collision_bits < bits )
-	{
-	    VPRINTF( stderr, "required: %d bits\n", bits );
-	    VPRINTF( stderr, "token value: %d bits\n", collision_bits );
-	    QPUTS( stderr, "rejected: too few bits\n" );
-	    valid_for = HASHCASH_INVALID;
-	    goto leave;
-	}
-
-	/* we only consider the token checked if we had enough
-	 * information that we will have fully verified that
-	 * the token is valid
-	 */
-
-	if ( yes_flag || ( !name_flag && !width_flag && !left_flag &&
-			   res_flag && bits_flag && database_flag ) )
-	{
-	    checked = 1;
-	}
-
-        /* if we're checking the database */
-	/* don't add unchecked or invalid tokens to the database */
-	if ( database_flag && checked && valid_for >= 0 )
-	{
-	    /* new file add empty purged time */
-	    if ( !file_exists( db_filename, &err ) )
-	    {
-		if ( err ) { die( err ); }
-		if ( !sdb_create( &db, db_filename, &err ) ) { die( err ); }
-		if ( !sdb_add( &db, PURGED_KEY, "", &err ) ) { die( err ); }
-	    }
-	    else		/* existing file, open it */
-	    {
-		if ( !sdb_open( &db, db_filename, &err ) ) { die( err ); }
-	    }
-	    in_db = sdb_lookup( &db, token, token_utime, MAX_UTC, &err ); 
-	    if ( err ) { die( err ); }
-	    if ( in_db )	/* if it's in there, it's a failure */
-	    {
-		if ( !sdb_close( &db, &err ) ) { die( err ); }
-		QPUTS( stderr, "rejected: double spent\n" ); 
-		valid_for = HASHCASH_INVALID; 
-		goto leave;
-	    }
-	    else
-	    {
-		VPUTS( stderr, "database: not double spent\n" );
-		sprintf( period, "%ld", (long)validity_period );
-		sdb_add( &db, token, period, &err );
-	    }
-	    if ( !sdb_close( &db, &err ) ) { die( err ); }
-	}
-
-	if ( res_flag ) 
-	{
-	    VPRINTF( stderr, "required resource name: %s\n", token_resource );
-	}
-
-	if ( name_flag || verbose_flag )
-	{
-	    QPRINTF( stderr, "token resource name: %s\n", token_resource );
-	    PPRINTF( stdout, "%s\n", token_resource );
-	}
-
-	VPRINTF( stderr, "required: %d bits\n", bits );
-
-	if ( width_flag || verbose_flag ) 
-	{
-	    QPRINTF( stderr, "token value: %d bits\n", collision_bits );
-	    PPRINTF( stdout, "%d\n", collision_bits );
-	}
-	
     leave:
-	if ( width_flag || left_flag || name_flag )
-	{
+	if ( width_flag || left_flag || name_flag ) {
 	    exit( yes_flag ? EXIT_SUCCESS : EXIT_UNCHECKED );
 	}
 	QPRINTF( stderr, "token check: %s", 
 		 ( valid_for >= 0 ) ? 
 		 ( checked ? "ok" : "ok but not fully checked as" ) : 
 		 "failed" );
-	if ( valid_for >= 0 )
-	{
-	    if ( !checked )
-	    {
-		if ( !bits_flag )
-		{
-		    comma = 1; QPUTS( stderr, " bits" );
-		}
-		if ( !res_flag )
-		{
+	if ( valid_for >= 0 ) {
+	    if ( !checked ) {
+		if ( !res_flag ) {
 		    if ( comma ) { QPUTS( stderr, "," ); } 
 		    comma = 1; QPUTS( stderr, " resource" );
 		}
-		if ( !database_flag )
-		{
+		if ( !db_flag ) {
 		    if ( comma ) { QPUTS( stderr, "," ); } 
 		    comma = 1; QPUTS( stderr, " database" );
 		}
@@ -868,16 +786,14 @@ int parse_period( const char* aperiod, long* resp )
     period_len = strlen( aperiod );
     if ( period_len == 0 ) { return 0; }
     last_char = aperiod[period_len-1];
-    if ( ! isdigit( last_char ) && ! strchr( "YyMdhmsw", last_char ) )
-    {
+    if ( ! isdigit( last_char ) && ! strchr( "YyMdhmsw", last_char ) ) {
 	return 0;
     }
 
     sstrncpy( period, aperiod, MAX_PERIOD );
 
     if ( ! isdigit( last_char ) ) { period[--period_len] = '\0'; }
-    if ( period[0] == '+' || period[0] == '-' )
-    {
+    if ( period[0] == '+' || period[0] == '-' ) {
 	if ( period[0] == '-' ) { res = -1; }
 	period++; period_len--;
     }
@@ -902,9 +818,9 @@ int parse_period( const char* aperiod, long* resp )
 void usage( const char* msg )
 {
     fputs( msg, stderr );
-    fprintf( stderr, "mint:\t\thashcash [-m] [opts] -b bits resource\n" );
+    fprintf( stderr, "mint:\t\thashcash [-m] [opts] resource\n" );
     fprintf( stderr, "measure speed:\thashcash -s [-b bits]\n" );
-    fprintf( stderr, "check:\t\thashcash -c [opts] -d -b bits -r resource [-e period] [token]\n" );
+    fprintf( stderr, "check:\t\thashcash -c [opts] -d -r resource [-e period] [token]\n" );
     fprintf( stderr, "purge expired:\thashcash -p now [-k] [-j resource] [-t time] [-u]\n" );
     fprintf( stderr, "count bits:\thashcash -w [opts] [token]\n" );
     fprintf( stderr, "get resource:\thashcash -n [opts] [token]\n" );
@@ -929,20 +845,23 @@ void usage( const char* msg )
     fprintf( stderr, "\t-i\t\twith -x/-X and -c, check msg body as well\n" );
     fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
     fprintf( stderr, "\t-z width\twidth of time field 2,4,6,8,10 or 12 chars (default 6)\n" );
+    fprintf( stderr, "\t-C\t\tmatch resources as case sensitive (default insensitive)\n" );
+    fprintf( stderr, "\t-S\t\tmatch following resources as text strings\n" );
+    fprintf( stderr, "\t-W\t\tmatch following resources as email with wildcards (default)\n" );
+    fprintf( stderr, "\t-E\t\tmatch following resources as regular expression\n" );
     fprintf( stderr, "examples:\n" );
-    fprintf( stderr, "\thashcash -b20 foo                               # mint 20 bit collision\n" );
+    fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit collision\n" );
     fprintf( stderr, "\thashcash -cdb20 -r foo 0:020814:foo:55f4316f29cd98f2  # check collision\n" );
     fprintf( stderr, "\n" );
     fprintf( stderr, "see hashcash (1) man page or http://www.hashcash.org/ for more details.\n" );
     exit( EXIT_ERROR );
 }
 
-typedef struct
-{
+typedef struct {
     time_t expires_before;
     char now_utime[ MAX_UTC+1 ];
     int all;
-    char* resource;
+    ARRAY* resource;
 } db_arg;
 
 /* compile time assert */
@@ -952,45 +871,50 @@ typedef struct
 #endif
 
 static int sdb_cb_token_matcher( const char* key, char* val,
-				 void* argp, int* err )
-{
+				 void* argp, int* err ) {
     db_arg* arg = (db_arg*)argp;
     char token_utime[ MAX_UTC+1 ];
-    char resource[ MAX_RES+1 ];
+    char token_res[ MAX_RES+1 ], *res;
     time_t expires;
     time_t expiry_period;
     time_t created;
-    int vers;
+    int vers, i, matched, type;
+    void** compile;
+    char* re_err;
 
     *err = 0;
-    if ( strcmp( key, PURGED_KEY ) == 0 ) 
-    {
+    if ( strcmp( key, PURGED_KEY ) == 0 ) {
 	sstrncpy( val, arg->now_utime, MAX_UTC ); 
 	return 1;		/* update purge time */
-    } 
+    }
 
-    if ( !hashcash_parse( key, &vers, token_utime, MAX_UTC, resource, 
-			  MAX_RES ) )
-    {
-	*err = EINPUT;	/* corrupted token in DB */
+    if ( !hashcash_parse( key, &vers, token_utime, MAX_UTC, token_res, 
+			  MAX_RES ) ) {
+	*err = EINPUT;		/* corrupted token in DB */
 	return 0;
     }
-    if ( vers != 0 )
-    {
+    if ( vers != 0 ) {
 	*err = EINPUT; 		/* unsupported version number in DB */
 	return 0; 
     }
-    if ( arg->resource != NULL ) /* if purging only for given resource */
-    {
-	if ( strncmp( resource, arg->resource, MAX_RES ) != 0 )
-	{
-	    return 1;		/* if it doesn't match keep it */
+    /* if purging only for given resource */
+    if ( array_num( arg->resource ) > 0 ) {
+	matched = 0;
+	for ( i = 0; !matched && i < array_num( arg->resource ); i++ ) {
+	    res = arg->resource->elt[i].str;
+	    type = arg->resource->elt[i].type;
+	    compile = &(arg->resource->elt[i].regexp);
+	    matched = resource_match( type, token_res, res, compile, &re_err );
+	    if ( re_err != NULL ) { 
+		fprintf( stderr, "regexp error: " ); 
+		die_msg( re_err ); 
+	    }
 	}
+	if ( !matched ) { return 1; } /* if it doesn't match, keep it */
     }
     if ( arg->all ) { return 0; } /* delete all regardless of expiry */
     if ( val[0] == '0' && val[1] == '\0' ) { return 1; } /* keep forever */
-    if ( strlen( val ) != strspn( val, "0123456789" ) )
-    {
+    if ( strlen( val ) != strspn( val, "0123456789" ) ) {
 	*err = EINPUT; return 0;
     }
     expiry_period = atoi( val );
@@ -1002,32 +926,134 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     return 1;			/* otherwise keep */
 }
 
-int do_purge( DB* db, time_t expires_before, time_t now, int all, 
-	      char* purge_resource, int* err )
-{
+void db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
+	       long purge_period, time_t now_time, time_t real_time ) {
+    int err;
+    time_t last_time;
+    char purge_utime[ MAX_UTC+1 ];	/* time token created */
     int ret = 0;
     db_arg arg;
 
-    arg.expires_before = expires_before;
-    arg.resource = purge_resource;
-    arg.all = all;
-    if ( !to_utctimestr( arg.now_utime, MAX_UTC, now ) )
-    {
-	*err = EINPUT; return 0; 
+    if ( now_time < 0 ) { die_msg( "error: outside unix time Epoch" ); }
+
+    if ( !sdb_lookup( db, PURGED_KEY, purge_utime, MAX_UTC, &err ) ) {
+	die( err );
     }
 
-    VPRINTF( stderr, "purging database: ..." );
-    ret = sdb_updateiterate( db, sdb_cb_token_matcher, (void*)&arg, err );
-    VPRINTF( stderr, ret ? "done\n" : "failed\n" ); 
-    return ret;
+    last_time = from_utctimestr( purge_utime, 1 );
+    if ( last_time < 0 ) { /* not first time, but corrupted */
+	purge_period = 0; /* purge now */
+    }
+
+    if ( !to_utctimestr( arg.now_utime, MAX_UTC, now_time ) ) {
+	die_msg( "error: converting time" );
+    }
+
+    arg.expires_before = now_time;
+    arg.resource = purge_resource;
+    arg.all = purge_all;
+
+    if ( purge_period == 0 || now_time >= last_time + purge_period ) {
+	VPRINTF( stderr, "purging database: ..." );
+	ret = sdb_updateiterate( db, sdb_cb_token_matcher, (void*)&arg, &err );
+	VPRINTF( stderr, ret ? "done\n" : "failed\n" ); 
+    }
 }
 
-void die( int err )
+void db_open( DB* db, const char* db_filename ) {
+    int err;
+
+    if ( !sdb_open( db, db_filename, &err ) ) { die( err ); }
+    fgetc( db->file );		/* try read to trigger EOF */
+    if ( feof( db->file ) ) {
+	if ( !sdb_add( db, PURGED_KEY, "700101000000", &err ) ) { 
+	    die( err ); 
+	}
+    }
+    rewind( db->file );
+}
+
+int db_in( DB* db, char* token, char *period ) {
+    int err;
+    int in_db;
+
+    in_db = sdb_lookup( db, token, period, MAX_UTC, &err ); 
+    if ( err ) { die( err ); }
+    return in_db;
+}
+
+void db_add( DB* db, char* token, char *period ) {
+    int err;
+    if ( !sdb_add( db, token, period, &err ) ) { die( err ); }
+}
+
+void db_close( DB* db ) {
+    int err;
+    if ( !sdb_close( db, &err ) ) { die( err ); }
+}
+
+void stolower( char* str ) {
+    if ( !str ) { return; }
+    for ( ; *str; str++ ) {
+	*str = tolower( *str );
+    }
+}
+
+/* num = start size, auto-grows */ 
+
+void array_alloc( ARRAY* array, int num ) {
+    array->num = 0;
+    array->max = num;
+    array->elt = malloc( sizeof( ELEMENT ) * num );
+    if ( array->elt == NULL ) { die_msg( "out of memory" ); }
+}
+
+/* auto-grow array */
+
+ void array_push( ARRAY* array, char *str, int type, long validity, 
+		 long grace, long anon, int width, int bits ) 
+{
+    if ( array->num >= array->max ) {
+	array->elt = realloc( array->elt, array->max * 2 );
+	if ( array->elt == NULL ) { die_msg( "out of memory" ); }
+	array->max *= 2;
+    }
+    array->elt[array->num].regexp = NULL; /* compiled regexp */
+    array->elt[array->num].type = type;
+    array->elt[array->num].validity = validity;
+    array->elt[array->num].grace = grace;
+    array->elt[array->num].anon = anon;
+    array->elt[array->num].width = width;
+    array->elt[array->num].bits = bits;
+    if ( str ) {
+	array->elt[array->num].str = strdup( str );
+	if ( array->elt[array->num].str == NULL ) { 
+	    die_msg( "out of memory" ); 
+	}
+    } else {
+	array->elt[array->num].str = NULL;
+    }
+    array->num++;
+}
+
+int bit_cmp( const void* ap, const void* bp )
+{
+    ELEMENT* a = (ELEMENT*) ap;
+    ELEMENT* b = (ELEMENT*) bp;
+
+    return a->bits == b->bits ? 0 : ( a->bits < b->bits ? 1 : -1 );
+}
+
+void array_sort( ARRAY* array, int(*cmp)(const void*, const void*) )
+{
+    qsort( array->elt, array->num, sizeof( ELEMENT ), cmp );
+}
+
+void die( int err ) 
 {
     const char* str = "";
 
-    switch ( err )
-    {
+    switch ( err ) {
     case EOK:
 	exit( EXIT_SUCCESS );
 	break;
@@ -1042,37 +1068,76 @@ void die( int err )
     exit( EXIT_ERROR );
 }
 
-void die_msg( const char* str )
-{
+void die_msg( const char* str ) {
     QPUTS( stderr, str );
+    QPUTS( stderr, "\n" );
     exit( EXIT_ERROR );
 }
 
 /* remove unix, DOS and MAC linefeeds from line ending */
 
-void chomplf( char* token )
-{
+void chomplf( char* token ) {
     int tok_len = strlen(token);
     if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
     if ( token[tok_len-1] == '\r' ) { token[--tok_len] = '\0'; }
     if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
 }
 
-void trimspace( char* token )
-{
+void trimspace( char* token ) {
     int tok_len = strlen(token);
     int tok_begin = 0;
-    while ( tok_begin < tok_len && isspace(token[tok_begin]) ) 
-    {
+    while ( tok_begin < tok_len && isspace(token[tok_begin]) ) {
 	tok_begin++;
     }
-    if ( tok_begin > 0 ) 
-    {
+    if ( tok_begin > 0 ) {
 	tok_len -= tok_begin;
 	strcpy( token, token+tok_begin );
     }
-    while ( tok_len > 0 && isspace(token[tok_len-1]) )
-    {
+    while ( tok_len > 0 && isspace(token[tok_len-1]) ) {
 	token[--tok_len] = '\0';
     }
+}
+
+double report_speed( int bits, double* time_est ) 
+{
+    double tries_expected = hashcash_expected_tries( bits );
+    
+    VPRINTF( stderr, "mint: %d bit partial hash collision\n", bits );
+    VPRINTF( stderr, "expected: %.0f tries (= 2^%d tries)\n",
+	     tries_expected, bits );
+
+    if ( !quiet_flag ) {
+	*time_est = hc_est_time( bits );
+	QPRINTF( stderr, "time estimate: %.0f seconds", *time_est );
+	if ( *time_est > TIME_AEON ) {
+	    QPRINTF( stderr, " (%.0f aeons)", *time_est / TIME_AEON );
+	} else if ( *time_est > TIME_YEAR * 10 ) {
+	    QPRINTF( stderr, " (%.0f years)", *time_est / TIME_YEAR );
+	} else if ( *time_est > TIME_YEAR ) {
+	    QPRINTF( stderr, " (%.1f years)", *time_est / TIME_YEAR );
+	} else if ( *time_est > TIME_MONTH ) {
+	    QPRINTF( stderr, " (%.1f months)", *time_est / TIME_MONTH );
+	} else if ( *time_est > TIME_DAY * 10 ) {
+	    QPRINTF( stderr, " (%.0f days)", *time_est / TIME_DAY );
+	} else if ( *time_est > TIME_DAY ) {
+	    QPRINTF( stderr, " (%.1f days)", *time_est / TIME_DAY );
+	} else if ( *time_est > TIME_HOUR ) {
+	    QPRINTF( stderr, " (%.0f hours)", *time_est / TIME_HOUR );
+	} else if ( *time_est > TIME_MINUTE ) {
+	    QPRINTF( stderr, " (%.0f minutes)", *time_est / TIME_MINUTE );
+	} else if ( *time_est > 1 ) {
+	    /* already printed seconds */
+	} else if ( *time_est > TIME_MILLI_SECOND ) {
+	    QPRINTF( stderr, " (%.0f milli-seconds)", 
+		     *time_est / TIME_MILLI_SECOND );
+	} else if ( *time_est > TIME_MICRO_SECOND ) {
+	    QPRINTF( stderr, " (%.0f micro-seconds)", 
+		     *time_est / TIME_MICRO_SECOND );
+	} else if ( *time_est > TIME_NANO_SECOND ) {
+	    QPRINTF( stderr, " (%.0f nano-seconds)", 
+		     *time_est / TIME_NANO_SECOND );
+	}
+	QPUTS( stderr, "\n" );
+    }
+    return tries_expected;
 }

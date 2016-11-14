@@ -1,4 +1,4 @@
-/* -*- Mode: C; c-file-style: "bsd" -*- */
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
 
 #include <stdio.h>
 #include <time.h>
@@ -10,9 +10,13 @@
 #endif
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "sdb.h"
 #include "types.h"
 #include "utct.h"
+#include "lock.h"
 
 #if defined( VMS )
     #define unlink(x) delete(x)
@@ -20,45 +24,32 @@
 
 /* simple though inefficient implementation of a database function */
 
-int file_exists( const char* filename, int* err )
-{
-    FILE* sdb = fopen( filename, "r" );
-    *err = 0;
-    if ( sdb != NULL ) { fclose( sdb ); return 1; }
-    if ( errno == ENOENT ) { return 0; }
-    *err = errno; return 0;
-}
+static int sdb_insert( DB*, const char* key, const char* val, int* err );
 
-int file_delete( const char* filename, int* err )
+int sdb_open( DB* h, const char* filename, int* err ) 
 {
-    if ( unlink( filename ) == -1 ) { *err = errno; return 0; }
-    return 1;
-}
+    int fd;
+    FILE* fp;
 
-int file_rename( const char* old_name, const char* new_name, int* err )
-{
-    if ( rename( old_name, new_name ) == -1 ) { *err = errno; return 0; }
-    return 1;
-}
-
-int sdb_create( DB* h, const char* filename, int* err )
-{
-    return sdb_open( h, filename, err );
-}
-
-int sdb_open( DB* h, const char* filename, int* err )
-{
     *err = 0;
     h->file = NULL;
     if ( filename == NULL ) { return 0; }
-    h->file = fopen( filename, "a+" );
-    if ( h->file == NULL ) { *err = errno; h->file = NULL; return 0; }
+    fd = open( filename, O_RDWR | O_CREAT, S_IREAD | S_IWRITE );
+    if ( fd == -1 ) { goto fail; }
+    fp = fdopen( fd, "w+" );
+    if ( fp == NULL ) { goto fail; }
+    h->file = fp;
+    if ( !lock_write( h->file ) ) { goto fail; }
     strncpy( h->filename, filename, PATH_MAX ); h->filename[PATH_MAX] = '\0';
+    h->write_pos = 0;
     return 1;
+ fail:
+    *err = errno;
+    return 0;
 }
 
 int sdb_close( DB* h, int* err ) 
-{ 
+{
     if ( h == NULL || h->file == NULL ) { return 0; }
     if ( fclose( h->file ) == EOF ) { *err = errno; return 0; }
     *err = 0; return 1;
@@ -67,6 +58,7 @@ int sdb_close( DB* h, int* err )
 int sdb_add( DB* h, const char* key, const char* val, int* err )
 {
     *err = 0;
+
     if ( h == NULL || h->file == NULL ) { return 0; }
     if ( strlen( key ) > MAX_KEY ) { return 0; }
     if ( strlen( val ) > MAX_VAL ) { return 0; }
@@ -80,13 +72,19 @@ int sdb_add( DB* h, const char* key, const char* val, int* err )
 
 #define MAX_LINE (MAX_KEY+MAX_VAL) 
 
-int sdb_findfirst( DB* h, char* key, int klen, char* val, int vlen, int* err )
+static void sdb_rewind( DB* h ) 
 {
     rewind( h->file );
+    h->write_pos = 0;
+}
+
+int sdb_findfirst( DB* h, char* key, int klen, char* val, int vlen, int* err ) 
+{
+    sdb_rewind( h );
     return sdb_findnext( h, key, klen, val, vlen, err );
 }
 
-int sdb_findnext( DB* h, char* key, int klen, char* val, int vlen, int* err )
+int sdb_findnext( DB* h, char* key, int klen, char* val, int vlen, int* err ) 
 {
     char line[MAX_LINE+1];
     int line_len;
@@ -115,7 +113,7 @@ int sdb_findnext( DB* h, char* key, int klen, char* val, int vlen, int* err )
 }
 
 static int sdb_cb_notkeymatch( const char* key, const char* val, 
-			    void* arg, int* err )
+			    void* arg, int* err ) 
 {
     *err = 0;
     if ( strncmp( key, arg, MAX_KEY ) != 0 ) { return 1; }
@@ -123,27 +121,27 @@ static int sdb_cb_notkeymatch( const char* key, const char* val,
 } 
 
 static int sdb_cb_keymatch( const char* key, const char* val, 
-			    void* arg, int* err )
+			    void* arg, int* err ) 
 {
     *err = 0;
     if ( strncmp( key, arg, MAX_KEY ) == 0 ) { return 1; }
     return 0;
 } 
 
-int sdb_del( DB* h, const char* key, int* err )
+int sdb_del( DB* h, const char* key, int* err ) 
 {
     return sdb_updateiterate( h, (sdb_wcallback)sdb_cb_notkeymatch, 
 			      (void*)key, err );
 }
 
-int sdb_lookup( DB* h, const char* key, char* val, int vlen, int* err )
+int sdb_lookup( DB* h, const char* key, char* val, int vlen, int* err ) 
 {
     char fkey[MAX_KEY+1];
     return sdb_callbacklookup( h, sdb_cb_keymatch, (void*)key, 
 			       fkey, MAX_KEY, val, vlen, err );
 }
 
-int sdb_lookupnext( DB* h, const char* key, char* val, int vlen, int* err )
+int sdb_lookupnext( DB* h, const char* key, char* val, int vlen, int* err ) 
 {
     char fkey[MAX_KEY+1];
     return sdb_callbacklookupnext( h, sdb_cb_keymatch, (void*)key,
@@ -152,7 +150,7 @@ int sdb_lookupnext( DB* h, const char* key, char* val, int vlen, int* err )
 
 int sdb_callbacklookup( DB* h, sdb_rcallback cb, void* arg, 
 			char* key, int klen, char* val, int vlen, 
-			int* err )
+			int* err ) 
 {
     rewind( h->file );
     return sdb_callbacklookupnext( h, cb, arg, key, klen, val, vlen, err );
@@ -160,14 +158,12 @@ int sdb_callbacklookup( DB* h, sdb_rcallback cb, void* arg,
 
 int sdb_callbacklookupnext( DB* h, sdb_rcallback cb, void* arg, 
 			    char* key, int klen, char* val, int vlen, 
-			    int* err )
+			    int* err ) 
 {
     char fkey[MAX_KEY+1];
 
-    while ( sdb_findnext( h, fkey, MAX_KEY, val, vlen, err ) )
-    {
-	if ( cb( fkey, val, arg, err ) )
-	{
+    while ( sdb_findnext( h, fkey, MAX_KEY, val, vlen, err ) ) {
+	if ( cb( fkey, val, arg, err ) ) {
 	    strncpy( key, fkey, klen ); key[klen] = '\0';
 	    return 1;
 	}
@@ -175,48 +171,48 @@ int sdb_callbacklookupnext( DB* h, sdb_rcallback cb, void* arg,
     return 0;
 }
 
+int sdb_insert( DB* db, const char* key, const char* val, int* err ) 
+{
+    int res;
+    *err = 0;
+
+    res = ftell( db->file ); 
+    if ( res < 0 ) { goto fail; }
+    db->read_pos = res;
+
+    if ( fseek( db->file, db->write_pos, SEEK_SET ) == -1 ) { goto fail; }
+    if ( fprintf( db->file, "%s %s\n", key, val ) == 0 ) { goto fail; }
+    
+    res = ftell( db->file );
+    if ( res < 0 ) { goto fail; }
+    db->write_pos = res;
+
+    if ( fseek( db->file, db->read_pos, SEEK_SET ) == -1 ) { goto fail; }
+    return 1;
+ fail:
+    *err = errno;
+    return 0;
+}
+
 int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
 {
-    DB tmp;
     int found;
-    int dontcare;
     char fkey[MAX_KEY+1];
     char fval[MAX_VAL+1];
 
-    tmp.file = NULL;
-    strncpy( tmp.filename, h->filename, PATH_MAX ); 
-    tmp.filename[PATH_MAX] = '\0';
-    strncat( tmp.filename, "t", PATH_MAX ); tmp.filename[PATH_MAX] = '\0';
-
-    if ( file_exists( tmp.filename, err ) ) 
-    { 
-	file_delete( tmp.filename, err ); 
-    }
-    if ( *err ) { return 0; }
-
-    if ( !sdb_create( &tmp, tmp.filename, err ) ) { return 0; }
     for ( found = sdb_findfirst( h, fkey, MAX_KEY, fval, MAX_VAL, err );
 	  found;
-	  found = sdb_findnext( h, fkey, MAX_KEY, fval, MAX_VAL, err ) )
-    {
-	if ( cb( fkey, fval, arg, err ) ) 
-	{
+	  found = sdb_findnext( h, fkey, MAX_KEY, fval, MAX_VAL, err ) ) {
+	if ( cb( fkey, fval, arg, err ) ) {
 	    if ( *err ) { goto fail; }
-	    if ( !sdb_add( &tmp, fkey, fval, err ) ) { goto fail; }
+	    if ( !sdb_insert( h, fkey, fval, err ) ) { goto fail; }
 	}
 	else if ( *err ) { goto fail; }
     }
-    if ( !sdb_close( &tmp, err ) ) { goto fail; }
-    tmp.file = NULL;
-    if ( !sdb_close( h, err ) ) { goto fail; }
-    h->file = NULL;
-    if ( !file_rename( tmp.filename, h->filename, err ) ) { goto fail; }
-    if ( !sdb_open( h, h->filename, err ) ) { return 0; }
+
+    ftruncate( fileno( h->file ), h->write_pos );
     return 1;
  fail:
-    if ( tmp.file != NULL ) { sdb_close( &tmp, &dontcare ); }
-    file_delete( tmp.filename, &dontcare );
-    if ( h->file == NULL ) { sdb_open( h, h->filename, &dontcare ); }
     return 0;
 }
 
@@ -229,17 +225,8 @@ static int sdb_cb_update( const char* key, char* val, void* arg, int* err )
 {
     sdb_cb_update_arg* argt  = (sdb_cb_update_arg*)arg;
     *err = 0;
-    if ( strncmp( argt->key, key, MAX_KEY ) == 0 )
-    {
+    if ( strncmp( argt->key, key, MAX_KEY ) == 0 ) {
 	strncpy( val, argt->nval, MAX_VAL ); val[MAX_VAL] = '\0';
     }
     return 1;
-}
-
-int sdb_update( DB* h, char* key, char* nval, int* err )
-{
-    sdb_cb_update_arg argt;
-    argt.key = key;
-    argt.nval = nval;
-    return sdb_updateiterate( h, sdb_cb_update, key, (void*)&argt );
 }
