@@ -85,10 +85,11 @@ int minter_ansi_compact_2_test(void)
     ROUNDu( t + 3, C, D, E, A, B, Func, K, W );\
     ROUNDu( t + 4, B, C, D, E, A, Func, K, W );
 
-int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
+unsigned long minter_ansi_compact_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
+	MINTER_CALLBACK_VARS;
 	unsigned long iters = 0 ;
-	int n = 0 , t = 0 , gotBits = 0 , maxBits = (bits > 16) ? 16 : bits ;
+	int n = 0, t = 0, gotBits = 0, maxBits = (bits > 16) ? 16 : bits;
 	uInt32 bitMask1Low = 0 , bitMask1High = 0 , s = 0 ;
 	uInt32 A = 0 , B = 0 , *W = 0 ;
 	/*register*/ uInt32 A1 = 0 , B1 = 0 , C1 = 0 , D1 = 0 , E1 = 0 ;
@@ -101,7 +102,7 @@ int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailInd
 	unsigned char *X2 = (unsigned char*) W2;
 	int addressMask = 0 ;
 	static const int endTest = 3;
-	unsigned char *output = (unsigned char*) block, *X = NULL;
+	unsigned char *output = (unsigned char*) block;
 	const int W32[] = {21,23,24,26,27,29,30,31,0}, W52[] = {20,23,26,28,29,31,0};
 	char wordUpdate[80] = {0};
 	
@@ -109,6 +110,8 @@ int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailInd
 	if(maxIter > 0xFFFFFFF0U)
 		maxIter = 0xFFFFFFF0U;
 	
+	*best = 0;
+
 	/* Work out whether we need to swap bytes during encoding */
 	addressMask = ( *(char*)&endTest );
 	
@@ -288,14 +291,12 @@ int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailInd
 				A = A1;
 				B = B1;
 				W = W1;
-				X = X1;
 				break;
 			
 			case 1:
 				A = A2;
 				B = B2;
 				W = W2;
-				X = X2;
 				break;
 		}
 		
@@ -322,6 +323,7 @@ int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailInd
 				}
 			}
 			
+			*best=gotBits;
 			/* Regenerate the bit mask */
 			maxBits = gotBits+1;
 			if(maxBits < 32) {
@@ -337,16 +339,14 @@ int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailInd
 				PUT_WORD(output + t*4, W[t]);
 			
 			/* Is it good enough to bail out? */
-			if(gotBits >= bits)
-				return gotBits;
+			if(gotBits >= bits) {
+				return iters+2;
+			}
 		}
 		
 		if(0) return 0;
+		MINTER_CALLBACK();
 	}
 	
-	/* Return the best result we found so far */
-	if(maxBits)
-		return maxBits-1;
-	else
-		return 0;
+	return iters+2;
 }

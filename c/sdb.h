@@ -13,6 +13,16 @@
 extern "C" {
 #endif
 
+#if !defined(HCEXPORT)
+    #if !defined(WIN32) || defined(MONOLITHIC)
+        #define HCEXPORT
+    #elif defined(BUILD_DLL)
+        #define HCEXPORT __declspec(dllexport)
+    #else /* USE_DLL */
+        #define HCEXPORT extern __declspec(dllimport)
+    #endif
+#endif
+
 typedef struct {
     FILE* file;
     char filename[PATH_MAX+1];
@@ -37,20 +47,31 @@ typedef int (*sdb_rcallback)( const char* key, const char* val,
 
 /* NOTE: keys should not contain spaces */
 
+HCEXPORT
 int sdb_open( DB*, const char* filename, int* err );
+HCEXPORT
 int sdb_add( DB*, const char* key, const char* val, int* err );
+HCEXPORT
 int sdb_updateiterate( DB*, sdb_wcallback cb, void* arg, int* err );
+HCEXPORT
 int sdb_del( DB*, const char* key, int* err );
+HCEXPORT
 int sdb_findfirst( DB*, char* key, int klen, char* val, int vlen, int* err );
+HCEXPORT
 int sdb_findnext( DB*, char* key, int klen, char* val, int vlen, int* err );
+HCEXPORT
 int sdb_lookup( DB*, const char* key, char* val, int vlen, int* err );
+HCEXPORT
 int sdb_lookupnext( DB*, const char* key, char* val, int vlen, int* err );
+HCEXPORT
 int sdb_close( DB*, int* err );
 
+HCEXPORT
 int sdb_callbacklookup( DB*, sdb_rcallback cb, void* arg, 
 			char* key, int klen, char* val, int vlen,
 			int* err );
 
+HCEXPORT
 int sdb_callbacklookupnext( DB*, sdb_rcallback cb, void* arg, 
 			    char* key, int klen, char* val, int vlen, 
 			    int* err );

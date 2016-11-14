@@ -1,6 +1,7 @@
 /* -*- Mode: C; c-file-style: "stroustrup" -*- */
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "sstring.h"
 
 
@@ -9,6 +10,7 @@
 /* if *tok is NULL space is allocated; if the *tok is not NULL, and
  * the token is too large it is truncated; tok_len returns the length,
  * a pointer to **tok is also returned
+ * if tok is NULL do not return the parsed value
  */
 
 char* sstrtok( const char* str, const char* delim, char** tok, int tok_max, 

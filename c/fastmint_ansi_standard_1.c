@@ -45,10 +45,11 @@ int minter_ansi_standard_1_test(void)
     ROUND5( t + 10, Func, K );\
     ROUND5( t + 15, Func, K )
 
-int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
+unsigned long minter_ansi_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
-	unsigned long iters = 0 ;
-	int t = 0 , gotBits = 0 , maxBits = (bits > 16) ? 16 : bits ;
+        MINTER_CALLBACK_VARS;
+	unsigned long iters = 0;
+	int t = 0, gotBits = 0, maxBits = (bits > 16) ? 16 : bits ;
 	uInt32 bitMask1Low = 0 , bitMask1High = 0 , s = 0 ;
 	uInt32 A = 0 , B = 0 , C = 0 , D = 0 , E = 0 ;
 	uInt32 W[80] = {0};
@@ -63,6 +64,8 @@ int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIn
 	if(maxIter > 0xFFFFFFF0U)
 		maxIter = 0xFFFFFFF0U;
 	
+	*best = 0;
+
 	/* Work out whether we need to swap bytes during encoding */
 	addressMask = ( *(char*)&endTest );
 	
@@ -251,6 +254,7 @@ int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIn
 				}
 			}
 			
+			*best=gotBits;
 			/* Regenerate the bit mask */
 			maxBits = gotBits+1;
 			if(maxBits < 32) {
@@ -266,14 +270,12 @@ int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIn
 				PUT_WORD(output + t*4, W[t]);
 			
 			/* Is it good enough to bail out? */
-			if(gotBits >= bits)
-				return gotBits;
+			if(gotBits >= bits) {
+				return iters+1;
+			}
 		}
+		MINTER_CALLBACK();
 	}
 	
-	/* Return the best result we found so far */
-	if(maxBits)
-		return maxBits-1;
-	else
-		return 0;
+	return iters+1;
 }

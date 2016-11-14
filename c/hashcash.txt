@@ -257,9 +257,7 @@ OPTIONS
         down to the nearest month start;
         * 2 months < period <= 2 days then time format YYMMDD is used
         rounded down to the begining of the nearest day;
-        * 2 days < period <= 2 hours then time format YYMMDDhh is used
-        rounded down to the begining of the nearest hour;
-        * 2 hours < period <= 2 minutes then time format YYMMDDhhmm is used
+        * 2 days < period <= 2 minutes then time format YYMMDDhhmm is used
         rounded down to the begining of the nearest minute;
         * period < 2 minutes then time format YYMMDDhhmmss is used in
         seconds.
@@ -389,8 +387,7 @@ OPTIONS
     *-t time*
         Pretend the current time is the time given for purposes of minting
         stamps, verifying stamps and purging old stamps from the database.
-        Time is given in a format based on UTCTIME format
-        YYMMDD[hh[mm[ss]]].
+        Time is given in a format based on UTCTIME format YYMMDD[hhmm[ss]].
 
         Time is expressed in local time by default. Use with *-u* flag to
         give time in UTC (GMT).
@@ -472,6 +469,16 @@ OPTIONS
         on checking. The *-C* flag overrides this so that resources are
         treated as case sensitive on checking, and not canonizalized on
         minting.
+
+    *-P*
+        Print progress info (number of iterations, expected iterations,
+        percentage done, best stamp size found so far).
+
+    *-O core*
+        Select hashcash core with that number. Currently 0-9 are valid
+        cores. Not all cores work on all architectures. Eg some are x86
+        specific assembler, others PPC specific assembler. If a core is not
+        valid hashcash returns failure and explains what happened.
 
 EXAMPLES
   Creating stamps

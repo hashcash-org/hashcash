@@ -15,17 +15,13 @@
 /* no regular expression support */
 #endif
 
+#define BUILD_DLL
 #include "hashcash.h"
+#include "utct.h"
 #include "libfastmint.h"
 #include "sha1.h"
 #include "random.h"
 #include "sstring.h"
-
-#if defined( WIN32 )
-#include "mydll.h"
-#else
-#define EXPORT
-#endif
 
 
 time_t round_off( time_t now_time, int digits );
@@ -143,17 +139,17 @@ int email_match( const char* email, const char* pattern )
     return ret;
 }
 
-EXPORT
-int hashcash_mint( time_t now_time, int time_width, 
-		   const char* resource, unsigned bits, 
-		   long anon_period, char** new_token, int tok_len, 
-		   long* anon_random, double* tries_taken, char* ext )
+const char* hashcash_version( void ) { return HASHCASH_VERSION_STRING; }
+
+int hashcash_mint( time_t now_time, int time_width, const char* resource, 
+		   unsigned bits, long anon_period, char** new_token, 
+		   long* anon_random, double* tries_taken, char* ext,
+		   int compress, hashcash_callback cb, void* user_arg )
 {
     long rnd = 0 ;
     char now_utime[ MAX_UTCTIME+1 ] = {0}; /* current time */
     char* token = 0;
-    volatile clock_t begin = 0 , end = 0 , tmp = 0 ;
-    double elapsed = 0;
+    double taken;
 
     if ( resource == NULL ) {
 	return HASHCASH_INTERNAL_ERROR;
@@ -186,28 +182,22 @@ int hashcash_mint( time_t now_time, int time_width,
     }
 
     now_time = round_off( now_time, 12-time_width );
-    to_utctimestr( now_utime, time_width, now_time );
+    hashcash_to_utctimestr( now_utime, time_width, now_time );
 
     if ( !ext ) { ext = ""; }
     token = malloc( MAX_TOK+strlen(ext)+1 );
+    if ( token == NULL ) { return HASHCASH_OUT_OF_MEMORY; }
     sprintf( token, "%d:%d:%s:%s:%s:", 
 	     HASHCASH_FORMAT_VERSION, bits, now_utime, resource, ext );
 
-    end = clock();
-    while((begin = clock()) == end) {}
-    
-    hashcash_fastmint( bits, token, new_token );
-    end = clock();
+    taken = hashcash_fastmint( bits, token, new_token, cb, user_arg );
+    if ( taken < 0 ) {
+	free( token );
+	return HASHCASH_USER_ABORT;
+    }
+    free( token );
 
-    if ( end < begin ) { tmp = end; end = begin; begin = tmp; }
-
-    elapsed = (end-begin) / (double) CLOCKS_PER_SEC;
-
-    /* hashcash_fastmint does not track iterations, 
-       work backwards from time for now -- avoid work if caller
-       does not care about tries_taken */
-
-    if ( tries_taken ) { *tries_taken = elapsed * hashcash_per_sec(); }
+    if ( tries_taken ) { *tries_taken = taken; }
 
     return HASHCASH_OK;
 }
@@ -232,7 +222,6 @@ time_t round_off( time_t now_time, int digits )
     return mk_utctime( now );
 }
 
-EXPORT
 int hashcash_validity_to_width( time_t validity_period )
 {
     int time_width = 6;		/* default YYMMDD */
@@ -257,7 +246,6 @@ int hashcash_validity_to_width( time_t validity_period )
 #define VALID_STR_CHARS "/+0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"\
 			"abcdefghijklmnopqrstuvwxyz="
 
-EXPORT
 int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
 		    int utct_max, char* token_resource, int res_max, 
 		    char** ext, int ext_max ) 
@@ -307,7 +295,6 @@ int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
     return 1;
 }
 
-EXPORT
 unsigned hashcash_count( const char* token )
 {
     SHA1_ctx ctx;
@@ -361,7 +348,6 @@ unsigned hashcash_count( const char* token )
     return collision_bits;
 }
 
-EXPORT
 long hashcash_valid_for( time_t token_time, time_t validity_period,
 			 long grace_period, time_t now_time )
 {
@@ -417,12 +403,15 @@ int regexp_match( const char* str, const char* regexp,
 		*q++ = '\\';
 	    } else if ( strchr( REGEXP_UNSUP, *r ) ) {
 		*err = "compiled with BSD regexp, {} not suppored";
+		free( quoted_regexp );
 		return 0;
 	    }
 	}
 	if ( *(q-1) != '$' ) { *q++ = '$'; }
 	*q = '\0';
-	if ( ( *err = re_comp( quoted_regexp ) ) != NULL ) { return 0; }
+	if ( ( *err = re_comp( quoted_regexp ) ) != NULL ) { 
+	    free( quoted_regexp ); return 0; 
+	}
 	free( quoted_regexp );
 	return re_exec( str );
 #elif defined( REGEXP_POSIX )
@@ -432,6 +421,7 @@ int regexp_match( const char* str, const char* regexp,
 	int re_len = 0 , bre_len = 0 ;
 	static char re_err[ MAX_RE_ERR+1 ] = {0};
 	re_err[0] = '\0';
+	*err = NULL;
 	
 	if ( *comp == NULL ) {
 	    *comp = malloc( sizeof(regex_t) );
@@ -454,7 +444,7 @@ int regexp_match( const char* str, const char* regexp,
 		bound_regexp = (char*)regexp;
 	    }
 
-	    if ( ( re_code = regcomp( *comp, regexp, 
+	    if ( ( re_code = regcomp( *comp, bound_regexp, 
 				      REG_EXTENDED | REG_NOSUB ) ) != 0 ) {
 		regerror( re_code, *comp, re_err, MAX_RE_ERR );
 		*err = re_err;
@@ -470,9 +460,8 @@ int regexp_match( const char* str, const char* regexp,
 #endif
 }
 
-EXPORT
-int resource_match( int type, const char* token_res, const char* res,
-		    void** compile, char** err ) 
+int hashcash_resource_match( int type, const char* token_res, const char* res,
+			     void** compile, char** err ) 
 {
     switch ( type ) {
     case TYPE_STR: 
@@ -490,7 +479,6 @@ int resource_match( int type, const char* token_res, const char* res,
     return 1;
 }
 
-EXPORT
 int hashcash_check( const char* token, int case_flag, const char* resource,
 		    void **compile, char** re_err, int type, time_t now_time, 
 		    time_t validity_period, long grace_period, 
@@ -511,7 +499,7 @@ int hashcash_check( const char* token, int case_flag, const char* resource,
 	return HASHCASH_UNSUPPORTED_VERSION;
     }
 
-    *token_time = from_utctimestr( token_utime, 1 );
+    *token_time = hashcash_from_utctimestr( token_utime, 1 );
     if ( *token_time == -1 ) {
 	return HASHCASH_INVALID;
     }
@@ -521,7 +509,8 @@ int hashcash_check( const char* token, int case_flag, const char* resource,
     }
 
     if ( resource && 
-	 !resource_match( type, token_res, resource, compile, re_err ) ) {
+	 !hashcash_resource_match( type, token_res, 
+				   resource, compile, re_err ) ) {
 	if ( *re_err != NULL ) { 
 	    return HASHCASH_REGEXP_ERROR;
 	} else {
@@ -540,13 +529,11 @@ int hashcash_check( const char* token, int case_flag, const char* resource,
 			       grace_period, now_time );
 }
 
-EXPORT
 double hashcash_estimate_time( int b )
 {
     return hashcash_expected_tries( b ) / (double)hashcash_per_sec();
 }
 
-EXPORT
 double hashcash_expected_tries( int b )
 {
     double expected_tests = 1;
@@ -558,3 +545,7 @@ double hashcash_expected_tries( int b )
     return expected_tests;
 }
 
+void hashcash_free( void* ptr ) 
+{
+    if ( ptr != NULL ) { free( ptr ); }
+}

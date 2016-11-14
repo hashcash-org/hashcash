@@ -1,5 +1,72 @@
+#if !defined( _libfastmint_h )
+#define _libfastmint_h
+
+#if defined(WIN32)
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
+#include "hashcash.h"
+
+#if defined(WIN32)
+#define MILLISEC 1
+#define TIMETYPE DWORD
+#define TIME0 0
+#define timer(x) (*(x)=GetTickCount())
+#else
+#define MILLISEC 1000
+#define TIME0 {0,0}
+#define TIMETYPE struct timeval
+#define timer(x) gettimeofday(x,NULL)
+#endif
+
+#define MINTER_CALLBACK_ARGS hashcash_callback cb, void* user_args,	\
+	double counter, double expected
+
+#define MINTER_CALLBACK_VARS double percent;	\
+	TIMETYPE prev=TIME0, curr;		\
+        int lastBits = 0
+
+/* in minter if have to do something for acces to floating point
+ * operations override this */
+
+/* eg mmx minter sets to this: __builtin_ia32_emms() */
+
+#define MINTER_CALLBACK_CLEANUP_FP /**/
+
+
+#if defined(WIN32)
+#define small_time_diff_gt( c, p, intv ) \
+	((c>p?c-p:(c+(((TIMETYPE)-1)-p)))>(intv))
+#else
+/* works for intervals < 1 second */
+#define small_time_diff_gt( c, p, intv )				\
+        (c.tv_sec-p.tv_sec>1 ||						\
+	(c.tv_usec+((c.tv_sec - p.tv_sec)?1000000:0))-p.tv_usec>(intv))
+#endif
+
+#define MINTER_CALLBACK()						     \
+	do {								     \
+		if (cb != NULL && (iters & 0xFFFF) == 0) {		     \
+			timer(&curr);                                        \
+			if (gotBits > lastBits ||                            \
+			    small_time_diff_gt(curr,prev,100*MILLISEC)) {    \
+                                MINTER_CALLBACK_CLEANUP_FP;		     \
+				percent = (int)(((counter+iters)/	     \
+					expected*100)+0.5);		     \
+				if (!cb(percent,*best,bits,    \
+					counter+iters,expected,user_args)) { \
+					*best = -1;                          \
+					return 0;			     \
+				}					     \
+				prev = curr;                                 \
+				lastBits = gotBits;			     \
+			}						     \
+		}							     \
+	} while (0)
+
 typedef unsigned int uInt32;
-typedef int (* HC_Mint_Routine)(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+typedef unsigned long (* HC_Mint_Routine)(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 typedef int (* HC_Mint_Capable_Routine)(void);
 
 typedef enum {
@@ -46,7 +113,7 @@ extern void hashcash_select_minter();
  * result buffer after use.
  * Returns the number of bits actually minted (may be more or less than requested).
  */
-extern unsigned int hashcash_fastmint(const int bits, const char *token, char **result);
+extern double hashcash_fastmint(const int bits, const char *token, char **result, hashcash_callback cb, void* user_arg);
 
 /* Perform a quick benchmark of the selected minting backend.  Returns speed. */
 extern unsigned long hashcash_per_sec(void);
@@ -73,54 +140,55 @@ extern unsigned long hashcash_benchtest(int verbose);
 /* Standard ANSI-C 1-pipe "compact" implementation - for use on x86 and other
  * register-limited architectures.
  */
-extern int minter_ansi_compact_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_ansi_compact_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_compact_1_test(void);
 
 /* Standard ANSI-C 1-pipe "Method B" implementation - for use on register-rich architectures.
  */
-extern int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_ansi_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_standard_1_test(void);
 
 /* Standard ANSI-C 1-pipe "ultra-compact" implementation - for use on architectures with
  * severely limited L1 caches (eg. M68K).
  */
-extern int minter_ansi_ultracompact_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_ansi_ultracompact_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_ultracompact_1_test(void);
 
 /* Standard ANSI-C 2-pipe "compact" implementation - for use on register-rich architectures.
  */
-extern int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_ansi_compact_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_compact_2_test(void);
 
 /* Standard ANSI-C 2-pipe "Method B" implementation - for use on register-rich architectures.
  */
-extern int minter_ansi_standard_2(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_ansi_standard_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_ansi_standard_2_test(void);
 
 /* PowerPC Altivec 1x4-pipe "Method B" implementation - for use on G4 and higher systems.
  */
-extern int minter_altivec_standard_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_altivec_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_altivec_standard_1_test(void);
 
 /* PowerPC Altivec 2x4-pipe "Method B" implementation - for use on G4 and higher systems.  Hand-optimised.
  */
-extern int minter_altivec_standard_2(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_altivec_standard_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_altivec_standard_2_test(void);
 
 /* PowerPC Altivec 2x4-pipe "compact" implementation - for use on G4 and higher systems.  Hand-optimised.
  */
-extern int minter_altivec_compact_2(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_altivec_compact_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_altivec_compact_2_test(void);
 
 /* AMD64/x86 MMX 1x2-pipe "Method B" implementation - for use on Pentium-MMX/2/3/4, K6-2/3,
  * Athlon, Athlon64, Opteron, and compatible systems.  Hand-optimised.
  */
-extern int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_mmx_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_mmx_standard_1_test(void);
 
 /* AMD64/x86 MMX 1x2-pipe "compact" implementation - for use on Pentium-MMX/2/3/4, K6-2/3,
  * Athlon, Athlon64, Opteron, and compatible systems.  Hand-optimised.
  */
-extern int minter_mmx_compact_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter);
+extern unsigned long minter_mmx_compact_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_mmx_compact_1_test(void);
 
+#endif

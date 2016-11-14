@@ -117,7 +117,8 @@ typedef struct {
 
 void db_open( DB* db, const char* db_filename );
 void db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
-	       long purge_period, time_t now_time, time_t real_time );
+	       long purge_period, time_t now_time, time_t real_time,
+	       long grace_period );
 int db_in( DB* db, char* token, char *period );
 void db_add( DB* db, char* token, char *token_utime );
 void db_close( DB* db ) ;
@@ -138,11 +139,15 @@ int verbose_flag;
 int out_is_tty;
 int in_is_tty;
 
+int progress_callback(int percent, int largest, int target, 
+		      double counter, double expected, void* user);
+
 #define PURGED_KEY "last_purged"
 
 int main( int argc, char* argv[] ) 
 {
     long validity_period = 28*TIME_DAY; /* default validity period: 28 days */
+    long purge_validity_period = 28*TIME_DAY; /* same default */
     long grace_period = 2*TIME_DAY; /* default grace period: 2 days */
 
     char period[ MAX_PERIOD+1 ], utcttime[ MAX_UTC+1 ];
@@ -152,7 +157,7 @@ int main( int argc, char* argv[] )
     int default_bits = 20;	/* default 20 bits */
     int count_bits, claimed_bits = 0, bits = 0;
     int check_flag = 0, case_flag = 0, hdr_flag = 0;
-    int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0, ext_flag = 0 ;
+    int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0;
     int bits_flag = 0, str_type = TYPE_WILD; /* default to wildcard match */
     int validity_flag = 0, db_flag = 0, yes_flag = 0, purge_flag = 0;
     int mint_flag = 0, ignore_boundary_flag = 0, name_flag = 0, res_flag = 0;
@@ -169,7 +174,7 @@ int main( int argc, char* argv[] )
     clock_t start = 0, end = 0, tmp = 0;
 
     long purge_period = 0, valid_for = HASHCASH_INVALID, time_period = 0 ;
-    int purge_all = 0, just_flag = 0, re_flag = 0, wild_flag = 0;
+    int purge_all = 0;
     int multiple_validity = 0, multiple_bits = 0, multiple_resources = 0;
     int multiple_grace = 0, accept = 0;
 
@@ -178,7 +183,9 @@ int main( int argc, char* argv[] )
     time_t now_time = real_time;
     time_t token_time = 0, expiry_time = 0;
     int time_width_flag = 0;	/* -z option, default 6 YYMMDD */
+    int small_flag = 0;		/* fast by default */
     int inferred_time_width = 0, time_width = 6; /* default YYMMDD */
+    int core = 0, res = 0;
 
     double tries_taken = 0, taken = 0, tries_expected = 0, time_est = 0;
     int opt = 0, vers = 0, db_opened = 0, i = 0, t = 0, tty_info = 0;
@@ -186,6 +193,7 @@ int main( int argc, char* argv[] )
     char *re_err = NULL;
     ELEMENT* ent = NULL;
     DB db;
+    hashcash_callback callback = NULL;
 
 #if defined( THINK_C )
     argc = ccommand(&argv);
@@ -206,7 +214,7 @@ int main( int argc, char* argv[] )
     array_alloc( &args, 32 );
 
     while ( (opt=getopt(argc, argv, 
-			"-a:b:cde:Ef:g:hij:klmnop:qr:sSt:uvwx:yz:CMVX")) >0 ) {
+		"-a:b:cde:f:g:hij:klmnop:qr:sSt:uvwx:yz:CEMO:PSVXZ")) >0 ) {
 	switch ( opt ) {
 	case 'a': anon_flag = 1; 
 	    if ( !parse_period( optarg, &anon_period ) ) {
@@ -246,7 +254,6 @@ int main( int argc, char* argv[] )
 	    }
 	    break;
 	case 'E': 
-	    re_flag = 1;
 	    str_type = TYPE_REGEXP; 
 	    break;
 	case 'f': db_filename = strdup( optarg ); break;
@@ -263,7 +270,6 @@ int main( int argc, char* argv[] )
 	case 'h': usage( "" ); break;
 	case 'i': ignore_boundary_flag = 1; break;
 	case 'j': 
-	    just_flag = 1;
 	    array_push( &purge_resource, optarg, str_type, case_flag, 
 			0, 0, 0, 0, 0, 0 );
 	    over_flag = 0;
@@ -272,20 +278,33 @@ int main( int argc, char* argv[] )
 	case 'l': left_flag = 1; break;
 	case 'n': name_flag = 1; break;
 	case 'o': over_flag = 1; break;
+	case 'O': core = atoi( optarg ); 
+	    res = hashcash_use_core( core );
+	    if ( res < 1 ) {
+		usage( res == -1 ? "error: -O no such core\n" : 
+		       "error: -O core does not work on this platform" );
+	    }
+	    break;
 	case 'm': mint_flag = 1; 
 	    if ( !bits_flag ) { 
 		bits_flag = 1; 
 		bits = default_bits;
 	    }
 	    break;
+	case 'M':
+	    str_type = TYPE_WILD;
+	    break;
 	case 'p': 
+	    if ( purge_flag ) { usage("error: only one -p flag per call"); }
 	    purge_flag = 1;
 	    if ( strcmp( optarg, "now" ) == 0 ) { purge_period = 0; }
 	    else if ( !parse_period( optarg, &purge_period ) ||
 		      purge_period < 0 ) {
 		usage( "error: -p invalid purge interval" ); 
 	    }
+	    purge_validity_period = validity_period;
 	    break;
+	case 'P': callback = progress_callback; break;
 	case 'q': quiet_flag = 1; break;
 	case 1:
 	case 'r':
@@ -327,7 +346,7 @@ int main( int argc, char* argv[] )
 		}
 		now_time += time_period;
 	    } else {
-		now_time = from_utctimestr( optarg, utc_flag );
+		now_time = hashcash_from_utctimestr( optarg, utc_flag );
 		if ( now_time == (time_t)-1 ) { 
 		    usage( "error: -t invalid time format" ); 
 		}
@@ -337,12 +356,7 @@ int main( int argc, char* argv[] )
 	case 'v': verbose_flag = 1; break;
         case 'V': version_flag = 1; break;
 	case 'w': width_flag = 1; break;
-	case 'M':
-	    wild_flag = 1;
-	    str_type = TYPE_WILD;
-	    break;
 	case 'x':
-	    ext_flag = 1;
 	    ext = strdup( optarg ); 
 /* deprecate old -x flag */
 /*	    hdr_flag = 1; */
@@ -360,6 +374,7 @@ int main( int argc, char* argv[] )
 	        usage( "error: -z invalid time width: must be 6, 10 or 12" );
 	    }
 	    break;
+	case 'Z': small_flag = 1; break;
 	case '?': 
 	    fprintf( stderr, "error: unrecognized option -%c", optopt );
 	    usage( "" );
@@ -375,7 +390,7 @@ int main( int argc, char* argv[] )
     }
 
     if ( validity_flag && !time_width_flag && !inferred_time_width ) {
-        time_width = hashcash_validity_to_width( resource.elt[i].validity );
+        time_width = hashcash_validity_to_width( resource.elt[0].validity );
 	if ( !time_width ) { 
 	    die_msg( "error: -ve validity period" ); 
 	}
@@ -425,7 +440,8 @@ int main( int argc, char* argv[] )
 	db_opened = 1;
 
 	db_purge( &db, &purge_resource, purge_all, purge_period, 
-		  now_time, real_time );
+		  now_time, validity_flag ? purge_validity_period : 0,
+		  grace_period );
 
 	if ( mint_flag + check_flag + name_flag + left_flag + 
 	     width_flag + bits_flag + res_flag + speed_flag == 0 ) { 
@@ -465,12 +481,16 @@ int main( int argc, char* argv[] )
 	}
 
 	if ( !verbose_flag && speed_flag && mint_flag ) {
+	    QPRINTF( stderr, "core: %s\n", 
+		     hashcash_core_name( hashcash_core() ) );
 	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
                      hashcash_per_sec() );
             PPRINTF( stdout, "%ld\n", hashcash_per_sec() );
 	}
 
 	if ( verbose_flag || ( speed_flag && !bits_flag ) ) {
+	    QPRINTF( stderr, "core: %s\n",
+                     hashcash_core_name( hashcash_core() ) );
 	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
                      hashcash_per_sec() );
 	    if ( speed_flag && !bits_flag && !mint_flag ) {
@@ -498,17 +518,9 @@ int main( int argc, char* argv[] )
 	    if ( !ent->case_flag ) { stolower( ent->str ); }
 
 	    err = hashcash_mint( now_time, ent->width, ent->str, ent->bits, 
-				 ent->anon, &new_token, MAX_TOK, &anon_random, 
-				 verbose_flag ? &tries_taken : NULL, ext );
-
-	    /* verbose_flag ? ... above is work-around hashcash_mint
-               calls hashcash_per_sec to reverse compute tries_taken from
-	       timer due to hashcash_fastmint not returning number of
-	       tries taken.  If we don't need to output tries_taken,
-               we can avoid the effort of running hashcash_per_sec which is
-	       slower now we are using clock() in place of time().  
-	       this results in tries_taken being left at 0 */
-
+				 ent->anon, &new_token, &anon_random, 
+				 &tries_taken, ext, small_flag, 
+				 callback, NULL );
 	    end = clock();
 
 	    switch ( err ) {
@@ -541,8 +553,8 @@ int main( int argc, char* argv[] )
 	    }
 
 	    VPRINTF( stderr, "tries: %.0f", tries_taken );
-	    VPRINTF( stderr, " %.2f x expected\n", 
-		     tries_taken / tries_expected );
+	    VPRINTF( stderr, " %.0f%% of expected                         \n", 
+		     tries_taken / tries_expected * 100 );
 
 	    if ( end < start ) { tmp = end; end = start; start = tmp; }
 	    taken = (end-start)/(double)CLOCKS_PER_SEC;
@@ -808,7 +820,7 @@ int main( int argc, char* argv[] )
 			} else {
 			    expiry_time = token_time + validity_period;
 			    switch ( valid_for ) {
-			    case 0:
+			    case HASHCASH_VALID_FOREVER:
 				QPUTS( stderr, "forever\n" );
 				if ( name_flag || width_flag ) {
 				    PPUTS( stdout, " " );
@@ -907,6 +919,23 @@ int main( int argc, char* argv[] )
     return 0;
 }
 
+int progress_callback(int percent, int largest, int target, 
+		      double counter, double expected, void* user)
+{
+    static int previous_percent = -1;
+    static int previous_largest;
+    double previous_counter = -1;
+    if ( previous_counter != counter || 
+	 previous_percent != percent || previous_largest != largest ) {
+	fprintf( stderr, "percent: %.0lf/%.0lf = %d%% [%d/%d bits]\r", 
+		 counter, expected, percent, largest, target );
+	previous_percent = percent;
+	previous_largest = largest;
+	previous_counter = counter;
+    }
+    return 1;
+}
+
 int parse_period( const char* aperiod, long* resp )
 {
     int period_len;
@@ -983,6 +1012,8 @@ void usage( const char* msg )
     fprintf( stderr, "\t-S\t\tmatch following resources as text strings\n" );
     fprintf( stderr, "\t-W\t\tmatch following resources with wildcards (default)\n" );
     fprintf( stderr, "\t-E\t\tmatch following resources as regular expression\n" );
+    fprintf( stderr, "\t-P\t\tshow progress while searching\n");
+    fprintf( stderr, "\t-O core\tuse specified minting core\n");
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit collision\n" );
     fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check collision\n" );
@@ -995,6 +1026,8 @@ typedef struct {
     time_t expires_before;
     char now_utime[ MAX_UTC+1 ];
     int all;
+    long validity;
+    long grace;
     ARRAY* resource;
 } db_arg;
 
@@ -1046,9 +1079,9 @@ static int sdb_cb_token_matcher( const char* key, char* val,
 		stolower( lower_token_res );
 		lowered = 1;
 	    }
-	    matched = resource_match( type, case_flag ? 
-				      token_res : lower_token_res, 
-				      res, compile, &re_err );
+	    matched = hashcash_resource_match( type, case_flag ? 
+					       token_res : lower_token_res, 
+					       res, compile, &re_err );
 	    if ( re_err != NULL ) { 
 		fprintf( stderr, "regexp error: " ); 
 		die_msg( re_err ); 
@@ -1063,15 +1096,17 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     }
     expiry_period = atoi( val );
     if ( expiry_period < 0 ) { *err = EINPUT; return 0; } /* corrupted */
-    created = from_utctimestr( token_utime, 1 );
+    created = hashcash_from_utctimestr( token_utime, 1 );
     if ( created < 0 ) { *err = EINPUT; return 0; } /* corrupted */
-    expires = created + expiry_period;
+    expires = created 
+	+ (arg->validity ? arg->validity : expiry_period) + arg->grace;
     if ( expires <= arg->expires_before ) { return 0; }	/* delete if expired */
     return 1;			/* otherwise keep */
 }
 
 void db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
-	       long purge_period, time_t now_time, time_t real_time ) {
+	       long purge_period, time_t now_time, long validity_period,
+	       long grace_period ) {
     int err = 0 ;
     time_t last_time = 0 ;
     char purge_utime[ MAX_UTC+1 ] = {0}; /* time token created */
@@ -1084,18 +1119,20 @@ void db_purge( DB* db, ARRAY* purge_resource, int purge_all,
 	die( err );
     }
 
-    last_time = from_utctimestr( purge_utime, 1 );
+    last_time = hashcash_from_utctimestr( purge_utime, 1 );
     if ( last_time < 0 ) { /* not first time, but corrupted */
 	purge_period = 0; /* purge now */
     }
 
-    if ( !to_utctimestr( arg.now_utime, MAX_UTC, now_time ) ) {
+    if ( !hashcash_to_utctimestr( arg.now_utime, MAX_UTC, now_time ) ) {
 	die_msg( "error: converting time" );
     }
 
     arg.expires_before = now_time;
     arg.resource = purge_resource;
     arg.all = purge_all;
+    arg.validity = validity_period;
+    arg.grace = grace_period;
 
     if ( purge_period == 0 || now_time >= last_time + purge_period ) {
 	VPRINTF( stderr, "purging database: ..." );

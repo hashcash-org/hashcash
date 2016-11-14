@@ -6,6 +6,8 @@
 #include <sys/time.h>
 #include "random.h"
 
+int initialized = 0;
+
 /* on machines that have /dev/urandom -- use it */
 
 #if defined( __linux__ ) || defined( __FreeBSD__ ) || defined( __MACH__ ) || \
@@ -16,13 +18,14 @@ FILE* urandom = NULL;
 
 int random_init( void )
 {
-    urandom = fopen( URANDOM_FILE, "r" );
-    return ( urandom != NULL );
+    int res = (urandom = fopen( URANDOM_FILE, "r" )) != NULL;
+    if ( res ) { initialized = 1; }
+    return res;
 }
 
 int random_getbytes( void* data, size_t len )
 {
-    if ( !urandom && !random_init() ) { return 0; }
+    if ( !initialized && !random_init() ) { return 0; }
     return fread( data, len, 1, urandom );
 }
 
@@ -42,7 +45,9 @@ int random_final( void )
 /* on windows we are ok as we can use CAPI, but use CAPI combined with
    the below just to be sure! */
 
-/* WARNING: this is not of cryptographic quality */
+/* WARNING: on platforms other than windows this is not of
+ * cryptographic quality 
+ */
 
 #include <stdlib.h>
 
@@ -155,6 +160,8 @@ int random_init( void )
     srand(clock());
     random_stir( state, state );
     
+    initialized = 1;
+
     return 1;
 }
 
@@ -172,6 +179,8 @@ int random_getbytes( void* rnd, size_t len )
 {
     byte* rndp = (byte*)rnd;
     int use = 0;
+
+    if ( !initialized && !random_init() ) { return 0; }
 
     random_stir( state, state ); /* mix in the time, pid */
     for ( ; len > 0; len -= use, rndp += CHUNK_LEN ) {

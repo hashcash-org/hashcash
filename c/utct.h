@@ -9,6 +9,16 @@
 extern "C" {
 #endif
 
+#if !defined(HCEXPORT)
+    #if !defined(WIN32) || defined(MONOLITHIC)
+        #define HCEXPORT
+    #elif defined(BUILD_DLL)
+        #define HCEXPORT __declspec(dllexport)
+    #else /* USE_DLL */
+        #define HCEXPORT extern __declspec(dllimport)
+    #endif
+#endif
+
 const char* strtime( time_t* timep, int utc ); /* ctime like with utc arg */
 time_t mk_utctime( struct tm* tms ); /* mktime like with utc struct tm */
 
@@ -28,8 +38,11 @@ time_t mk_utctime( struct tm* tms ); /* mktime like with utc struct tm */
 
 #define MAX_UTCTIME 13
 
-time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc );
-int to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t );
+HCEXPORT
+time_t hashcash_from_utctimestr( const char utct[MAX_UTCTIME+1], int utc );
+
+HCEXPORT
+int hashcash_to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t );
 
 #if defined( __cplusplus )
 }

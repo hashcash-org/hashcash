@@ -1,22 +1,30 @@
 EXPORTS
-hashcash_mint
-hashcash_validity_to_width
-hashcash_count
-hashcash_parse
-hashcash_valid_for
-hashcash_check
-hashcash_per_sec
-hashcash_estimate_time
-hashcash_expected_tries
-hashcash_benchtest
-sdb_open
-sdb_add
-sdb_updateiterate
-sdb_del
-sdb_findfirst
-sdb_findnext
-sdb_lookup
-sdb_lookupnext
-sdb_close
-sdb_callbacklookup
-sdb_callbacklookupnext
+    hashcash_benchtest @1
+    hashcash_check @2
+    hashcash_core @3
+    hashcash_core_name @4
+    hashcash_count @5
+    hashcash_estimate_time @6
+    hashcash_expected_tries @7
+    hashcash_free @8
+    hashcash_from_utctimestr @9
+    hashcash_mint @10
+    hashcash_parse @11
+    hashcash_per_sec @12
+    hashcash_resource_match @13
+    hashcash_to_utctimestr @14
+    hashcash_use_core @15
+    hashcash_valid_for @16
+    hashcash_validity_to_width @17
+    hashcash_version @18
+    sdb_add @19
+    sdb_callbacklookup @20
+    sdb_callbacklookupnext @21
+    sdb_close @22
+    sdb_del @23
+    sdb_findfirst @24
+    sdb_findnext @25
+    sdb_lookup @26
+    sdb_lookupnext @27
+    sdb_open @28
+    sdb_updateiterate @29

@@ -1,3 +1,38 @@
+hashcash-1.13 - 16-Oct-2004 - Adam Back <adam@cypherspace.org>
+
+	* fix bug where grace period not applied to double-spend db.
+	  I think this could allow people to double-spend in the time
+	  period after the resulting premature purging and before
+	  expiry (which is the grace period)
+
+	* add new feature where -e <period> can be used with -p to
+	  override the expiry given at spend time (that is stored in
+	  the double-spend db).  Inspired by question from Atom
+          Smasher <atom@suspicious.org>.
+
+	* clean up some memory leaks
+
+	* add hashcash_free function (DLL scenario caller can't rely
+          on having same deallocator to call as library compiled with)
+
+	* lots more function documentation in hashcash.h for
+	  library/DLL users, renamed all exported library functions to
+	  start with hashcash_ prefix.
+
+	* added hashcash_version function.
+
+	* added callback function to allow user quit (returns
+	  HASHCASH_USER_ABORT) and to give progress feedback.
+
+	* added option -P which uses the callback to show progress.
+
+	* added -O core option to allow user selection of core.
+
+	* added small parameter to hashcash (to request small stamps
+	  rather than slightly larger fast to generate stamps), and -Z
+	  option to turn this on.  (In fact it is not implemented yet
+	  but want to avoid changing library interface later).
+
 hashcash-1.12 - 03-Oct-2004 - Adam Back <adam@cypherspace.org>
 
 	* make a HASHCASH.DLL on windows using MINGW.

@@ -2,9 +2,9 @@
 #include <setjmp.h>
 #include "libfastmint.h"
 
-#if defined(WIN32)
-#define __MMX__
-#endif
+//#if defined(WIN32) && !defined(__MMX__)
+//#define __MMX__
+//#endif
 
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
 typedef int mmx_d_t __attribute__ ((mode(V2SI)));
@@ -283,11 +283,17 @@ static inline mmx_d_t S(int n, mmx_d_t X)
     ROUNDu( t + 3, C, D, E, A, B, Func, K );\
     ROUNDu( t + 4, B, C, D, E, A, Func, K );
 
-int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
+#if defined(MINTER_CALLBACK_CLEANUP_FP)
+#undef MINTER_CALLBACK_CLEANUP_FP
+#endif
+#define MINTER_CALLBACK_CLEANUP_FP __builtin_ia32_emms()
+
+unsigned long minter_mmx_standard_1(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
+  MINTER_CALLBACK_VARS;
   unsigned long iters = 0 ;
-  int n = 0 , t = 0 , gotBits = 0 , maxBits = (bits > 16) ? 16 : bits ;
+  int n = 0, t = 0, gotBits = 0, maxBits = (bits > 16) ? 16 : bits;
   uInt32 bitMask1Low = 0 , bitMask1High = 0 , s = 0 ;
   mmx_d_t vBitMaskHigh = {} , vBitMaskLow = {} ;
   register mmx_d_t A = {} , B = {} , C = {} , D = {} , E = {} ;
@@ -302,10 +308,12 @@ int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailInd
   unsigned char *X = (unsigned char*) W;
   unsigned char *output = (unsigned char*) block;
 	
-	/* Make sure we don't get into an infinite loop */
-	if(maxIter > 0xFFFFFFF0U)
-		maxIter = 0xFFFFFFF0U;
+  /* Make sure we don't get into an infinite loop */
+  if(maxIter > 0xFFFFFFF0U)
+    maxIter = 0xFFFFFFF0U;
 	
+  *best = 0;
+
   /* Splat Kn constants into MMX-style array */
   ((uInt32*)K)[0] = ((uInt32*)K)[1] = K1;
   ((uInt32*)K)[2] = ((uInt32*)K)[3] = K2;
@@ -348,20 +356,20 @@ int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailInd
     X[(((tailIndex - 1) & ~3) << 1) + (((tailIndex - 1) & 3) ^ 3) +  0] = p[(iters & 0x3e) + 0];
     X[(((tailIndex - 1) & ~3) << 1) + (((tailIndex - 1) & 3) ^ 3) +  4] = p[(iters & 0x3e) + 1];
     if(!(iters & 0x3f)) {
-	    X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  0] =
-			X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  4] = p[(iters >>  6) & 0x3f];
-	    X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  0] =
-			X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  4] = p[(iters >> 12) & 0x3f];
-	    X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  0] =
-			X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  4] = p[(iters >> 18) & 0x3f];
-	    X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  0] =
-			X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  4] = p[(iters >> 24) & 0x3f];
-	    X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  0] =
-			X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  4] = p[(iters >> 30) & 0x3f];
-		}
+      X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  0] =
+	X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  4] = p[(iters >>  6) & 0x3f];
+      X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  0] =
+	X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  4] = p[(iters >> 12) & 0x3f];
+      X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  0] =
+	X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  4] = p[(iters >> 18) & 0x3f];
+      X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  0] =
+	X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  4] = p[(iters >> 24) & 0x3f];
+      X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  0] =
+	X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  4] = p[(iters >> 30) & 0x3f];
+    }
 		
-		/* Force compiler to flush and reload MMX registers */
-		asm volatile ( "nop" : : : "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7", "memory" );
+    /* Force compiler to flush and reload MMX registers */
+    asm volatile ( "nop" : : : "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7", "memory" );
 
     /* Bypass shortcuts below on certain iterations */
     if((!(iters & 0xffffff)) && (tailIndex == 52 || tailIndex == 32)) {
@@ -369,56 +377,53 @@ int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailInd
 			for(t=16; t < 32; t += 4) {
 				asm volatile (
 											/* Use pairs of adjacent MMX registers to build four nearly-independent chains */
-											"\n\t movq -128(%[w]),%%mm0"
-											"\n\t movq -120(%[w]),%%mm2"
-											"\n\t movq -112(%[w]),%%mm4"
-											"\n\t movq -104(%[w]),%%mm6"
+	"\n\t movq -128(%[w]),%%mm0"
+	"\n\t movq -120(%[w]),%%mm2"
+	"\n\t movq -112(%[w]),%%mm4"
+	"\n\t movq -104(%[w]),%%mm6"
+	"\n\t pxor  %%mm4,    %%mm0"
+	"\n\t pxor  %%mm6,    %%mm2"
+	"\n\t pxor  -96(%[w]),%%mm4"
+	"\n\t pxor  -88(%[w]),%%mm6"
+	"\n\t pxor  -64(%[w]),%%mm0"
+	"\n\t pxor  -56(%[w]),%%mm2"
+	"\n\t pxor  -48(%[w]),%%mm4"
+	"\n\t pxor  -40(%[w]),%%mm6"
+	"\n\t pxor  -24(%[w]),%%mm0"
+	"\n\t pxor  -16(%[w]),%%mm2"
+
+	/* 0(%[w]) is not yet valid! */
+
+	"\n\t movq  %%mm0, %%mm1"
+	"\n\t movq  %%mm2, %%mm3"
+	"\n\t pslld $1,    %%mm0"
+	"\n\t psrld $31,   %%mm1"
+	"\n\t pslld $1,    %%mm2"
+	"\n\t psrld $31,   %%mm3"
+	"\n\t por   %%mm1, %%mm0"
+	"\n\t por   %%mm3, %%mm2"
+
+	/* ...now it is */
+	"\n\t pxor   -8(%[w]),%%mm4"
+	"\n\t pxor  %%mm0, %%mm6"
+	"\n\t movq  %%mm4, %%mm5"
+	"\n\t movq  %%mm6, %%mm7"
+	"\n\t pslld $1,    %%mm4"
+	"\n\t psrld $31,   %%mm5"
+	"\n\t pslld $1,    %%mm6"
+	"\n\t psrld $31,   %%mm7"
+	"\n\t por   %%mm5, %%mm4"
+	"\n\t por   %%mm7, %%mm6"
       	
-											"\n\t pxor  %%mm4,    %%mm0"
-											"\n\t pxor  %%mm6,    %%mm2"
-											"\n\t pxor  -96(%[w]),%%mm4"
-											"\n\t pxor  -88(%[w]),%%mm6"
+	"\n\t movq  %%mm0, 0(%[w])"
+	"\n\t movq  %%mm2, 8(%[w])"
+	"\n\t movq  %%mm4,16(%[w])"
+	"\n\t movq  %%mm6,24(%[w])"
       	
-											"\n\t pxor  -64(%[w]),%%mm0"
-											"\n\t pxor  -56(%[w]),%%mm2"
-											"\n\t pxor  -48(%[w]),%%mm4"
-											"\n\t pxor  -40(%[w]),%%mm6"
-      	
-											"\n\t pxor  -24(%[w]),%%mm0"
-											"\n\t pxor  -16(%[w]),%%mm2"
-											/* 0(%[w]) is not yet valid! */
-      	
-											"\n\t movq  %%mm0, %%mm1"
-											"\n\t movq  %%mm2, %%mm3"
-											"\n\t pslld $1,    %%mm0"
-											"\n\t psrld $31,   %%mm1"
-											"\n\t pslld $1,    %%mm2"
-											"\n\t psrld $31,   %%mm3"
-											"\n\t por   %%mm1, %%mm0"
-											"\n\t por   %%mm3, %%mm2"
-      	
-											/* ...now it is */
-											"\n\t pxor   -8(%[w]),%%mm4"
-											"\n\t pxor  %%mm0, %%mm6"
-      	
-											"\n\t movq  %%mm4, %%mm5"
-											"\n\t movq  %%mm6, %%mm7"
-											"\n\t pslld $1,    %%mm4"
-											"\n\t psrld $31,   %%mm5"
-											"\n\t pslld $1,    %%mm6"
-											"\n\t psrld $31,   %%mm7"
-											"\n\t por   %%mm5, %%mm4"
-											"\n\t por   %%mm7, %%mm6"
-      	
-											"\n\t movq  %%mm0, 0(%[w])"
-											"\n\t movq  %%mm2, 8(%[w])"
-											"\n\t movq  %%mm4,16(%[w])"
-											"\n\t movq  %%mm6,24(%[w])"
-      	
-											: /* no outputs */
-											: [w] "r" (W+t)
-											: "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7", "memory"
-											);
+	: /* no outputs */
+	: [w] "r" (W+t)
+	: "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7", "memory"
+	);
 			}
 
       A = H[0];
@@ -582,7 +587,7 @@ int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailInd
 						gotBits = 64;
 					}
 				}
-				
+				*best = gotBits;
 				/* Regenerate the bit mask */
 				maxBits = gotBits+1;
 				if(maxBits < 32) {
@@ -610,20 +615,17 @@ int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailInd
 					/* Shut down use of MMX */
 					__builtin_ia32_emms();
 				  
-					return gotBits;
+					return iters+2;
 				}
       }
     }
+    MINTER_CALLBACK();
   }
 	
   /* Shut down use of MMX */
   __builtin_ia32_emms();
 
-  /* Return the best result we found so far */
-	if(maxBits)
-		return maxBits-1;
-	else
-		return 0;
+  return iters+2;
 
   /* For other platforms */
 #else

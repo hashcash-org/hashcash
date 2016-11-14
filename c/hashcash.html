@@ -355,10 +355,7 @@ used rounded down to the nearest month start;</a></strong><br />
 <li><strong><a name="item_2_months__3c_period__3c_3d_2_days_then_time_format">2 months &lt; period &lt;= 2 days then time format YYMMDD is
 used rounded down to the begining of the nearest day;</a></strong><br />
 </li>
-<li><strong><a name="item_2_days__3c_period__3c_3d_2_hours_then_time_format_">2 days &lt; period &lt;= 2 hours then time format YYMMDDhh is
-used rounded down to the begining of the nearest hour;</a></strong><br />
-</li>
-<li><strong><a name="item_2_hours__3c_period__3c_3d_2_minutes_then_time_form">2 hours &lt; period &lt;= 2 minutes then time format
+<li><strong><a name="item_2_days__3c_period__3c_3d_2_minutes_then_time_forma">2 days &lt; period &lt;= 2 minutes then time format
 YYMMDDhhmm is used rounded down to the begining of the nearest minute;</a></strong><br />
 </li>
 <li><strong><a name="item_period__3c_2_minutes_then_time_format_yymmddhhmmss">period &lt; 2 minutes then time format YYMMDDhhmmss is used in
@@ -542,7 +539,7 @@ collision in the body too if one is not found in the headers.
 Pretend the current time is the time given for purposes of minting
 stamps, verifying stamps and purging old stamps from the database.
 Time is given in a format based on UTCTIME format
-YYMMDD[hh[mm[ss]]].
+YYMMDD[hhmm[ss]].
 </dd>
 <dd>
 <p>Time is expressed in local time by default.  Use with <em>-u</em> flag to
@@ -657,6 +654,22 @@ ranges {}.)</p>
 By default resources are canonicalized to lower case on minting and on
 checking.  The <em>-C</em> flag overrides this so that resources are treated
 as case sensitive on checking, and not canonizalized on minting.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dp"><em>-P</em></a></strong><br />
+</dt>
+<dd>
+Print progress info (number of iterations, expected iterations,
+percentage done, best stamp size found so far).
+</dd>
+<p></p>
+<dt><strong><a name="item__2do_core"><em>-O core</em></a></strong><br />
+</dt>
+<dd>
+Select hashcash core with that number.  Currently 0-9 are valid cores.
+Not all cores work on all architectures.  Eg some are x86 specific
+assembler, others PPC specific assembler.  If a core is not valid
+hashcash returns failure and explains what happened.
 </dd>
 <p></p></dl>
 <p>

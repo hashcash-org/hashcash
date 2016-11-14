@@ -624,9 +624,10 @@ static void WF(vector unsigned int *W, int tailIndex)
 }
 #endif
 
-int minter_altivec_compact_2(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
+unsigned long minter_altivec_compact_2(int bits, int* best, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
 	#if defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
+	MINTER_CALLBACK_VARS;
 	unsigned long iters;
 	unsigned int m, n, o, t, gotBits, maxBits = (bits > 16) ? 16 : bits;
 	uInt32 bitMask1Low, bitMask1High, s;
@@ -651,6 +652,8 @@ int minter_altivec_compact_2(int bits, char *block, const uInt32 IV[5], int tail
 	if(maxIter > 0xFFFFFFF0U)
 		maxIter = 0xFFFFFFF0U;
 	
+	*best = 0;
+
 	/* Work out which bits to mask out for test */
 	if(maxBits < 32) {
 		bitMask1Low = ~((((uInt32) 1) << (32 - maxBits)) - 1);
@@ -909,6 +912,7 @@ int minter_altivec_compact_2(int bits, char *block, const uInt32 IV[5], int tail
 					}
 				}
 				
+				*best=gotBits;
 				/* Regenerate the bit mask */
 				maxBits = gotBits+1;
 				if(maxBits < 32) {
@@ -937,18 +941,16 @@ int minter_altivec_compact_2(int bits, char *block, const uInt32 IV[5], int tail
 				}
 				
 				/* Is it good enough to bail out? */
-				if(gotBits >= bits)
-					return gotBits;
+				if(gotBits >= bits) {
+					return iters+8;
+				}
 			}
 		}
 		if(0) return 0;
+		MINTER_CALLBACK();
 	}
 	
-	/* Return the best result we found so far */
-	if(maxBits)
-		return maxBits-1;
-	else
-		return 0;
+	return iters+8;
 
 	/* For other platforms */
 	#else
