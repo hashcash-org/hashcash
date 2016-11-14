@@ -172,7 +172,7 @@ static enum
 #if __STDC__ || defined(PROTO)
 extern char *getenv(const char *name);
 extern int  strcmp (const char *s1, const char *s2);
-extern int  strncmp(const char *s1, const char *s2, int n);
+/*extern int  strncmp(const char *s1, const char *s2, int n);*/
 
 static int my_strlen(const char *s);
 static char *my_index (const char *str, int chr);
@@ -242,7 +242,7 @@ static void
 exchange (argv)
      char **argv;
 {
-  char *temp, **first, **last;
+  char *temp = NULL , **first = NULL , **last = NULL ;
 
   /* Reverse all the elements [first_nonopt, optind) */
   first = &argv[first_nonopt];
@@ -332,7 +332,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
      int *longind;
      int long_only;
 {
-  int option_index;
+  int option_index = 0 ;
 
   optarg = 0;
 
@@ -692,7 +692,7 @@ main (argc, argv)
      int argc;
      char **argv;
 {
-  int c;
+  int c = 0 ;
   int digit_optind = 0;
 
   while (1)

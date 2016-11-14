@@ -5,17 +5,17 @@
 #include <string.h>
 #include "sha1.h"
 
-byte b;
+byte b = 0 ;
 
 #define BUF_SIZE 1024
 
 int main( int argc, char* argv[] )
 {
-    SHA1_ctx ctx;
-    int i,j;
-    byte digest[ SHA1_DIGEST_BYTES ];
-    clock_t start, end, tmp;
-    double elapsed;
+    SHA1_ctx ctx = {} ;
+    int i = 0 , j = 0 ;
+    byte digest[ SHA1_DIGEST_BYTES ] = {} ;
+    clock_t start = 0 , end = 0 , tmp = 0 ;
+    double elapsed = 0 ;
 
 /* test 1 data */
     const char* test1 = "abc";

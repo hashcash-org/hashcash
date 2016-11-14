@@ -47,15 +47,15 @@ int minter_ansi_standard_1_test(void)
 
 int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
 {
-	unsigned long iters;
-	int t, gotBits, maxBits = (bits > 16) ? 16 : bits;
-	uInt32 bitMask1Low, bitMask1High, s;
-	uInt32 A,B,C,D,E;
-	uInt32 W[80];
-	uInt32 H[5], pH[5];
+	unsigned long iters = 0 ;
+	int t = 0 , gotBits = 0 , maxBits = (bits > 16) ? 16 : bits ;
+	uInt32 bitMask1Low = 0 , bitMask1High = 0 , s = 0 ;
+	uInt32 A = 0 , B = 0 , C = 0 , D = 0 , E = 0 ;
+	uInt32 W[80] = {0};
+	uInt32 H[5] = {0}, pH[5] = {0};
 	const char *p = encodeAlphabets[EncodeBase64];
 	unsigned char *X = (unsigned char*) W;
-	int addressMask;
+	int addressMask = 0 ;
 	static const int endTest = 3;
 	unsigned char *output = (unsigned char*) block;
 	

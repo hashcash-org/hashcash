@@ -1,3 +1,25 @@
+hashcash-1.07 - 11-Sep-2004 - Adam Back <adam@cypherspace.org>
+
+	* patch from J H Wilson <jhw@ieee.org> to initialize a bunch
+	  of variables (actually I had to back some of these out to
+	  get to compile on non gnu compilers -- some of those
+	  structure initializations are gnu extensions I think.
+
+	* also J H Wilson one of patch changes was to avoid mmx
+	  assembler code clobbering ebx register which is needed for
+	  fPIC support.
+
+	* better randomness on windows using the CAPI rng
+	  CryptGenRandom.  Still compiles using MINGW ... whee!
+
+	* made a separate GNUmakefile for gnu make (it takes that one
+	  first over Makefile) and a Makefile which is the same but no
+	  ifdef stuff which confuses some other makes, and no gnu
+	  specific compile options (for x86 anyway).
+
+	* add gettimeofday timer into entropy to improve randomness on
+	  systems which do not have /dev/urandom, and are not windows
+
 hashcash-1.06 - 10-Sep-2004 - Adam Back <adam@cypherspace.org>
 
 	* patch from Justin Guyett <justin@soze.net> to fix unsigned

@@ -32,8 +32,8 @@ static int sdb_insert( DB*, const char* key, const char* val, int* err );
 
 int sdb_open( DB* h, const char* filename, int* err ) 
 {
-    int fd;
-    FILE* fp;
+    int fd = 0 ;
+    FILE* fp = NULL ;
 
     *err = 0;
     h->file = NULL;
@@ -90,10 +90,10 @@ int sdb_findfirst( DB* h, char* key, int klen, char* val, int vlen, int* err )
 
 int sdb_findnext( DB* h, char* key, int klen, char* val, int vlen, int* err ) 
 {
-    char line[MAX_LINE+1];
-    int line_len;
+    char line[MAX_LINE+1] = {0};
+    int line_len = 0 ;
     char* fkey = line;
-    char* fval;
+    char* fval = NULL ;
 
     *err = 0;
     if ( h->file == NULL ) { return 0; }
@@ -140,14 +140,14 @@ int sdb_del( DB* h, const char* key, int* err )
 
 int sdb_lookup( DB* h, const char* key, char* val, int vlen, int* err ) 
 {
-    char fkey[MAX_KEY+1];
+    char fkey[MAX_KEY+1] = {0};
     return sdb_callbacklookup( h, sdb_cb_keymatch, (void*)key, 
 			       fkey, MAX_KEY, val, vlen, err );
 }
 
 int sdb_lookupnext( DB* h, const char* key, char* val, int vlen, int* err ) 
 {
-    char fkey[MAX_KEY+1];
+    char fkey[MAX_KEY+1] = {0};
     return sdb_callbacklookupnext( h, sdb_cb_keymatch, (void*)key,
 				   fkey, MAX_KEY, val, vlen, err );
 }
@@ -164,7 +164,7 @@ int sdb_callbacklookupnext( DB* h, sdb_rcallback cb, void* arg,
 			    char* key, int klen, char* val, int vlen, 
 			    int* err ) 
 {
-    char fkey[MAX_KEY+1];
+    char fkey[MAX_KEY+1] = {0};
 
     while ( sdb_findnext( h, fkey, MAX_KEY, val, vlen, err ) ) {
 	if ( cb( fkey, val, arg, err ) ) {
@@ -177,7 +177,7 @@ int sdb_callbacklookupnext( DB* h, sdb_rcallback cb, void* arg,
 
 int sdb_insert( DB* db, const char* key, const char* val, int* err ) 
 {
-    int res;
+    int res = 0 ;
     *err = 0;
 
     res = ftell( db->file ); 
@@ -200,9 +200,9 @@ int sdb_insert( DB* db, const char* key, const char* val, int* err )
 
 int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
 {
-    int found;
-    char fkey[MAX_KEY+1];
-    char fval[MAX_VAL+1];
+    int found = 0 ;
+    char fkey[MAX_KEY+1] = {0};
+    char fval[MAX_VAL+1] = {0};
 
     for ( found = sdb_findfirst( h, fkey, MAX_KEY, fval, MAX_VAL, err );
 	  found;
@@ -220,6 +220,7 @@ int sdb_updateiterate( DB* h, sdb_wcallback cb, void* arg, int* err )
     return 0;
 }
 
+#if 0
 typedef struct {
     char* key;
     char* nval;
@@ -234,3 +235,4 @@ static int sdb_cb_update( const char* key, char* val, void* arg, int* err )
     }
     return 1;
 }
+#endif

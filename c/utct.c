@@ -19,7 +19,7 @@
 
 static int char_pair_atoi( const char* pair )
 {
-    char str[3];
+    char str[3] = {0};
     str[0] = pair[0]; str[1] = pair[1]; str[2] = '\0';
     if ( !isdigit( str[0] ) || !isdigit( str[1] ) ) { return -1; }
     return atoi( str );
@@ -48,11 +48,11 @@ static int century_offset_to_year( int century_offset )
 
 const char* strtime( time_t* timep, int utc )
 {
-    static char str[MAX_DATE+1];
-    struct tm* isdst;
-    char date[MAX_DATE+1];
-    char* timestr;
-    char* zone;
+    static char str[MAX_DATE+1] = {0};
+    struct tm* isdst = NULL;
+    char date[MAX_DATE+1] = {0};
+    char* timestr = NULL ;
+    char* zone = NULL ;
     if ( utc ) {
 	timestr = asctime( gmtime( timep ) );
 	zone = "UTC";
@@ -71,8 +71,8 @@ const char* strtime( time_t* timep, int utc )
 
 time_t mk_utctime( struct tm* tms ) {
     char* tz = getenv( "TZ" );
-    time_t res;
-    char *set_tz;
+    time_t res = 0 ;
+    char *set_tz = NULL ;
 
     putenv( "TZ=UTC+0" );
     res = mktime( tms );
@@ -88,12 +88,12 @@ time_t mk_utctime( struct tm* tms ) {
 time_t from_utctimestr( const char utct[MAX_UTCTIME+1], int utc )
 {
     time_t failed = -1;
-    time_t res;
+    time_t res = 0 ;
     struct tm tms;
-    int tms_hour;
-    struct tm* dst;
+    int tms_hour = 0;
+    struct tm* dst = NULL;
     int utct_len = strlen( utct );
-    int century_offset;
+    int century_offset = 0;
 
     if ( utct_len > MAX_UTCTIME || utct_len < 2 || ( utct_len % 2 == 1 ) ) {
 	return failed;

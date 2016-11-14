@@ -16,11 +16,14 @@
 #endif
 
 #include "hashcash.h"
+#include "libfastmint.h"
 #include "sha1.h"
 #include "random.h"
 #include "sstring.h"
 
 time_t round_off( time_t now_time, int digits );
+
+void stolower( char* str ) ;
 
 #if DEBUG
 /* smaller base for debugging */
@@ -39,7 +42,7 @@ long per_sec = 0;		/* cache calculation */
 
 char *strrstr(char *s1,char *s2) 
 {
-    char *sc2, *psc1, *ps1;
+    char *sc2 = NULL , *psc1 = NULL , *ps1 = NULL ;
  
     if ( *s2 == '\0' ) { return s1; }
     ps1 = s1 + strlen(s1);
@@ -57,7 +60,7 @@ char *strrstr(char *s1,char *s2)
 int wild_match( char* pat, char* str )
 {
     int num = 1, last = 0, first = 1;
-    char* term, *ptr = pat, *pos = str;
+    char* term = NULL , *ptr = pat, *pos = str;
 
     do {
 	term = ptr; ptr = strchr( ptr, '*' );
@@ -92,10 +95,10 @@ int wild_match( char* pat, char* str )
 
 int email_match( const char* email, const char* pattern )
 {
-    int len, ret = 0;
+    int len = 0 , ret = 0;
     char *pat_user = NULL, *pat_dom = NULL;
     char *em_user = NULL, *em_dom = NULL;
-    char *pat_sub, *em_sub, *pat_next, *em_next, *state;
+    char *pat_sub = NULL , *em_sub = NULL , *pat_next = NULL , *em_next = NULL , *state = NULL ;
     
     sstrtok( pattern, "@", &pat_user, 0, &len, &state );
     sstrtok( NULL, "@", &pat_dom, 0, &len, &state );
@@ -140,17 +143,10 @@ int hashcash_mint( time_t now_time, int time_width,
 		   long anon_period, char** new_token, int tok_len, 
 		   long* anon_random, double* tries_taken, char* ext )
 {
-    word32 i0 = 0, i1 = 0;
-    int i0f, i1f;
-    word32 ran0, ran1;
-    char counter[ MAX_CTR+1 ];
-    word32 found = 0;
-    long rnd;
-    char now_utime[ MAX_UTCTIME+1 ]; /* current time */
-    char rnd_str[GROUP_DIGITS*2+1];
-    double tries;
+    long rnd = 0 ;
+    char now_utime[ MAX_UTCTIME+1 ] = {0}; /* current time */
     char* token = 0;
-    volatile clock_t begin, end, tmp;
+    volatile clock_t begin = 0 , end = 0 , tmp = 0 ;
     double elapsed = 0;
 
     if ( resource == NULL ) {
@@ -212,7 +208,7 @@ int hashcash_mint( time_t now_time, int time_width,
 
 time_t round_off( time_t now_time, int digits )
 {
-    struct tm* now;
+    struct tm* now = NULL ;
 
     if ( digits != 2 && digits != 4 && 
 	 digits != 6 && digits != 8 && digits != 10 ) {
@@ -258,12 +254,12 @@ int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
 		    int utct_max, char* token_resource, int res_max, 
 		    char** ext, int ext_max ) 
 {
-    char ver_arr[MAX_VER+1];
-    char bits_arr[3+1];
+    char ver_arr[MAX_VER+1] = {0};
+    char bits_arr[3+1] = {0};
     char *bits_str = bits_arr, *ver = ver_arr;
     char *rnd = NULL, *cnt = NULL;
-    char *state;
-    int ver_len, utct_len, res_len, bit_len, rnd_len, cnt_len;
+    char *state = NULL ;
+    int ver_len = 0 , utct_len = 0 , res_len = 0 , bit_len = 0 , rnd_len = 0 , cnt_len = 0 ;
 
     /* parse out the resource name component 
      * v1 format:   ver:bits:utctime:resource:ext:rand:counter
@@ -306,16 +302,16 @@ int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
 unsigned hashcash_count( const char* token )
 {
     SHA1_ctx ctx;
-    byte target_digest[ SHA1_DIGEST_BYTES ];
-    byte token_digest[ SHA1_DIGEST_BYTES ];
-    char ver[MAX_VER+1];
-    int vers;
-    char* first_colon;
-    char* second_colon;
-    int ver_len;
-    int i;
-    int last;
-    int collision_bits;
+    byte target_digest[ SHA1_DIGEST_BYTES ] = {0};
+    byte token_digest[ SHA1_DIGEST_BYTES ] = {0};
+    char ver[MAX_VER+1] = {0};
+    int vers = 0 ;
+    char* first_colon = NULL; 
+    char* second_colon = NULL; 
+    int ver_len = 0 ;
+    int i = 0 ;
+    int last = 0 ;
+    int collision_bits = 0 ;
 
     first_colon = strchr( token, ':' );
     if ( first_colon == NULL ) { return 0; } /* should really fail */
@@ -359,7 +355,7 @@ unsigned hashcash_count( const char* token )
 long hashcash_valid_for( time_t token_time, time_t validity_period, 
 			 long grace_period, time_t now_time )
 {
-    long expiry_time;
+    long expiry_time = 0 ;
 
     /* for ever -- return infinity */
     if ( validity_period == 0 )	{ return HASHCASH_VALID_FOREVER; }
@@ -387,8 +383,8 @@ int regexp_match( const char* str, const char* regexp,
 		  void** compile, char** err ) 
 {
 #if defined( REGEXP_BSD )
-	char* q;
-	const char *r;
+	char* q = NULL ;
+	const char *r = NULL ;
 	char* quoted_regexp = malloc( strlen( regexp ) * 2 + 3 );
 	
 	*err = NULL;
@@ -421,10 +417,10 @@ int regexp_match( const char* str, const char* regexp,
 	return re_exec( str );
 #elif defined( REGEXP_POSIX )
 	regex_t** comp = (regex_t**) compile;
-	int re_code;
-	char* bound_regexp;
-	int re_len, bre_len;
-	static char re_err[ MAX_RE_ERR+1 ];
+	int re_code = 0 ;
+	char* bound_regexp = NULL ;
+	int re_len = 0 , bre_len = 0 ;
+	static char re_err[ MAX_RE_ERR+1 ] = {0};
 	re_err[0] = '\0';
 	
 	if ( *comp == NULL ) {
@@ -487,9 +483,9 @@ int hashcash_check( const char* token, int case_flag, const char* resource,
 		    void **compile, char** re_err, int type, time_t now_time, 
 		    time_t validity_period, long grace_period, 
 		    int required_bits, time_t* token_time ) {
-    time_t token_t;
-    char token_utime[ MAX_UTC+1 ];
-    char token_res[ MAX_RES+1 ];
+    time_t token_t = 0 ;
+    char token_utime[ MAX_UTC+1 ] = {0};
+    char token_res[ MAX_RES+1 ] = {0};
     int bits = 0, claimed_bits = 0, vers = 0;
     
     if ( token_time == NULL ) { token_time = &token_t; }

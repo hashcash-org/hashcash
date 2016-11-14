@@ -89,21 +89,21 @@ int minter_ansi_standard_2_test(void)
 
 int minter_ansi_standard_2(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
 {
-	unsigned long iters;
-	int n, t, gotBits, maxBits = (bits > 16) ? 16 : bits;
-	uInt32 bitMask1Low, bitMask1High, s;
-	uInt32 A,B,*W;
-	/*register*/ uInt32 A1,B1,C1,D1,E1;
-	/*register*/ uInt32 A2,B2,C2,D2,E2;
-	uInt32 W1[80];
-	uInt32 W2[80];
-	uInt32 H[5], pH[5];
+	unsigned long iters = 0 ;
+	int n = 0 , t = 0 , gotBits = 0 , maxBits = (bits > 16) ? 16 : bits ;
+	uInt32 bitMask1Low = 0 , bitMask1High = 0 , s = 0 ;
+	uInt32 A = 0 , B = 0 , *W = NULL  ;
+	/*register*/ uInt32 A1 = 0 , B1 = 0 , C1 = 0 , D1 = 0 , E1 = 0 ;
+	/*register*/ uInt32 A2 = 0 , B2 = 0 , C2 = 0 , D2 = 0 , E2 = 0 ;
+	uInt32 W1[80] = {0};
+	uInt32 W2[80] = {0};
+	uInt32 H[5] = {0}, pH[5] = {0};
 	const char *p = encodeAlphabets[EncodeBase64];
 	unsigned char *X1 = (unsigned char*) W1;
 	unsigned char *X2 = (unsigned char*) W2;
-	int addressMask;
+	int addressMask = 0 ;
 	static const int endTest = 3;
-	unsigned char *output = (unsigned char*) block, *X;
+	unsigned char *output = (unsigned char*) block, *X = NULL;
 	
 	/* Work out whether we need to swap bytes during encoding */
 	addressMask = ( *(char*)&endTest );
@@ -284,8 +284,8 @@ int minter_ansi_standard_2(int bits, char *block, const uInt32 IV[5], int tailIn
 				X1 = (unsigned char*) (W1+t);
 				X2 = (unsigned char*) (W2+t);
 				printf("%2X %2X %2X %2X | %2X %2X %2X %2X\n",
-					*(X1++), *(X1++), *(X1++), *(X1++), 
-					*(X2++), *(X2++), *(X2++), *(X2++) );
+					X1 [ 0 ] , X1 [ 1 ] , X1 [ 2 ] , X1 [ 3 ] , 
+					X2 [ 0 ] , X2 [ 1 ] , X2 [ 2 ] , X2 [ 3 ] ) ;
 			}
 			
 			X1 = (unsigned char*) W1;

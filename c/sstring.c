@@ -14,8 +14,8 @@
 char* sstrtok( const char* str, const char* delim, char** tok, int tok_max, 
 	       int* tok_len, char** s )
 {
-    char *end;
-    int use;
+    char *end = NULL ;
+    int use = 0 ;
 
     if ( delim == NULL ) { return NULL; }
     if ( str != NULL ) { *s = (char*)str; }

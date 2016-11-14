@@ -1,12 +1,16 @@
 #include <setjmp.h>
 #include "libfastmint.h"
 
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
+#if defined(WIN32)
+#define __MMX__
+#endif
+
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
 typedef int mmx_d_t __attribute__ ((mode(V2SI)));
 typedef int mmx_q_t __attribute__ ((mode(DI)));
 #endif
 
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
 #include <signal.h>
 
 #if defined(_WIN32)
@@ -29,14 +33,14 @@ static void sig_ill_handler(int sig)
 int minter_mmx_compact_1_test(void)
 {
   /* This minter runs only on x86 and AMD64 hardware supporting MMX - and will only compile on GCC */
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
 #if defined(_WIN32)
         sighandler_t oldhandler;
 #else
-	sigset_t signame;
-	struct sigaction sa_new, sa_old;
+	sigset_t signame = {} ;
+	struct sigaction sa_new = {} , sa_old = {} ;
 #endif	
-        int mmx_available;
+        int mmx_available = 0 ;
 
 	if(gIsMMXPresent == -1) {
 		gIsMMXPresent = 1;
@@ -55,13 +59,13 @@ int minter_mmx_compact_1_test(void)
 		
 		if(!sigsetjmp(gEnv, 0)) {
 		  asm volatile (
-										"movl $1, %%eax\n\t"
-										"cpuid\n\t"
-										"andl $0x800000, %%edx\n\t"
-										: "=d" (mmx_available)
-										: /* no input */
-										: "eax", "ebx", "ecx"
-										);
+			"movl $1, %%eax\n\t"
+			"cpuid\n\t"
+			"andl $0x800000, %%edx\n\t"
+			: "=d" (mmx_available)
+			: /* no input */
+			: "eax", /* "ebx", */ "ecx"
+			);
 		}
 		
 #if defined(_WIN32)
@@ -88,10 +92,10 @@ int minter_mmx_compact_1_test(void)
 #define OR(a,b) ( (mmx_d_t) __builtin_ia32_por( (mmx_q_t) a, (mmx_q_t) b) )
 #define ADD(a,b) ( __builtin_ia32_paddd(a,b) )
 
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
 static inline mmx_d_t S(int n, mmx_d_t X)
 {
-  mmx_d_t G;
+  mmx_d_t G = {} ;
 
   asm ("movq %[x],%[g]\n\t"
        "pslld %[sl],%[x]\n\t"
@@ -235,19 +239,19 @@ static inline mmx_d_t S(int n, mmx_d_t X)
 
 int minter_mmx_compact_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
 {
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
-  unsigned long iters;
-  int n, t, gotBits, maxBits = (bits > 16) ? 16 : bits;
-  uInt32 bitMask1Low, bitMask1High, s;
-  mmx_d_t vBitMaskHigh, vBitMaskLow;
-  register mmx_d_t A,B,C,D,E;
-  mmx_d_t MA,MB;
-  mmx_d_t W[80];
-  mmx_d_t H[5], pH[5];
-  mmx_d_t K[4];
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
+  unsigned long iters = 0 ;
+  int n = 0 , t = 0 , gotBits = 0 , maxBits = (bits > 16) ? 16 : bits ;
+  uInt32 bitMask1Low = 0 , bitMask1High = 0 , s = 0 ;
+  mmx_d_t vBitMaskHigh = {} , vBitMaskLow = {} ;
+  register mmx_d_t A = {} , B = {} , C = {} , D = {} , E = {} ;
+  mmx_d_t MA = {} , MB = {} ;
+  mmx_d_t W[80] = {} ;
+  mmx_d_t H[5] = {} , pH[5] = {} ;
+  mmx_d_t K[4] = {} ;
   uInt32 *Hw = (uInt32*) H;
   uInt32 *pHw = (uInt32*) pH;
-  uInt32 IA, IB;
+  uInt32 IA = 0 , IB = 0 ;
   const char *p = encodeAlphabets[EncodeBase64];
   unsigned char *X = (unsigned char*) W;
   unsigned char *output = (unsigned char*) block;

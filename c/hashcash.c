@@ -31,6 +31,7 @@
 #include "utct.h"
 #include "random.h"
 #include "hashcash.h"
+#include "libfastmint.h"
 #include "sstring.h"
 #include "getopt.h"
 
@@ -143,41 +144,43 @@ int main( int argc, char* argv[] )
     char period[ MAX_PERIOD+1 ], utcttime[ MAX_UTC+1 ];
     const char* db_filename = "hashcash.sdb";
     int boundary, err, anon_flag = 0, over_flag = 0, grace_flag = 0;
-    long anon_period = 0, anon_random;
+    long anon_period = 0, anon_random = 0 ;
     int default_bits = 20;	/* default 20 bits */
     int count_bits, claimed_bits = 0, bits = 0;
     int check_flag = 0, case_flag = 0, hdr_flag = 0;
-    int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0, ext_flag;
+    int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0, ext_flag = 0 ;
     int bits_flag = 0, str_type = TYPE_WILD; /* default to wildcard match */
     int validity_flag = 0, db_flag = 0, yes_flag = 0, purge_flag = 0;
     int mint_flag = 0, ignore_boundary_flag = 0, name_flag = 0, res_flag = 0;
     int auto_version = 0, version_flag = 0, checked = 0, comma = 0;
-    char header[ MAX_HDR+1 ];
+    char header[ MAX_HDR+1 ] = { 0 };
     int header_len, token_found = 0, headers_found = 0;
-    char token[ MAX_TOK+1 ], token_resource[ MAX_RES+1 ], *new_token = 0;
-    char line_arr[ MAX_LINE+1 ], *line = line_arr;
+    char token[ MAX_TOK+1 ] = { 0 }, token_resource[ MAX_RES+1 ] = { 0 };
+    char *new_token = NULL ;
+    char line_arr[ MAX_LINE+1 ] = { 0 }, *line = line_arr;
     int line_max = MAX_LINE, line_alloc = 0;
-    char ahead[ MAX_LINE+1 ], *ext = NULL;
+    char ahead[ MAX_LINE+1 ] = { 0 } , *ext = NULL;
     ARRAY purge_resource, resource, tokens, args;
 
-    clock_t start, end, tmp;
+    clock_t start = 0, end = 0, tmp = 0;
 
-    long purge_period = 0, valid_for = HASHCASH_INVALID, time_period;
+    long purge_period = 0, valid_for = HASHCASH_INVALID, time_period = 0 ;
     int purge_all = 0, just_flag = 0, re_flag = 0, wild_flag = 0;
     int multiple_validity = 0, multiple_bits = 0, multiple_resources = 0;
     int multiple_grace = 0, accept = 0;
 
-    char token_utime[ MAX_UTC+1 ];	/* time token created */
+    char token_utime[ MAX_UTC+1 ] = { 0 } ;	/* time token created */
     time_t real_time = time(0); /* now, in UTCTIME */
     time_t now_time = real_time;
     time_t token_time = 0, expiry_time = 0;
     int time_width_flag = 0;	/* -z option, default 6 YYMMDD */
     int inferred_time_width = 0, time_width = 6; /* default YYMMDD */
 
-    double tries_taken = 0, taken, tries_expected, time_est;
-    int opt, vers, db_opened = 0, i, t, tty_info, in_headers, skip, over = 0;
+    double tries_taken = 0, taken = 0, tries_expected = 0, time_est = 0;
+    int opt = 0, vers = 0, db_opened = 0, i = 0, t = 0, tty_info = 0;
+    int in_headers = 0, skip = 0, over = 0;
     char *re_err = NULL;
-    ELEMENT* ent;
+    ELEMENT* ent = NULL;
     DB db;
 
 #if defined( THINK_C )
@@ -1000,13 +1003,15 @@ typedef struct {
 static int sdb_cb_token_matcher( const char* key, char* val,
 				 void* argp, int* err ) {
     db_arg* arg = (db_arg*)argp;
-    char token_utime[ MAX_UTC+1 ];
-    char token_res[ MAX_RES+1 ], lower_token_res[ MAX_RES+1 ], *res;
-    time_t expires;
-    time_t expiry_period;
-    time_t created;
-    int vers, i, bits, matched, type, case_flag, lowered = 0;
-    void** compile;
+    char token_utime[ MAX_UTC+1 ] = {0};
+    char token_res[ MAX_RES+1 ] = {0}, lower_token_res[ MAX_RES+1 ] = {0};
+    char *res = NULL;
+    time_t expires = 0;
+    time_t expiry_period = 0;
+    time_t created = 0;
+    int vers = 0, i = 0, bits = 0, matched = 0, type = 0, case_flag = 0;
+    int lowered = 0 ;
+    void** compile = NULL;
     char* re_err = NULL;
 
     *err = 0;
@@ -1063,9 +1068,9 @@ static int sdb_cb_token_matcher( const char* key, char* val,
 
 void db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
 	       long purge_period, time_t now_time, time_t real_time ) {
-    int err;
-    time_t last_time;
-    char purge_utime[ MAX_UTC+1 ];	/* time token created */
+    int err = 0 ;
+    time_t last_time = 0 ;
+    char purge_utime[ MAX_UTC+1 ] = {0}; /* time token created */
     int ret = 0;
     db_arg arg;
 
@@ -1096,7 +1101,7 @@ void db_purge( DB* db, ARRAY* purge_resource, int purge_all,
 }
 
 void db_open( DB* db, const char* db_filename ) {
-    int err;
+    int err = 0 ;
 
     if ( !sdb_open( db, db_filename, &err ) ) { die( err ); }
     fgetc( db->file );		/* try read to trigger EOF */
@@ -1109,8 +1114,8 @@ void db_open( DB* db, const char* db_filename ) {
 }
 
 int db_in( DB* db, char* token, char *period ) {
-    int err;
-    int in_db;
+    int err = 0 ;
+    int in_db = 0 ;
 
     in_db = sdb_lookup( db, token, period, MAX_UTC, &err ); 
     if ( err ) { die( err ); }
@@ -1118,12 +1123,12 @@ int db_in( DB* db, char* token, char *period ) {
 }
 
 void db_add( DB* db, char* token, char *period ) {
-    int err;
+    int err = 0 ;
     if ( !sdb_add( db, token, period, &err ) ) { die( err ); }
 }
 
 void db_close( DB* db ) {
-    int err;
+    int err = 0 ;
     if ( !sdb_close( db, &err ) ) { die( err ); }
 }
 
@@ -1324,6 +1329,24 @@ double report_speed( int bits, double* time_est, int display )
     return tries_expected;
 }
 
+int read_append( char** s, int* smax, int* alloc, char* append )
+{
+    int slen = strlen( *s );
+    int alen = strlen( append );
+
+    if ( slen + alen > *smax ) {
+	if ( *alloc ) {
+	    *s = realloc( *s, slen+alen+1 );
+	} else {
+	    *s = malloc( slen+alen+1 );
+	    *alloc = 1;
+	}
+	if ( *s == NULL ) { return 0; } /* out of memory */
+    }
+    sstrncpy( (*s)+slen, append, alen );
+    return 1;
+}
+
 char *read_header( FILE* f, char** s, int* smax, int* alloc, 
 		   char* a, int amax )
 {
@@ -1345,24 +1368,6 @@ char *read_header( FILE* f, char** s, int* smax, int* alloc,
     } while ( a[0] == '\t' );
 
     return *s;
-}
-
-int read_append( char** s, int* smax, int* alloc, char* append )
-{
-    int slen = strlen( *s );
-    int alen = strlen( append );
-
-    if ( slen + alen > *smax ) {
-	if ( *alloc ) {
-	    *s = realloc( *s, slen+alen+1 );
-	} else {
-	    *s = malloc( slen+alen+1 );
-	    *alloc = 1;
-	}
-	if ( *s == NULL ) { return 0; } /* out of memory */
-    }
-    sstrncpy( (*s)+slen, append, alen );
-    return 1;
 }
 
 int read_eof( FILE* fp, char* a )

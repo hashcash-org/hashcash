@@ -8,9 +8,9 @@
 
 int SHA1_file( char* filename, byte md[ SHA1_DIGEST_BYTES ] )
 {
-    FILE* file;
-    byte buffer[ BUFFER_SIZE ];
-    size_t bytes_read;
+    FILE* file = NULL ;
+    byte buffer[ BUFFER_SIZE ] = {0};
+    size_t bytes_read = 0 ;
     int opened = 0;
     SHA1_ctx ctx;
     
@@ -39,8 +39,8 @@ int SHA1_file( char* filename, byte md[ SHA1_DIGEST_BYTES ] )
 
 const char* hex_digest( byte md[ SHA1_DIGEST_BYTES ] )
 {
-    int i;
-    static char hex[ SHA1_DIGEST_BYTES * 2 + 1 ];
+    int i = 0 ;
+    static char hex[ SHA1_DIGEST_BYTES * 2 + 1 ] = {0};
 
     for ( i = 0; i < SHA1_DIGEST_BYTES; i++ ) {
 	sprintf( hex + 2 * i, "%02x", md[ i ] );
@@ -51,9 +51,9 @@ const char* hex_digest( byte md[ SHA1_DIGEST_BYTES ] )
 
 int main( int argc, char* argv[] )
 {
-    int i;
-    byte digest[ SHA1_DIGEST_BYTES ];
-    int status;
+    int i = 0 ;
+    byte digest[ SHA1_DIGEST_BYTES ] = {0};
+    int status = 0 ;
     
     if ( argc == 1 ) {
 	status = SHA1_file( "-", digest );

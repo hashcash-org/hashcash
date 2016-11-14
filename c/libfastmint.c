@@ -83,7 +83,7 @@ void hashcash_select_minter()
 		EncodeBase64,
 		EncodeBase64,
 		EncodeBase64 };
-	int i;
+	int i = 0 ;
 	
 	/* Populate array */
 	if(!num_minters || !minters) {
@@ -128,8 +128,8 @@ unsigned long hashcash_per_sec(void)
 		"1:32:040404:foo@fnord.gov::0123456789abcdef:00000000";
 	static const int test_tail = 52;
 	unsigned long rate = 0, iter_count = 256;
-	volatile clock_t begin, end, tmp, res, taken;
-	double elapsed, multiple;
+	volatile clock_t begin = 0 , end = 0 , tmp = 0 , res = 0 , taken = 0 ;
+	double elapsed = 0 , multiple = 0 ;
 	char block[SHA1_INPUT_BYTES] = {0};
 	
 	/* Ensure a valid minter backend is selected */
@@ -230,11 +230,11 @@ unsigned long hashcash_benchtest(int verbose)
 	static const int bit_stats[] = { 8, 10, 16, 20, 22, 
 					 24, 26, 28, 30, 0 };
 	char block[SHA1_INPUT_BYTES] = {0};
-	volatile clock_t begin, end, tmp;
-	double elapsed, rate, peak_rate = 0;
+	volatile clock_t begin = 0 , end = 0 , tmp = 0 ;
+	double elapsed = 0 , rate = 0 , peak_rate = 0;
 	SHA1_ctx crypter;
-	unsigned char hash[SHA1_DIGEST_BYTES];
-	const char *p, *q;
+	unsigned char hash[SHA1_DIGEST_BYTES] = {0};
+	const char *p = NULL , *q = NULL ;
 	
 	/* If minter list isn't valid, make it so */
 	hashcash_select_minter();
@@ -290,7 +290,7 @@ unsigned long hashcash_benchtest(int verbose)
 		   block[test_tail] != (char) 0x80) {
 			if(verbose) {
 				printf("ERROR!\n");
-				printf("    Wanted %d bits, reported %d bits, got %d bits.\n", test_bits, got_bits, (a*8)+b);
+				printf("    Wanted %d bits, reported %lu bits, got %lu bits.\n", test_bits, got_bits, (a*8)+b);
 				if(block[test_tail] == (char) 0x80) {
 					printf("    End-of-block marker remains intact.\n");
 				} else {
@@ -392,11 +392,11 @@ unsigned int hashcash_fastmint(const int bits, const char *token,
 			       char **result)
 {
 	SHA1_ctx crypter;
-	unsigned char hash[SHA1_DIGEST_BYTES];
-	unsigned int IV[SHA1_DIGEST_WORDS];
-	char *buffer, *block, c;
-	unsigned int buflen, tail, gotbits, a, b;
-	unsigned long t;
+	unsigned char hash[SHA1_DIGEST_BYTES] = {0};
+	unsigned int IV[SHA1_DIGEST_WORDS] = {0};
+	char *buffer = NULL, *block = NULL, c = 0;
+	unsigned int buflen = 0, tail = 0, gotbits = 0, a = 0, b = 0;
+	unsigned long t = 0;
 	
 	/* Make sure list of minters is valid */
 	if(!minters || fastest_minter < 0)

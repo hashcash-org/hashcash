@@ -126,16 +126,18 @@ void SHA1_Init_With_IV( SHA1_ctx* ctx,
 void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ], 
 		      const byte M[ SHA1_INPUT_BYTES ] )
 {
-    int t;
+#ifdef	COMPACT
+    int t = 0 ;
+#endif
     word32 A = H[ 0 ];
     word32 B = H[ 1 ];
     word32 C = H[ 2 ];
     word32 D = H[ 3 ];
     word32 E = H[ 4 ];
 #if !defined( COMPACT )
-    word32 W[ 16 ];
+    word32 W[ 16 ] = {0};
 #else
-    word32 W[ 80 ];
+    word32 W[ 80 ] = {0};
 #endif
 
     memcpy( W, M, SHA1_INPUT_BYTES );
@@ -249,10 +251,10 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
 void SHA1_Update( SHA1_ctx* ctx, const void* pdata, size_t data_len )
 {
     const byte* data = (const byte*)pdata;
-    unsigned use;
-    unsigned mlen;
+    unsigned use = 0 ;
+    unsigned mlen = 0 ;
 #if !defined( word64 )
-    word32 low_bits;
+    word32 low_bits = 0 ;
 #endif
 
 /* convert data_len to bits and add to the 64-bit bit count */
@@ -289,10 +291,10 @@ void SHA1_Update( SHA1_ctx* ctx, const void* pdata, size_t data_len )
 
 void SHA1_Final( SHA1_ctx* ctx, byte digest[ SHA1_DIGEST_BYTES ] )
 {
-    unsigned mlen;
-    unsigned padding;
+    unsigned mlen = 0 ;
+    unsigned padding = 0 ;
 #if defined( word64 )
-    word64 temp;
+    word64 temp = 0 ;
 #endif
 
 #if defined( word64 )
@@ -337,11 +339,11 @@ void SHA1_Final( SHA1_ctx* ctx, byte digest[ SHA1_DIGEST_BYTES ] )
 
 static int swap_endian32( void* data, size_t len )
 {
-    word32 tmp32;
+    word32 tmp32 = 0 ;
     byte* tmp32_as_bytes = (byte*) &tmp32;
     word32* data_as_word32s = (word32*) data;
-    byte* data_as_bytes;
-    size_t i;
+    byte* data_as_bytes = NULL ;
+    size_t i = 0 ;
     
     for ( i = 0; i < len; i++ ) {
 	tmp32 = data_as_word32s[ i ];
