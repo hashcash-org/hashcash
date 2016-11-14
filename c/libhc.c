@@ -68,10 +68,6 @@ int hashcash_mint( time_t now_time, int time_width,
 
     if ( anon_period != 0 )
     {
-	if ( anon_period > validity_period )
-	{
-	    return HASHCASH_EXPIRED_ON_CREATION;
-	}
 	if ( !random_rectangular( (long)anon_period, anon_random ) )
 	{
 	    return HASHCASH_RNG_FAILED;

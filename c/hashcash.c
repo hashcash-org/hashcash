@@ -523,6 +523,7 @@ int main( int argc, char* argv[] )
 	else { QPRINTF( stderr, "hashcash token: %s\n", token ); }
 	if ( hdr_flag ) { PPUTS( stdout, header ); } 
 	PPRINTF( stdout, "%s\n", token ); fflush( stdout );
+	exit( EXIT_SUCCESS );
     }
     else /* if check_flag -- check token is valid */
     {

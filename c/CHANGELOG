@@ -1,3 +1,8 @@
+hashcash-0.19 - 25-Apr-2002 - Adam Back <adam@cypherspace.org>
+
+	* fix bug reported that minting always returns failure
+	* fix erroneous logic involving validation of validity periods
+
 hashcash-0.18 - 23-Mar-2002 - Adam Back <adam@cypherspace.org>
 
 	* fix token parsing to allow resource names with :s
