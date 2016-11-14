@@ -56,11 +56,6 @@
 #define MAX_HDR 256
 #define MAX_LINE 1024
 
-#define VALID_FOREVER 0
-#define VALID_IN_FUTURE -1
-#define VALID_EXPIRED -2
-#define VALID_NOT -3
-
 /* WARNING: the *PRINTF macros assume a coding style which always uses
  * braces {} around conditional code -- unfortunately there is no
  * portable way to do vararg macros or functions which call other
@@ -79,13 +74,7 @@ void chomplf( char* token );
 void die( int err );
 void die_msg( const char* );
 void usage( const char* );
-int count_collision_bits( char*, char* );
-double estimate_time( int );
-double expected_tries( int );
-long still_valid_for( time_t, time_t, time_t );
-int parse_token( const char*, char*, char* );
 int parse_period( const char* aperiod, long* resp );
-word32 hashes_per_sec( void );
 
 int quiet_flag;
 int verbose_flag;
@@ -137,7 +126,7 @@ int main( int argc, char* argv[] )
     char date[ MAX_DATE+1 ];
 
     long purge_period = 0;
-    char purge_utime[ MAX_UTCTIME+1 ];	/* time token created */
+    char purge_utime[ MAX_UTC+1 ];	/* time token created */
     int purge_all = 0;
     int just_flag = 0;
     char purge_resource[ MAX_RES+1 ];
@@ -147,13 +136,15 @@ int main( int argc, char* argv[] )
     long validity_period = 0;	/* default validity period: forever */
     char period[ MAX_PERIOD+1 ];
 
-    char token_utime[ MAX_UTCTIME+1 ];	/* time token created */
+    char token_utime[ MAX_UTC+1 ];	/* time token created */
     time_t token_time;
     time_t local_time;
     time_t real_time = utctime(0); /* now, in UTCTIME */
     time_t now_time = real_time;
+    int time_width = 6;		/* default YYMMDD */
     long time_period;
 
+    long per_sec;
     double tries_expected = 1;	/* suppress dumb warning */
     double tries_taken;
     double time_estimated;
@@ -284,7 +275,7 @@ int main( int argc, char* argv[] )
     {
 	if ( !( isopen = sdb_open( &db, db_filename, &err ) &&
 		sdb_lookup( &db, PURGED_KEY, purge_utime, 
-			    MAX_UTCTIME, &err ) ) )
+			    MAX_UTC, &err ) ) )
 	{
 	    goto dbleave;	/* should always be there */
 	}
@@ -380,11 +371,6 @@ int main( int argc, char* argv[] )
 		usage( "must use -b option when minting a token\n\n" ); 
 	    }
 
-	    if ( parse_token( token, token_utime, token_resource ) ) 
-	    {
-		usage( "looks like token, use -c option to check tokens\n\n" );
-	    } 
-
 	    if ( !res_flag )
 	    {
 		sstrncpy( resource, token, MAX_RES );
@@ -398,18 +384,19 @@ int main( int argc, char* argv[] )
 
 	if ( ( speed_flag && !bits_flag ) || verbose_flag )
 	{
-	    QPRINTF( stderr, "speed: %u collision tests per second\n",
-		     hashes_per_sec() );
+	    per_sec = hashcash_per_sec();
+	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
+		     per_sec );
 	    if ( speed_flag && !bits_flag )
 	    {
-		PPRINTF( stdout, "%u\n", hashes_per_sec() ); fflush( stdout );
+		PPRINTF( stdout, "%ld\n", per_sec ); fflush( stdout );
 	    }
 	}
 
 	if ( bits_flag || verbose_flag || speed_flag )
 	{
-	    time_estimated = estimate_time( bits );
-	    tries_expected = expected_tries( bits );
+	    time_estimated = hashcash_estimate_time( bits );
+	    tries_expected = hashcash_expected_tries( bits );
 	    VPRINTF( stderr, "mint: %d bit partial hash collision\n", 
 		     bits );
 	    VPRINTF( stderr, "expected: %.0f tries (= 2^%d tries)\n",
@@ -487,7 +474,14 @@ int main( int argc, char* argv[] )
 	}
 
 	timer_start();
-	err = hashcash_mint( now_time, resource, bits, 
+	time_width = validity_to_width( validity_period );
+	switch ( time_width )
+	{
+	case HASHCASH_INVALID_VALIDITY_PERIOD:
+	    die_msg( "error: negative validity period\n" );
+	}
+	if ( time_width < 0 ) { die_msg( "error: unknown failure\n" ); }
+	err = hashcash_mint( now_time, time_width, resource, bits, 
 			     validity_period, anon_period, 
 			     token, MAX_TOK, &anon_random, &tries_taken );
 	switch ( err )
@@ -504,6 +498,7 @@ int main( int argc, char* argv[] )
 	    die_msg( "error: -a token may expire on creation\n" );
 	case HASHCASH_INVALID_VALIDITY_PERIOD:
 	    die_msg( "error: negative validity period\n" );
+	case HASHCASH_INVALID_TIME_WIDTH:
 	case HASHCASH_NULL_ARG:
 	    die_msg( "error: internal error\n" );
 	case HASHCASH_OK:
@@ -576,21 +571,22 @@ int main( int argc, char* argv[] )
 	    if ( hdr_flag ) { VPRINTF( stderr, "token: %s\n", token ); }
 	}
 
-	if ( !parse_token( token, token_utime, token_resource ) ) 
+	if ( !hashcash_parse( token, token_utime, MAX_UTC,
+			      token_resource, MAX_RES ) ) 
 	{ 
 	    QPUTS( stderr, "rejected: malformed token\n" );
-	    valid_for = VALID_NOT;
+	    valid_for = HASHCASH_INVALID;
 	    goto leave;
 	}
 
 	if ( res_flag ) 
 	{
-	    if ( strncmp( resource, token_resource, MAX_RES ) != 0 ) 
+	    if ( strcmp( resource, token_resource ) != 0 ) 
 	    {
 		VPRINTF( stderr, "required resource name: %s\n", 
 			 token_resource );
 		QPUTS( stderr, "rejected: wrong resource name\n" );
-		valid_for = VALID_NOT;
+		valid_for = HASHCASH_INVALID;
 		goto leave;
 	    }
 	} 
@@ -605,7 +601,7 @@ int main( int argc, char* argv[] )
 	if ( token_time == -1 ) 
 	{ 
 	    QPUTS( stderr, "rejected: malformed token\n" );
-	    valid_for = VALID_NOT;
+	    valid_for = HASHCASH_INVALID;
 	    goto leave;
 	}
 	if ( utc_flag ) { local_time = token_time; zone = "UTC"; }
@@ -614,18 +610,19 @@ int main( int argc, char* argv[] )
 	date[strlen(date)-1] = '\0'; /* remove trailing \n */
 	VPRINTF( stderr, "token created: %s (%s)\n", date, zone );
 
-	valid_for = still_valid_for( token_time, validity_period, now_time );
+	valid_for = hashcash_valid_for( token_time, validity_period, 
+					now_time );
 	switch( valid_for )
 	{
-	case VALID_IN_FUTURE:
+	case HASHCASH_VALID_IN_FUTURE:
 	    QPUTS( stderr, "rejected: not yet valid\n" );
 	    goto leave;
 	    break;
-	case VALID_EXPIRED:
+	case HASHCASH_EXPIRED:
 	    QPUTS( stderr, "rejected: expired\n" );
 	    goto leave;
 	    break;
-	case VALID_FOREVER:
+	case HASHCASH_VALID_FOREVER:
 	default: /* days left */
 	    if ( verbose_flag || left_flag )
 	    {
@@ -646,14 +643,14 @@ int main( int argc, char* argv[] )
 	    break;
 	}
 
-	collision_bits = count_collision_bits( token_resource, token );
+	collision_bits = hashcash_count( token_resource, token );
 
 	if ( bits_flag && collision_bits < bits )
 	{
 	    VPRINTF( stderr, "required: %d bits\n", bits );
 	    VPRINTF( stderr, "token value: %d bits\n", collision_bits );
 	    QPUTS( stderr, "rejected: too few bits\n" );
-	    valid_for = VALID_NOT;
+	    valid_for = HASHCASH_INVALID;
 	    goto leave;
 	}
 
@@ -683,13 +680,13 @@ int main( int argc, char* argv[] )
 	    {
 		if ( !sdb_open( &db, db_filename, &err ) ) { die( err ); }
 	    }
-	    in_db = sdb_lookup( &db, token, token_utime, MAX_UTCTIME, &err ); 
+	    in_db = sdb_lookup( &db, token, token_utime, MAX_UTC, &err ); 
 	    if ( err ) { die( err ); }
 	    if ( in_db )	/* if it's in there, it's a failure */
 	    {
 		if ( !sdb_close( &db, &err ) ) { die( err ); }
 		QPUTS( stderr, "rejected: double spent\n" ); 
-		valid_for = VALID_NOT; 
+		valid_for = HASHCASH_INVALID; 
 		goto leave;
 	    }
 	    else
@@ -759,43 +756,6 @@ int main( int argc, char* argv[] )
     return 0;
 }
 
-/* all chars from ascii(32) to ascii(126) inclusive */
-
-#define VALID_STR_CHARS "!\"#$%&'()*+,-./0123456789:;<=>?@" \
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
-
-int parse_token( const char* token, char* utct, char* token_resource ) 
-{
-    char* first_colon;
-    char* second_colon;
-    char* str;
-    int utct_len;
-    int res_len;
-
-    first_colon = strchr( token, ':' );
-
-    if ( first_colon == 0 ) { return 0; }
-    utct_len = (int)(first_colon - token);
-    /* parse out the resource name component */
-    /* format:   utctime[Z]:resource:counter  */
-    second_colon = strchr( first_colon+1, ':' );
-    res_len = (int)(second_colon-1 - first_colon);
-    if ( second_colon == 0 || utct_len > MAX_UTCTIME || res_len > MAX_RES ) 
-    {
-	return 0;
-    }
-    memcpy( utct, token, utct_len ); utct[utct_len] = '\0';
-    sstrncpy( token_resource, first_colon+1, res_len );
-
-    str = second_colon+1;
-    if ( strlen( str ) != strspn( str, VALID_STR_CHARS ) )
-    {
-	return 0;
-    }
-
-    return 1;
-}
-
 int parse_period( const char* aperiod, long* resp )
 {
     int period_len;
@@ -839,128 +799,6 @@ int parse_period( const char* aperiod, long* resp )
     return 1;
 }
 
-double expected_tries( int b )
-{
-    double expected_tests = 1;
-    #define CHUNK ( sizeof( unsigned long ) - 1 )
-    for ( ; b > CHUNK; b -= CHUNK )
-    {
-	expected_tests *= ((unsigned long)1) << CHUNK;
-    }
-    expected_tests *= ((unsigned long)1) << b;
-    return expected_tests;
-}
-
-double estimate_time( int b )
-{
-    return expected_tries( b ) / (double)hashes_per_sec();
-}
-
-word32 hashes_per_sec( void )
-{
-    timer t1, t2;
-    double elapsed;
-    unsigned long n_collisions = 0;
-    char token[ MAX_TOK+1 ];
-    char counter[ MAX_CTR+1 ];
-    word32 step = 100;
-
-    /* wait for start of tick */
-
-    timer_read( &t2 );
-    do 
-    {
-	timer_read( &t1 );
-    }
-    while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
-	    timer_secs( &t1 ) == timer_secs( &t2 ) );
-
-    /* do computations for next tick */
-
-    do
-    {
-	n_collisions += step;
-	find_collision( "000101", "flame", 25, token, step, counter );
-	timer_read( &t2 );
-    }
-    while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
-	    timer_secs( &t1 ) == timer_secs( &t2 ) );
-
-/* see how many us the tick took */
-    elapsed = timer_interval( &t1, &t2 );
-    return (word32) ( 1000000.0 / elapsed * (double)n_collisions
-		      + 0.499999999 );
-}
-
-long still_valid_for( time_t token_time, 
-		      time_t validity_period, time_t now_time )
-{
-    int expiry_time;
-
-    /* for ever -- return infinity */
-    if ( validity_period == 0 )	{ return VALID_FOREVER; }
-
-    /* future date in token */
-    if ( token_time > now_time ) { return VALID_IN_FUTURE; }; 
-
-    expiry_time = token_time + validity_period;
-    if ( expiry_time > now_time )
-    {				/* valid return seconds left */
-	return expiry_time - now_time;
-    }
-    return VALID_EXPIRED;	/* otherwise expired */
-}
-
-int count_collision_bits( char* resource, char* token )
-{
-    char target[ MAX_TOK+1 ];	/* bigger than it needs to be */
-    SHA1_ctx ctx;
-    byte target_digest[ 20 ];
-    byte token_digest[ 20 ];
-    char* first_colon;
-    int utct_len;
-    int i;
-    int last;
-    int collision_bits;
-
-    first_colon = strchr( token, ':' );
-    if ( first_colon == NULL ) { return 0; } /* should really fail */
-    utct_len = first_colon - token;
-    memcpy( target, token, utct_len+1 ); target[utct_len+1] = '\0';
-    strncat( target, resource, MAX_RES );
-
-    SHA1_Init( &ctx );
-    SHA1_Update( &ctx, target, strlen( target ) );
-    SHA1_Final( &ctx, target_digest );
-      
-    SHA1_Init( &ctx );
-    SHA1_Update( &ctx, token, strlen( token ) );
-    SHA1_Final( &ctx, token_digest );
-   
-    for ( i = 0; i < 20 && token_digest[ i ] == target_digest[ i ]; i++ )
-    {
-    }
-
-    last = i;
-    collision_bits = 8 * i;
-
-#define bit( n, c ) (((c) >> (7 - (n))) & 1)
-
-    for ( i = 0; i < 8; i++ )
-    {
-	if ( bit( i, token_digest[ last ] ) == 
-	     bit( i, target_digest[ last ] ) )
-	{
-	    collision_bits++;
-	}
-	else
-	{
-	    break;
-	}
-    }
-    return collision_bits;
-}
-
 void usage( const char* msg )
 {
     fputs( msg, stderr );
@@ -999,22 +837,22 @@ void usage( const char* msg )
 typedef struct
 {
     time_t expires_before;
-    char now_utime[ MAX_UTCTIME+1 ];
+    char now_utime[ MAX_UTC+1 ];
     int all;
     char* resource;
 } db_arg;
 
 /* compile time assert */
 
-#if MAX_UTCTIME > MAX_VAL
-#error "MAX_UTCTIME must be less than MAX_VAL"
+#if MAX_UTC > MAX_VAL
+#error "MAX_UTC must be less than MAX_VAL"
 #endif
 
 static int sdb_cb_token_matcher( const char* key, char* val,
 				 void* argp, int* err )
 {
     db_arg* arg = (db_arg*)argp;
-    char token_utime[ MAX_UTCTIME+1 ];
+    char token_utime[ MAX_UTC+1 ];
     char resource[ MAX_RES+1 ];
     time_t expires;
     time_t expiry_period;
@@ -1023,11 +861,11 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     *err = 0;
     if ( strcmp( key, PURGED_KEY ) == 0 ) 
     {
-	sstrncpy( val, arg->now_utime, MAX_UTCTIME ); 
+	sstrncpy( val, arg->now_utime, MAX_UTC ); 
 	return 1;		/* update purge time */
     } 
 
-    if ( !parse_token( key, token_utime, resource ) )
+    if ( !hashcash_parse( key, token_utime, MAX_UTC, resource, MAX_RES ) )
     {
 	*err = EINPUT;	/* corrupted token in DB */
 	return 0;
@@ -1063,7 +901,7 @@ int do_purge( DB* db, time_t expires_before, time_t now, int all,
     arg.expires_before = expires_before;
     arg.resource = purge_resource;
     arg.all = all;
-    if ( !to_utctimestr( arg.now_utime, MAX_UTCTIME, now ) )
+    if ( !to_utctimestr( arg.now_utime, MAX_UTC, now ) )
     {
 	*err = EINPUT; return 0; 
     }

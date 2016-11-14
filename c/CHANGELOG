@@ -1,3 +1,11 @@
+hashcash-0.18 - 23-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+	* fix token parsing to allow resource names with :s
+	  in them (eg. urls etc)
+	* change hashcash_mint API a bit
+	* add programming APIs for all other functions except
+	  double spend db, and move library code to libhc.c
+
 hashcash-0.17 - 23-Mar-2002 - Adam Back <adam@cypherspace.org>
 
 	* add programming API for hashcash_mint

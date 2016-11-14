@@ -5,6 +5,7 @@
 #include "hashcash.h"
 #include "sha1.h"
 #include "random.h"
+#include "timer.h"
 
 time_t round_off( time_t now_time, int digits );
 
@@ -19,14 +20,17 @@ time_t round_off( time_t now_time, int digits );
 #define GFORMAT "%02x"
 #endif
 
-int hashcash_mint( time_t now_time, const char* resource, unsigned bits, 
+word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource, 
+		       int bits, char* token, word32 tries, char* counter );
+
+int hashcash_mint( time_t now_time, int time_width, 
+		   const char* resource, unsigned bits, 
 		   time_t validity_period, long anon_period, 
 		   char* token, int tok_len, long* anon_random,
 		   double* tries_taken )
 {
     word32 i0;
     word32 ran0, ran1;    
-    int time_width = 6;		/* default YYMMDD */
     char counter[ MAX_CTR+1 ];
     char* counter_ptr = counter;
     int found = 0;
@@ -48,6 +52,8 @@ int hashcash_mint( time_t now_time, const char* resource, unsigned bits,
     {
 	return HASHCASH_INVALID_TOK_LEN;
     }
+
+    if ( time_width == 0 ) { time_width = 6; } /* default YYMMDD */
 
     if ( !random_getbytes( &ran0, sizeof( word32 ) ) ||
 	 !random_getbytes( &ran1, sizeof( word32 ) ) )
@@ -79,16 +85,12 @@ int hashcash_mint( time_t now_time, const char* resource, unsigned bits,
 	return HASHCASH_INVALID_VALIDITY_PERIOD;
     }
 
-    if ( validity_period != 0 )
-    {  /* YYMMDDhhmmss or YYMMDDhhmm or YYMMDDhh or YYMMDD or YYMM or YY */
-	if ( validity_period < 2*TIME_MINUTE ) { time_width = 12; } 
-	else if ( validity_period < 2*TIME_HOUR ) { time_width = 10; }
-	else if ( validity_period < 2*TIME_DAY ) { time_width = 8; }
-	else if ( validity_period < 2*TIME_MONTH ) { time_width = 6; }
-	else if ( validity_period < 2*TIME_YEAR ) { time_width = 4; }
-	else { time_width = 2; }
+    if ( time_width != 12 && time_width != 10 && time_width != 8 &&
+	 time_width != 6 && time_width != 4 && time_width != 2 )
+    {
+	return HASHCASH_INVALID_TIME_WIDTH;
     }
-    
+
     now_time = round_off( now_time, 12-time_width );
     to_utctimestr( now_utime, time_width, now_time );
 
@@ -244,4 +246,216 @@ time_t round_off( time_t now_time, int digits )
     case 2: now->tm_sec = 0;
     }
     return mktime( now );
+}
+
+int validity_to_width( time_t validity_period )
+{
+    int time_width = 6;		/* default YYMMDD */
+    if ( validity_period < 0 ) { return HASHCASH_INVALID_VALIDITY_PERIOD; }
+    if ( validity_period != 0 )
+    {  /* YYMMDDhhmmss or YYMMDDhhmm or YYMMDDhh or YYMMDD or YYMM or YY */
+	if ( validity_period < 2*TIME_MINUTE ) { time_width = 12; } 
+	else if ( validity_period < 2*TIME_HOUR ) { time_width = 10; }
+	else if ( validity_period < 2*TIME_DAY ) { time_width = 8; }
+	else if ( validity_period < 2*TIME_MONTH ) { time_width = 6; }
+	else if ( validity_period < 2*TIME_YEAR ) { time_width = 4; }
+	else { time_width = 2; }
+    }
+    return time_width;
+}
+
+/* all chars from ascii(32) to ascii(126) inclusive */
+
+#define VALID_STR_CHARS "!\"#$%&'()*+,-./0123456789:;<=>?@" \
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+
+int hashcash_parse( const char* token, char* utct, int utct_max,
+		    char* token_resource, int res_max ) 
+{
+    char* first_colon;
+    char* last_colon;
+    char* str;
+    int utct_len;
+    int res_len;
+
+    first_colon = strchr( token, ':' );
+
+    if ( first_colon == NULL ) { return 0; }
+    utct_len = (int)(first_colon - token);
+    if ( utct_len > utct_max ) { return 0; }
+
+    /* parse out the resource name component 
+     * format:   utctime:resource:counter  
+     * where utctime is [YY[MM[DD[hh[mm[ss]]]]]] 
+     * note the resource may itself include :s if it is a URL
+     * for example
+     *
+     * the resource name is part between first colon and last colon */
+
+    last_colon = strrchr( first_colon+1, ':' );
+    if ( last_colon == NULL ) { return 0; }
+    res_len = (int)(last_colon-1 - first_colon);
+    if ( res_len > res_max ) { return 0; }
+    memcpy( utct, token, utct_len ); utct[utct_len] = '\0';
+    sstrncpy( token_resource, first_colon+1, res_len );
+
+    str = last_colon+1;
+    if ( strlen( str ) != strspn( str, VALID_STR_CHARS ) )
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
+unsigned hashcash_count( const char* resource, const char* token )
+{
+    char target[ MAX_TOK+1 ];	/* bigger than it needs to be */
+    SHA1_ctx ctx;
+    byte target_digest[ 20 ];
+    byte token_digest[ 20 ];
+    char* first_colon;
+    int utct_len;
+    int i;
+    int last;
+    int collision_bits;
+
+    first_colon = strchr( token, ':' );
+    if ( first_colon == NULL ) { return 0; } /* should really fail */
+    utct_len = first_colon - token;
+    memcpy( target, token, utct_len+1 ); target[utct_len+1] = '\0';
+    strncat( target, resource, MAX_RES );
+
+    SHA1_Init( &ctx );
+    SHA1_Update( &ctx, target, strlen( target ) );
+    SHA1_Final( &ctx, target_digest );
+      
+    SHA1_Init( &ctx );
+    SHA1_Update( &ctx, token, strlen( token ) );
+    SHA1_Final( &ctx, token_digest );
+   
+    for ( i = 0; i < 20 && token_digest[ i ] == target_digest[ i ]; i++ )
+    {
+    }
+
+    last = i;
+    collision_bits = 8 * i;
+
+#define bit( n, c ) (((c) >> (7 - (n))) & 1)
+
+    for ( i = 0; i < 8; i++ )
+    {
+	if ( bit( i, token_digest[ last ] ) == 
+	     bit( i, target_digest[ last ] ) )
+	{
+	    collision_bits++;
+	}
+	else
+	{
+	    break;
+	}
+    }
+    return collision_bits;
+}
+
+long hashcash_valid_for( time_t token_time, time_t validity_period, 
+			 time_t now_time )
+{
+    long expiry_time;
+
+    /* for ever -- return infinity */
+    if ( validity_period == 0 )	{ return HASHCASH_VALID_FOREVER; }
+
+    /* future date in token */
+    if ( token_time > now_time ) { return HASHCASH_VALID_IN_FUTURE; }; 
+
+    expiry_time = token_time + validity_period;
+    if ( expiry_time > now_time )
+    {				/* valid return seconds left */
+	return expiry_time - now_time;
+    }
+    return HASHCASH_EXPIRED;	/* otherwise expired */
+}
+
+int hashcash_check( const char* token, const char* resource, time_t now_time, 
+		    time_t validity_period, int required_bits ) {
+    time_t token_time;
+    char token_utime[ MAX_UTC+1 ];
+    char token_resource[ MAX_RES+1 ];
+    int bits = 0;
+    
+    if ( !hashcash_parse( token, token_utime, MAX_UTC, 
+			  token_resource, MAX_RES ) )
+    {
+	return HASHCASH_INVALID;
+    }
+
+    token_time = from_utctimestr( token_utime );
+    if ( token_time == -1 )
+    {
+	return HASHCASH_INVALID;
+    }
+    if ( strcmp( token_resource, resource ) != 0 )
+    {
+	return HASHCASH_WRONG_RESOURCE;
+    }
+    bits = hashcash_count( token, token_resource );
+    if ( bits < required_bits )
+    {
+	return HASHCASH_INSUFFICIENT_BITS;
+    }
+    return hashcash_valid_for( token_time, validity_period, now_time );
+}
+
+long hashcash_per_sec( void )
+{
+    timer t1, t2;
+    double elapsed;
+    unsigned long n_collisions = 0;
+    char token[ MAX_TOK+1 ];
+    char counter[ MAX_CTR+1 ];
+    word32 step = 100;
+
+    /* wait for start of tick */
+
+    timer_read( &t2 );
+    do 
+    {
+	timer_read( &t1 );
+    }
+    while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
+	    timer_secs( &t1 ) == timer_secs( &t2 ) );
+
+    /* do computations for next tick */
+
+    do
+    {
+	n_collisions += step;
+	find_collision( "000101", "flame", 25, token, step, counter );
+	timer_read( &t2 );
+    }
+    while ( timer_usecs( &t1 ) == timer_usecs( &t2 ) &&
+	    timer_secs( &t1 ) == timer_secs( &t2 ) );
+
+/* see how many us the tick took */
+    elapsed = timer_interval( &t1, &t2 );
+    return (word32) ( 1000000.0 / elapsed * (double)n_collisions
+		      + 0.499999999 );
+}
+
+double hashcash_estimate_time( int b )
+{
+    return hashcash_expected_tries( b ) / (double)hashcash_per_sec();
+}
+
+double hashcash_expected_tries( int b )
+{
+    double expected_tests = 1;
+    #define CHUNK ( sizeof( unsigned long ) - 1 )
+    for ( ; b > CHUNK; b -= CHUNK )
+    {
+	expected_tests *= ((unsigned long)1) << CHUNK;
+    }
+    expected_tests *= ((unsigned long)1) << b;
+    return expected_tests;
 }

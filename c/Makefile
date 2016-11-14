@@ -16,8 +16,7 @@ POD2HTML = pod2html
 POD2TEXT = pod2text
 DELETE = /bin/rm -f
 OBJS = hashcash.o libsha1.o libhc.o timer.o sdb.o utct.o random.o
-TAR = tar
-COMPRESS = gzip
+DIST = ../dist.csh
 
 hashcash:	$(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
@@ -57,6 +56,9 @@ clean:
 
 distclean:
 	$(DELETE) *.o *~ $(EXES) *.db *.bak
+
+dist:	
+	$(DIST)
 
 # DO NOT DELETE
 
