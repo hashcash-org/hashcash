@@ -2,9 +2,9 @@ This software can be distributed and used under any of the following
 licenses:
 
 	public domain
-	BSD
-	LGPL
-	GPL
+	BSD (3 clause -- no advertising clause)
+	LGPL (2.1)
+	GPL (2)
 
 in the order of author preference.  If you need any other licensing
-send email to Adam Back <adam@cypherspace.org>
+send email to Adam Back <adam@cypherspace.org>.

@@ -1,0 +1,7 @@
+hashcash-sendmail and hashcash-request are written by Kyle Hasselbacher.  Both
+programs are considered alpha-quality by the author.  Use at your own risk.
+
+hashcash-sendmail is used to add hashcash support for MUAs that do not natively
+support hashcash.
+
+hashcash-request is used to pre-request hashcash tokens.

@@ -142,7 +142,7 @@ int main( int argc, char* argv[] )
     long anon_period = 0, anon_random;
     int default_bits = 20;	/* default 20 bits */
     int count_bits, claimed_bits = 0, bits = 0;
-    int collision_bits, check_flag = 0, case_flag = 0, hdr_flag = 0;
+    int check_flag = 0, case_flag = 0, hdr_flag = 0;
     int width_flag = 0, left_flag = 0, speed_flag = 0, utc_flag = 0, ext_flag;
     int bits_flag = 0, str_type = TYPE_WILD; /* default to wildcard match */
     int validity_flag = 0, db_flag = 0, yes_flag = 0, purge_flag = 0;
@@ -168,7 +168,7 @@ int main( int argc, char* argv[] )
     time_t now_time = real_time;
     time_t token_time = 0, expiry_time = 0;
     int time_width_flag = 0;	/* -z option, default 6 YYMMDD */
-    int inferred_time_width, time_width = 6; /* default YYMMDD */
+    int inferred_time_width = 0, time_width = 6; /* default YYMMDD */
 
     double tries_taken, taken, tries_expected, time_est;
     int opt, vers, db_opened = 0, i, t, tty_info, in_headers, skip, over = 0;
@@ -988,7 +988,7 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     time_t created;
     int vers, i, bits, matched, type;
     void** compile;
-    char* re_err;
+    char* re_err = NULL;
 
     *err = 0;
     if ( strcmp( key, PURGED_KEY ) == 0 ) {
@@ -1001,7 +1001,7 @@ static int sdb_cb_token_matcher( const char* key, char* val,
 	*err = EINPUT;		/* corrupted token in DB */
 	return 0;
     }
-    if ( vers != 0 ) {
+    if ( vers != 0 && vers != 1 ) {
 	*err = EINPUT; 		/* unsupported version number in DB */
 	return 0; 
     }

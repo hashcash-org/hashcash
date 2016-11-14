@@ -37,8 +37,7 @@ DESCRIPTION
 
     A hashcash stamp constitutes a proof-of-work which takes a
     parameterizable amount of work to compute for the sender. The recipient
-    can verify received stamps efficiently. This package also includes a
-    sha1 implementation which behaves somewhat like md5sum, but with SHA1.
+    can verify received stamps efficiently.
 
     The hashcash proof-of-work function is to compute partial hash
     collisions (the SHA1 hash function is used). By choosing the number of
@@ -716,5 +715,5 @@ AUTHOR
     Written by Adam Back <adam@cypherspace.org>
 
 SEE ALSO
-    sha1-hashcash(1), sha1(1), sha1sum(1), http://www.hashcash.org/
+    http://www.hashcash.org/
 

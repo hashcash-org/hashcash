@@ -1,0 +1,114 @@
+#!/usr/bin/perl
+
+# $Id: hashcash-request,v 1.2 2004/03/31 05:05:10 kyle Exp $
+
+#
+# hashcash-request
+#
+# This goes with hashcash-daemon.  Use this script to make a request for
+# the daemon to precompute a token for a later message.  When the daemon
+# isn't busy, it will make the token to be used later.
+#
+# An up-to-date version is normally here:
+# http://www.toehold.com/~kyle/hashcash/
+#
+
+# Consider this ALPHA software.  It works for me, but it has not been through
+# much real testing.
+
+#
+# Copyright (C) 2004  Kyle Hasselbacher <kyle@toehold.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+
+use strict;
+use Data::Dumper;
+
+#
+# I want to support some of the same flags that hashcash does.
+#
+#         -b bits         find or check partial hash collision of length bits
+#         -r resource     resource name for minting or checking token
+#         -e period       time until token expires
+#         -t time         modify current time token created at
+#         -a time         modify time by random amount in range given
+#         -u              give time in UTC instead of local time
+#         -h              print this usage info
+#         -z width        width of time field 2,4,6,8,10 or 12 chars (default 6)
+# -L limit -- make no more than this many tokens for a given resource
+
+# This hash will be sent to hashcash-sendmail when it's done.
+my $add = { 'nice' => 19 };
+
+# Process command line arguments.  A better processor would do some
+# sanity checks on these.
+while ( defined( my $arg = shift ) ) {
+    if ( $arg eq '-b' ) {
+	$$add{ 'bits' } = shift;
+    }
+    elsif ( $arg eq '-t' ) {
+	$$add{ 'expiry' } = shift;
+    }
+    elsif ( $arg eq '-r' ) {
+	$$add{ 'addr' } = shift;
+    }
+    elsif ( $arg eq '-h' ) {
+	print<<'END_OF_HELP';
+         -b bits         find partial hash collision of length bits
+         -r resource     resource name for minting token
+         -t time         modify current time token created at
+         -h              print this usage info
+END_OF_HELP
+	exit;
+    }
+}
+if ( ! exists( $$add{ 'addr' } ) ) {
+    $$add{ 'addr' } = undef;
+}
+
+my @rcpt = ( $add );
+
+#my $width = 6;
+#$width = $opt_z if ( defined( $opt_z ) );
+#if ( $width != 2 && $width != 4 && $width != 6 && $width != 8 &&
+#     $width != 10 && $width != 12 ) {
+#    die "Acceptible widths are 2, 4, 6, 8, 10 or 12.\n";
+#}
+
+# Open a pipe to hashcash-sendmail.  Invoking it this way implies that
+# a request is on the way in on standard input.
+if ( ! open( HCSM, "|hashcash-sendmail" ) ) {
+    die "Can't execute hashcash-sendmail: $!\n";
+}
+
+$Data::Dumper::Useqq = 1;
+
+my $dump = Data::Dumper->Dump( [ \@rcpt ], [ qw( *rcpt ) ] );
+$dump .= "\n1;\n";
+
+print HCSM $dump;
+close( HCSM );
+
+exit 0;
+
+# $Log: hashcash-request,v $
+# Revision 1.2  2004/03/31 05:05:10  kyle
+# It does the same thing but completely differently to go with the new
+# hashcash-sendmail which doesn't have a hashcash-daemon
+#
+# Revision 1.1  2004/03/24 17:49:48  kyle
+# Initial revision
+#

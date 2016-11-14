@@ -59,7 +59,7 @@ char *strrstr(char *s1,char *s2)
 int wild_match( char* pat, char* str )
 {
     int num = 1, last = 0, first = 1;
-    char* term, *prev_term, *ptr = pat, *pos = str, *find;
+    char* term, *ptr = pat, *pos = str;
 
     do {
 	term = ptr; ptr = strchr( ptr, '*' );
@@ -151,8 +151,8 @@ int hashcash_mint( time_t now_time, int time_width,
     char now_utime[ MAX_UTCTIME+1 ]; /* current time */
     char rnd_str[GROUP_DIGITS*2+1];
     double tries;
-    char* token = 0;
 #if defined( CHROMATIX )
+    char* token = 0;
     volatile clock_t begin, end;
     double elapsed = 0;
 #endif
@@ -233,7 +233,7 @@ int hashcash_mint( time_t now_time, int time_width,
 #endif
 
     for ( i1=0, i1f=1; i1f || i1!=0; i1f=0,i1=(i1+1) & GROUP_SIZE) {
-	sprintf( counter, GFFORMAT, i1 & GROUP_SIZE, 0 );
+	sprintf( counter, GFFORMAT, i1 & GROUP_SIZE/*, 0*/ );
 	found = find_collision( now_utime, resource, bits, *new_token,
 				GROUP_SIZE, rnd_str, counter, ext );
 	if ( found ) { goto done; }
@@ -282,7 +282,6 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
     int j;
     word32 trial;
     word32 tries2;
-    int counter_len;
     int first, try_len, try_strlen;
     byte target_digest[ SHA1_DIGEST_BYTES ];
     byte try_digest[ SHA1_DIGEST_BYTES ];
@@ -412,8 +411,8 @@ int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
     char bits_arr[3+1];
     char *bits_str = bits_arr, *ver = ver_arr;
     char *rnd = NULL, *cnt = NULL;
-    char *str, *pstr, *state, *s;
-    int ver_len, utct_len, res_len, bit_len, rnd_len, cnt_len, len;
+    char *state;
+    int ver_len, utct_len, res_len, bit_len, rnd_len, cnt_len;
 
     /* parse out the resource name component 
      * v1 format:   ver:bits:utctime:resource:ext:rand:counter
@@ -449,7 +448,7 @@ int hashcash_parse( const char* token, int* vers, int* bits, char* utct,
 	*bits = atoi( bits_str ); if ( *bits < 0 ) { return 0; }
 	if ( strspn( cnt, VALID_STR_CHARS ) != cnt_len ) { return 0; }
     }
-    if ( strspn( rnd, VALID_STR_CHARS ) != rnd_len ) { return 0; }
+    if ( rnd == NULL || strspn( rnd, VALID_STR_CHARS ) != rnd_len ) { return 0; }
     return 1;
 }
 

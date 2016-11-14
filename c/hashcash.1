@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2004-08-07" "1.00" "hashcash"
+.TH HASHCASH 1 "2004-08-08" "1.01" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
@@ -170,9 +170,7 @@ filtering rules.
 .PP
 A hashcash stamp constitutes a proof-of-work which takes a
 parameterizable amount of work to compute for the sender.  The
-recipient can verify received stamps efficiently. This package also
-includes a sha1 implementation which behaves somewhat like md5sum, but
-with \s-1SHA1\s0.
+recipient can verify received stamps efficiently.
 .PP
 The hashcash proof-of-work function is to compute partial hash
 collisions (the \s-1SHA1\s0 hash function is used).  By choosing the number
@@ -894,4 +892,4 @@ corrupted database contents) an exit status of 3 is returned.
 Written by Adam Back <adam@cypherspace.org>
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fIsha1\-hashcash\fR\|(1), \fIsha1\fR\|(1), \fIsha1sum\fR\|(1), http://www.hashcash.org/
+http://www.hashcash.org/

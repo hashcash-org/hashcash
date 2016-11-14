@@ -1,0 +1,29 @@
+This package was debianized by Hubert Chan <hubert@uhoreg.ca> on
+Sat, 27 Dec 2003 15:23:30 -0500.
+
+It was downloaded from http://www.hashcash.org/
+
+Upstream Author: Adam Back <adam@cypherspace.org>
+
+Copyright:
+
+The source contains getopt.c and getopt.h, which are copyright by the FSF, and
+licensed under the GPL.  On Debian systems, the GPL can be found at
+/usr/share/common-licenses/GPL.
+
+The source contains fip180-1.txt, written by the United States government, and
+is in the public domain.
+
+The hashcash-sendmail and hashcash-request programs in the contrib directory
+are copyright Kyle Hasselbacher, and licensed under the GPL.
+
+The rest of the software is licensed under your choice of (in the upstream
+author's preference):
+  - public domain
+  - BSD
+  - LGPL
+  - GPL
+
+On Debian systems, the BSD license can be found at
+/usr/share/common-licenses/BSD, the LGPL at /usr/share/common-licenses/LGPL,
+and the GPL at /usr/share/common-licenses/GPL.

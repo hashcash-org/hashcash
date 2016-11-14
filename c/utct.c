@@ -48,9 +48,9 @@ static int century_offset_to_year( int century_offset )
 
 const char* strtime( time_t* timep, int utc )
 {
-    static char str[MAX_DATE];
+    static char str[MAX_DATE+1];
     struct tm* isdst;
-    char date[MAX_DATE];
+    char date[MAX_DATE+1];
     char* timestr;
     char* zone;
     if ( utc ) {

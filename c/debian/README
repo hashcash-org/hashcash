@@ -1,0 +1,10 @@
+The original hashcash package includes a program called sha1-hashcash.
+However, since Debian already includes sha1sum in the coreutils program,
+sha1-hashcash is not distributed in this Debian package.
+
+This distribution also includes Kyle Hasselbacher's hashcash-sendmail and
+hashcash-request scripts, which can be found in the examples directory.  The
+hashcash-sendmail script can be used to integrate hashcash into MUAs that do
+not support hashcash natively, such as mutt.  hashcash-request can be used to
+pre-request hashcash tokens for future use.  The current version of both
+scripts are considered ALPHA quality.  Use at your own risk.

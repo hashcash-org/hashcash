@@ -1,4 +1,13 @@
-PRE-RELEASE hashcash-1.00pr5 - 28-Aug-2004 - Adam Back <adam@cypherspace.org>
+hashcash-1.01 - 8-Aug-2004 - Adam Back <adam@cypherspace.org>
+
+	* fold in patches accumulated by Hubert Chan
+	  <hubert@uhoreg.ca> from several contributors on hashcash
+	  list for debian release.  And another one from Justin
+	  Guylett to clean up some stuff.
+
+	* another couple of minor bug fixes
+
+hashcash-1.00 - 7-Aug-2004 - Adam Back <adam@cypherspace.org>
 
 	* increment version number, 1.x to reflect move to version 1
 	  stamp format

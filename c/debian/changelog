@@ -1,0 +1,57 @@
+hashcash (1.00-1) unstable; urgency=low
+
+  * New upstream release.
+  * This release adds the new stamp format.  (closes: 239157)
+  * Update of Kyle Hasselbacher's scripts.
+  * Add link to the hashcash-sendmail page in copyright file and in
+    hashcash-sendmail.txt.
+  * New license from upstream.
+  * Add rule to debian/rules to rebuild documentation if needed.
+  * Apply patch from Justin to fix segfault when checking future version
+    stamps.
+
+ -- Hubert Chan <hubert@uhoreg.ca>  Sun,  8 Aug 2004 00:09:33 -0400
+
+hashcash (0.32-1) unstable; urgency=low
+
+  * New upstream release.
+  * Updated copyright file to add new request by author.
+  * Change upstream website in copyright file to reflect new address.
+  * Add Kyle Hasselbacher's hashcash-sendmail and hashmail-request scripts
+    (ALPHA) to examples directory.
+
+ -- Hubert Chan <hubert@uhoreg.ca>  Wed, 26 May 2004 23:47:13 -0400
+
+hashcash (0.28-4) unstable; urgency=low
+
+  * Remove beginning "a" from package description.
+  * Fixed typos in changelog, and improved consistency.
+  * Re-add fip180-1.txt to source package.  (Not needed for binary
+    package.)  All FIPS are public domain worldwide, as per discussion on
+    debian-legal.
+    http://lists.debian.org/debian-legal/2004/debian-legal-200403/msg00028.html
+
+ -- Hubert Chan <hubert@uhoreg.ca>  Thu,  4 Mar 2004 15:42:31 -0500
+
+hashcash (0.28-3) unstable; urgency=low
+
+  * Don't install sha1 or sha1.1.  Debian already has sha1sum.
+  * Remove fip180-1.txt -- copyright status uncertain.
+  * Fix the copyright file to make it clear that Debian does not
+    specifically make the same pledges that upstream does.
+
+ -- Hubert Chan <hubert@uhoreg.ca>  Fri, 27 Feb 2004 21:16:19 -0500
+
+hashcash (0.28-2) unstable; urgency=low
+
+  * Bump policy version to 3.6.1.
+  * Add note to copyright file about getopt being GPL licensed.
+
+ -- Hubert Chan <hubert@uhoreg.ca>  Sun, 22 Feb 2004 21:32:22 -0500
+
+hashcash (0.28-1) unstable; urgency=low
+
+  * Initial Release. (closes: 234743)
+
+ -- Hubert Chan <hubert@uhoreg.ca>  Sat, 27 Dec 2003 15:23:30 -0500
+
