@@ -525,7 +525,7 @@ subsequent release.
 <dt><strong><a name="item__2di"><em>-i</em></a></strong><br />
 </dt>
 <dd>
-When checking and using the <em>-X</em> or <em>-x</em> flag, ignore the blank line
+When checking and using the <em>-X</em> flag, ignore the blank line
 boundary between headers and body of the message, and check for
 collision in the body too if one is not found in the headers.
 </dd>
@@ -622,7 +622,7 @@ is the default.  See also <em>-S</em>, <em>-E</em> and <em>-C</em>
 </dt>
 <dd>
 When checking stamps use simple text compare to compare resource names
-to those in stamps.  See also <em>-W</em>, &lt;-E&gt; and <em>-C</em>.
+to those in stamps.  See also <em>-W</em>, <em>-E</em> and <em>-C</em>.
 </dd>
 <p></p>
 <dt><strong><a name="item__2de"><em>-E</em></a></strong><br />
@@ -807,7 +807,7 @@ they will no longer be needed -- expired stamps can be rejected based
 purely on their old date, so the space taken by expired stamps in the
 double spend database can be saved without risk of accepting an
 expired though otherwise valid stamp.</p>
-<p>The first field of the stamp is the UTC time since 1st January 1970.
+<p>The third field of the stamp is the UTC time since 1st January 1970.
 The default time format is YYMMDD, time rounded down to the nearest
 day.  The default validity period is 28 days.</p>
 <p>You can provide an alternative validity period with the <em>-e</em> option.</p>
@@ -953,7 +953,7 @@ format.</p>
 <dl>
 <dt><strong><a name="item_ver__3d_1"><em>ver</em> = 1</a></strong><br />
 </dt>
-<dt><strong><a name="item_bits__3d_how_many_bits_of_partial_2dcollision_the_"><em>bits</em> = how many bits of partial-collision the stamp has</a></strong><br />
+<dt><strong><a name="item_bits__3d_how_many_bits_of_partial_2dcollision_the_"><em>bits</em> = how many bits of partial-collision the stamp is claimed to have</a></strong><br />
 </dt>
 <dt><strong><a name="item_date__3d_yymmdd_5bhhmm_5bss_5d_5d"><em>date</em> = YYMMDD[hhmm[ss]]</a></strong><br />
 </dt>

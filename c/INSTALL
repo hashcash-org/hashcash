@@ -1,13 +1,21 @@
 To compile type:
 
-make clean
-make
+	make
 
-Then to install type:
+to see a list of platforms.  Current platforms are:
 
-make install
+	x86, g3-osx, ppc-linux, generic
 
-which will install the binaries sha1 and hashcash in /usr/local/bin,
+Choose platform (or generic if your platform is not listed) and then
+type:
+
+	make <platform>
+
+To install the compiled binaries type:
+
+	make install
+
+This will install the binaries sha1 and hashcash in /usr/local/bin,
 and the man page hashcash.1 in /usr/local/man/man1.
 
 To change the binary installation location change the INSTALL_PATH in
@@ -15,3 +23,11 @@ the Makefile.  To change the man page installation location change the
 MAN_INSTALL_PATH in the Makefile.
 
 For usage information see the man page.
+
+To override the CFLAGS argument without editing the Makefile do:
+
+	make "CFLAGS=-DREGEXP_POSIX -O3 -myflags"
+
+(choose appropriate REGEXP approach for your system, default
+REGEXP_POSIX, alternative REGEXP_BSD, or fall back to neither
+defined if your system doesn't have REGEXP.)

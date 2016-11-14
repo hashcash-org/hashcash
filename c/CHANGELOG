@@ -1,3 +1,83 @@
+hashcash-1.03 - 07-Sep-2004 - Adam Back <adam@cypherspace.org>
+
+	* remove TARGET_ARCH again, let's keep things simple.  Just
+	  use CFLAGS period.
+
+	* figured out what GENTOO ebuild is doing, changed ebuild file
+
+	* remove recursion from hashcash_fastmint
+
+	* start using TARGET_ARCH in Makefile, hope it's portable;
+	  it's an attempt to be more GENTOO ebuild friendly
+
+	* Makefile change: when PACKAGE is defined build default
+	  target, otherwise echo the target info as before
+
+	* removed a bunch of old code replaced by fastmint, got rid of
+	  CHROMATIX define
+
+	* fix following errors reported by Atom Smasher <atom@suspicious.org>
+
+		* fix width measuring bug with v0 stamps
+
+		* fix resource read from stdin bug
+
+		* use GNU getopt source always -- getopt
+		  on BSD behaves differently (the getopt source is
+		  smart -- it comments itself out on machines with
+		  GNU_LIBRARY so using it always is not a problem)
+
+		* bug: should send the time estimate to
+		  stderr, and the stamp to stdout
+
+		* -z width flag not properly error checked
+		  to enforce UTCTIME restrictions (only valid widths
+		  6, 10 or 12 digits)
+
+	* update LICENSE to note you end up with some GNU GPL taint
+	  from getopt on systems without POSIX getopt which probably
+	  forces you to use GPL as I link against it.  Unless someone
+	  wants to re-write the getopt or can point me at a public
+	  domain replacement.  In particular this includes BSD and
+	  MACH (OSX) and as before windows.
+
+	* apply patch from Jonathan Morton <chromi@chromatix.demon.co.uk>
+	  with following fixes:
+	
+	  	* fix bug in mmx assembler code exposed by integration
+
+		* add generic target in Makefile
+	
+		* increase benchmark work factor to improve accuracy of
+		  results (as not used at run-time)
+	
+		* new hashcash_quickbench() 
+
+	* changes to hashcash_quickbench() to give faster timing on
+       	  linux x86 which has low resolution clock() (1/100th sec vs
+	  1usec on OSX).  (It was taking ~ 0.6sec on linux x86, code
+	  takes 0.1 sec now which is less noticeable)
+
+	* related to above studiously avoided calling hc_per_sec()
+	  which invokes hashcash_quickbench() -- seems a shame to burn
+	  1/10th sec in default mint creation path if user typically
+	  doesn't care about the info about how long it took.  Now you
+	  have to give -s or -v to get speed info when minting.
+
+	* fix case sensitivity bug reported by Atom Smasher
+	  <atom@suspicious.org>
+	
+	* add CPL option back to LICENSE file
+	* add make targets for different processors
+	* remove 2nd call of hashcash_benchtest (supposed to call
+	  hc_per_second which caches not hashcash_per_second)
+	* enable static selection of fastmint cores, disable run
+	  time benchtest
+
+	* applied fastmint fix patch from Jonathan Morton
+	  <chromi@chromatix.demon.co.uk> and re-enabled fastmint
+	  (remove -DCHROMATIX in Makefile to disable)
+
 hashcash-1.02 - 11-Aug-2004 - Adam Back <adam@cypherspace.org>
 
 	* minor documentation stuff (put back ref to sha1-hashcash in

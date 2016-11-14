@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2004-08-11" "1.02" "hashcash"
+.TH HASHCASH 1 "2004-09-01" "1.03" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
@@ -517,7 +517,7 @@ mechanism has not yet been implemented.  This will come in a
 subsequent release.
 .IP "\fI\-i\fR" 4
 .IX Item "-i"
-When checking and using the \fI\-X\fR or \fI\-x\fR flag, ignore the blank line
+When checking and using the \fI\-X\fR flag, ignore the blank line
 boundary between headers and body of the message, and check for
 collision in the body too if one is not found in the headers.
 .IP "\fI\-t time\fR" 4
@@ -583,7 +583,7 @@ is the default.  See also \fI\-S\fR, \fI\-E\fR and \fI\-C\fR
 .IP "\fI\-S\fR" 4
 .IX Item "-S"
 When checking stamps use simple text compare to compare resource names
-to those in stamps.  See also \fI\-W\fR, <\-E> and \fI\-C\fR.
+to those in stamps.  See also \fI\-W\fR, \fI\-E\fR and \fI\-C\fR.
 .IP "\fI\-E\fR" 4
 .IX Item "-E"
 When checking stamps use regular expressions to specify resource names
@@ -717,7 +717,7 @@ purely on their old date, so the space taken by expired stamps in the
 double spend database can be saved without risk of accepting an
 expired though otherwise valid stamp.
 .PP
-The first field of the stamp is the \s-1UTC\s0 time since 1st January 1970.
+The third field of the stamp is the \s-1UTC\s0 time since 1st January 1970.
 The default time format is \s-1YYMMDD\s0, time rounded down to the nearest
 day.  The default validity period is 28 days.
 .PP
@@ -834,8 +834,8 @@ where
 .IP "\fIver\fR = 1" 4
 .IX Item "ver = 1"
 .PD 0
-.IP "\fIbits\fR = how many bits of partial-collision the stamp has" 4
-.IX Item "bits = how many bits of partial-collision the stamp has"
+.IP "\fIbits\fR = how many bits of partial-collision the stamp is claimed to have" 4
+.IX Item "bits = how many bits of partial-collision the stamp is claimed to have"
 .IP "\fIdate\fR = YYMMDD[hhmm[ss]]" 4
 .IX Item "date = YYMMDD[hhmm[ss]]"
 .IP "\fIresource\fR = resource string (eg \s-1IP\s0 address, email address)" 4

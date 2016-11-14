@@ -14,7 +14,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.02
+#define HASHCASH_VERSION 1.03
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -143,6 +143,10 @@ int hashcash_check( const char* token, const char* resource, void **compile,
 
 /* return how many tries per second the machine can do */
 
+extern long per_sec;
+
+#define hc_per_sec() ( per_sec ? per_sec : ( per_sec = hashcash_per_sec() ) )
+
 long hashcash_per_sec( void );
 
 /* estimate how many seconds it would take to mint a token of given size */
@@ -161,6 +165,7 @@ int email_match( const char* pattern, const char* email );
 
 int resource_match( int type, const char* token_res, const char* res, 
 		    void** compile, char** err );
+
 
 #if defined( __cplusplus )
 }

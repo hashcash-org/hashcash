@@ -35,9 +35,7 @@ time_t round_off( time_t now_time, int digits );
 #define GFORMAT "%08x"
 #endif
 
-word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource, 
-		       int bits, char* token, word32 tries, char* rnd_str,
-		       char* counter, char* ext );
+long per_sec = 0;		/* cache calculation */
 
 char *strrstr(char *s1,char *s2) 
 {
@@ -151,18 +149,15 @@ int hashcash_mint( time_t now_time, int time_width,
     char now_utime[ MAX_UTCTIME+1 ]; /* current time */
     char rnd_str[GROUP_DIGITS*2+1];
     double tries;
-#if defined( CHROMATIX )
     char* token = 0;
-    volatile clock_t begin, end;
+    volatile clock_t begin, end, tmp;
     double elapsed = 0;
-#endif
 
     if ( resource == NULL ) {
 	return HASHCASH_INTERNAL_ERROR;
     }
 
     if ( anon_random == NULL ) { anon_random = &rnd; }
-    if ( tries_taken == NULL ) { tries_taken = &tries; }
 
     *anon_random = 0;
 
@@ -171,13 +166,6 @@ int hashcash_mint( time_t now_time, int time_width,
     }
 
     if ( time_width == 0 ) { time_width = 6; } /* default YYMMDD */
-
-    if ( !random_getbytes( &ran0, sizeof( word32 ) ) ||
-	 !random_getbytes( &ran1, sizeof( word32 ) ) ) {
-	return HASHCASH_RNG_FAILED;
-    }
-    
-    sprintf( rnd_str, "%08x%08x",ran0,ran1);
 
     if ( now_time < 0 ) {
 	return HASHCASH_INVALID_TIME;
@@ -198,7 +186,6 @@ int hashcash_mint( time_t now_time, int time_width,
     now_time = round_off( now_time, 12-time_width );
     to_utctimestr( now_utime, time_width, now_time );
 
-#if defined( CHROMATIX )
     if ( !ext ) { ext = ""; }
     token = malloc( MAX_TOK+strlen(ext)+1 );
     sprintf( token, "%d:%d:%s:%s:%s:", 
@@ -209,151 +196,18 @@ int hashcash_mint( time_t now_time, int time_width,
     
     hashcash_fastmint( bits, token, new_token );
     end = clock();
+
+    if ( end < begin ) { tmp = end; end = begin; begin = tmp; }
+
     elapsed = (end-begin) / (double) CLOCKS_PER_SEC;
 
     /* hashcash_fastmint does not track iterations, 
-       work backwards from time for now */
-    *tries_taken = elapsed * hashcash_per_sec();
-#else
-    *new_token = malloc( MAX_TOK+1 );
-    /* try 32 bit counter */
+       work backwards from time for now -- avoid work if caller
+       does not care about tries_taken */
 
-#if defined( DEBUG )
-    fprintf( stderr, "try %d group\n", GROUP_DIGITS );
-#endif
-
-    found = find_collision( now_utime, resource, bits, *new_token,
-			    GROUP_SIZE, rnd_str, "", ext );
-    if ( found ) { goto done; }
-
-    /* if exceed that try 64 bit counter */    
-
-#if defined( DEBUG )
-    fprintf( stderr, "try %d group\n", GROUP_DIGITS*2 );
-#endif
-
-    for ( i1=0, i1f=1; i1f || i1!=0; i1f=0,i1=(i1+1) & GROUP_SIZE) {
-	sprintf( counter, GFFORMAT, i1 & GROUP_SIZE/*, 0*/ );
-	found = find_collision( now_utime, resource, bits, *new_token,
-				GROUP_SIZE, rnd_str, counter, ext );
-	if ( found ) { goto done; }
-    }
-
-    /* if exceed that try 96 bit counter */
-
-#if defined( DEBUG )
-    fprintf( stderr, "try %d group\n", GROUP_DIGITS*3 );
-#endif
-
-    for ( i0=0, i0f=1; i0f || i0!=0; i0f=0,i0=(i0+1) & GROUP_SIZE) {
-	for ( i1=0, i1f=1; i1f || i1!=0; i1f=0,i1=(i1+1) & GROUP_SIZE) {
-	    sprintf( counter, GFFORMAT GFORMAT, 
-		     i0 & GROUP_SIZE, i1 & GROUP_SIZE );
-	    found = find_collision( now_utime, resource, bits, *new_token,
-				    GROUP_SIZE, rnd_str, counter, ext );
-	    if ( found ) { goto done; }
-	}
-    }
-
-    /* shouldn't get here without trying  */
-    /* for a very long time, 2^96 operations is a _lot_ of CPU */
-
-    return HASHCASH_TOO_MANY_TRIES;
-
- done:
-    
-    *tries_taken = (double)i0 * (double)ULONG_MAX * (double)ULONG_MAX +
-	(double)i1 * (double)ULONG_MAX + (double)found ;
-#endif
+    if ( tries_taken ) { *tries_taken = elapsed * hc_per_sec(); }
 
     return HASHCASH_OK;
-}
-
-word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource, 
-		       int bits, char* token, word32 tries, char* rnd_str,
-		       char* counter, char *ext )
-{
-    char* hex = "0123456789abcdef";
-    char ctry[ MAX_TOK+1 ];
-    char* changing_part_of_try;
-    SHA1_ctx ctx;
-    SHA1_ctx precomputed_ctx;
-    word32 i;
-    int j;
-    word32 trial;
-    word32 tries2;
-    int first, try_len, try_strlen;
-    byte target_digest[ SHA1_DIGEST_BYTES ];
-    byte try_digest[ SHA1_DIGEST_BYTES ];
-    int partial_byte = bits & 7;
-    int check_bytes;
-    int partial_byte_index = 0;	/* suppress dumb warning */
-    int partial_byte_mask = 0xFF; /* suppress dumb warning */
-    char last_char;
-   
-    first = strlen( counter ) == 0 ? 1 : 0;
-    trial = 0;
-
-    memset( target_digest, 0, SHA1_DIGEST_BYTES );
-
-    if ( partial_byte ) {
-	partial_byte_index = bits / 8;
-	partial_byte_mask = ~ (( 1 << (8 - (bits & 7))) -1 );
-	check_bytes = partial_byte_index + 1;
-	target_digest[ partial_byte_index ] &= partial_byte_mask;
-    } else {
-	check_bytes = bits / 8;
-    }
-
-    if ( !ext ) { ext = ""; }
-    sprintf( ctry, "%d:%d:%s:%s:%s:%s:%s", 
-	     HASHCASH_FORMAT_VERSION, bits, utct, resource, ext, rnd_str, 
-	     counter );
-
-    try_len = (int)strlen( ctry );
-
-/* length of try is fixed, GFORMAT is %08x, so move strlen outside loop */
-
-    changing_part_of_try = ctry + try_len;
-
-/* part of the ctx context can be precomputed as not all of the
-   message is changing
-*/
-
-    tries2 = (int) ( (double) tries / 16.0 + 0.5 );
-    for ( i = 0; i < tries2; i++, trial = (trial + 16) & GROUP_SIZE ) {
-/* move precompute closer to the inner loop to precompute more */
-
-	SHA1_Init( &precomputed_ctx );
-	sprintf( changing_part_of_try, first ? GFFORMAT : GFORMAT, trial );
-	try_strlen = try_len + (int)strlen( changing_part_of_try ); 
-	SHA1_Update( &precomputed_ctx, ctry, try_strlen - 1 );
-
-#if defined( DEBUG )
-	fprintf( stderr, "try: %s\n", ctry );
-#endif
-	for ( j = 0; j < 16; j++ ) {
-	    memcpy( &ctx, &precomputed_ctx, sizeof( SHA1_ctx ) );
-	    last_char = hex[ j ];
-	    SHA1_Update( &ctx, &last_char, 1 );
-	    SHA1_Final( &ctx, try_digest );
-
-	    if ( bits > 7 ) {
-		if ( try_digest[ 0 ] != target_digest[ 0 ] ) {
-		    continue;
-		}
-	    }
-	    if ( partial_byte ) {
-		try_digest[ partial_byte_index ] &= partial_byte_mask;
-	    }
-	    if ( memcmp( target_digest, try_digest, check_bytes ) == 0 ) {
-		ctry[ try_strlen-1 ] = hex[ j ];
-		sstrncpy( token, ctry, MAX_TOK );
-		return i * 16 + j + 1;
-	    }
-	}
-    }
-    return 0;
 }
 
 time_t round_off( time_t now_time, int digits )
@@ -381,13 +235,10 @@ int validity_to_width( time_t validity_period )
     int time_width = 6;		/* default YYMMDD */
     if ( validity_period < 0 ) { return 0; }
     if ( validity_period != 0 ) {
-/* YYMMDDhhmmss or YYMMDDhhmm or YYMMDDhh or YYMMDD or YYMM or YY */
+/* YYMMDDhhmmss or YYMMDDhhmm or YYMMDD */
 	if ( validity_period < 2*TIME_MINUTE ) { time_width = 12; } 
 	else if ( validity_period < 2*TIME_HOUR ) { time_width = 10; }
-	else if ( validity_period < 2*TIME_DAY ) { time_width = 8; }
-	else if ( validity_period < 2*TIME_MONTH ) { time_width = 6; }
-	else if ( validity_period < 2*TIME_YEAR ) { time_width = 4; }
-	else { time_width = 2; }
+	else { time_width = 6; }
     }
     return time_width;
 }
@@ -473,7 +324,7 @@ unsigned hashcash_count( const char* token )
     sstrncpy( ver, token, ver_len );
     vers = atoi( ver );
     if ( vers < 0 ) { return 0; }
-    if ( vers != 1 ) { return 0; } /* unsupported version number */
+    if ( vers > 1 ) { return 0; } /* unsupported version number */
     second_colon = strchr( first_colon+1, ':' );
     if ( second_colon == NULL ) { return 0; } /* should really fail */
 
@@ -676,46 +527,9 @@ int hashcash_check( const char* token, const char* resource, void **compile,
 			       grace_period, now_time );
 }
 
-long hashcash_per_sec( void )
-{
-#if defined( CHROMATIX )
-    return (long)hashcash_benchtest( 0 );
-#else
-    clock_t t1, t2, t1c,t2c,tmp;
-    double elapsed;
-    unsigned long n_collisions = 0;
-    char token[ MAX_TOK+1 ];
-    word32 step = 100;
-
-    /* wait for start of tick */
-
-    t2 = clock();
-    do {
-	t1 = clock();
-    } while ( t1 == t2 );
-    t1c = t1;
-
-    /* do computations for next tick */
-
-    do {
-	n_collisions += step;
-	find_collision( "000101", "flame", 25, token, step, "", "", "" );
-	t2c = t2 = clock();
-	if ( t2c < t1c ) { tmp = t2c; t2c = t1c; t1c = tmp; }	
-    } while ( (t2c - t1c) < CLOCKS_PER_SEC/10 );
-
-    if ( t2 < t1 ) { tmp = t2; t2 = t1; t1 = tmp; }
-
-/* see how many us the tick took */
-    elapsed = (double)(t2 - t1 )/CLOCKS_PER_SEC;
-    return (word32) ( 1.0 / elapsed * (double)n_collisions
-		      + 0.499999999 );
-#endif
-}
-
 double hashcash_estimate_time( int b )
 {
-    return hashcash_expected_tries( b ) / (double)hashcash_per_sec();
+    return hashcash_expected_tries( b ) / (double)hc_per_sec();
 }
 
 double hashcash_expected_tries( int b )

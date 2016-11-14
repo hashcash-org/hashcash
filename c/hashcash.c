@@ -16,7 +16,6 @@
     #include <unistd.h>
 #elif defined ( WIN32 )
     #include <io.h>
-    #include "getopt.h"
 #endif
 
 #include <stdio.h>
@@ -33,6 +32,7 @@
 #include "random.h"
 #include "hashcash.h"
 #include "sstring.h"
+#include "getopt.h"
 
 #if defined( OPENSSL )
 #include <openssl/sha.h>
@@ -61,9 +61,13 @@
  * vararg functions
  */
 
-#define QQ if (!quiet_flag)
-#define PP if (!out_is_tty||quiet_flag) 
-#define VV if (verbose_flag) 
+#define QQE (!quiet_flag)
+#define PPE (!out_is_tty||quiet_flag)
+#define VVE (verbose_flag)
+
+#define QQ if (QQE) 
+#define PP if (PPE) 
+#define VV if (VVE) 
 #define QPRINTF QQ fprintf
 #define PPRINTF PP fprintf
 #define VPRINTF VV fprintf
@@ -84,7 +88,7 @@ void die( int err );
 void die_msg( const char* );
 void usage( const char* );
 int parse_period( const char* aperiod, long* resp );
-double report_speed( int bits, double* time_est );
+double report_speed( int bits, double* time_est, int display );
 
 typedef struct {
     char* str;
@@ -121,8 +125,6 @@ void array_sort( ARRAY* array, int(*cmp)(const void*, const void*) );
 
 void stolower( char* str );
 
-long per_sec = 0;		/* cache calculation */
-#define hc_per_sec() ( per_sec ? per_sec : ( per_sec = hashcash_per_sec() ) )
 #define hc_est_time(b) ( hashcash_expected_tries(b) / (double)hc_per_sec() )
 int quiet_flag;
 int verbose_flag;
@@ -170,7 +172,7 @@ int main( int argc, char* argv[] )
     int time_width_flag = 0;	/* -z option, default 6 YYMMDD */
     int inferred_time_width = 0, time_width = 6; /* default YYMMDD */
 
-    double tries_taken, taken, tries_expected, time_est;
+    double tries_taken = 0, taken, tries_expected, time_est;
     int opt, vers, db_opened = 0, i, t, tty_info, in_headers, skip, over = 0;
     char *re_err = NULL;
     ELEMENT* ent;
@@ -343,8 +345,8 @@ int main( int argc, char* argv[] )
 	case 'z': 
 	    time_width_flag = 1; 
 	    time_width = atoi( optarg );
-	    if ( time_width <= 0 || time_width % 2 || time_width > 12) {
-	        usage( "error: -z invalid time width: must be 2,4,6,8,10 or 12" );
+	    if ( time_width != 6 && time_width != 10 && time_width != 12 ) {
+	        usage( "error: -z invalid time width: must be 6, 10 or 12" );
 	    }
 	    break;
 	case '?': 
@@ -406,7 +408,6 @@ int main( int argc, char* argv[] )
 
     if ( quiet_flag ) {	verbose_flag = 0; } /* quiet overrides verbose */
     if ( speed_flag && check_flag ) { speed_flag = 0; }	/* ignore speed */
-    if ( speed_flag && mint_flag ) { mint_flag = 0; } /* ignore mint */
 
     if ( purge_flag ) {
 	db_open( &db, db_filename );
@@ -443,7 +444,7 @@ int main( int argc, char* argv[] )
 		    chomplf( line );
 		    trimspace( line );
 		    if ( line[0] != '\0' ) {
-			array_push( &resource, line, 0,validity_period, 
+			array_push( &args, line, 0,validity_period, 
 				    grace_period, anon_period, time_width, 
 				    bits, 0 );
 		    }
@@ -457,33 +458,48 @@ int main( int argc, char* argv[] )
 	    }
 	}
 
+	if ( !verbose_flag && speed_flag && mint_flag ) {
+	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
+		     hc_per_sec() );
+	    PPRINTF( stdout, "%ld\n", hc_per_sec() );
+	}
+
 	if ( verbose_flag || ( speed_flag && !bits_flag ) ) {
 	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
 		     hc_per_sec() );
-	    if ( speed_flag && !bits_flag ) {
+	    if ( speed_flag && !bits_flag && !mint_flag ) {
 		PPRINTF( stdout, "%ld\n", hc_per_sec() );
 		exit( EXIT_SUCCESS ); /* don't actually calculate it */
 	    }
 	}
 
-	if ( speed_flag && bits_flag ) {
-	    tries_expected = report_speed( bits, &time_est );
+	if ( speed_flag && bits_flag && !mint_flag ) {
+	    tries_expected = report_speed( bits, (PPE) ? &time_est : 0,
+					   !quiet_flag );
 	    PPRINTF( stdout, "%.0f\n", time_est );
 	    exit( EXIT_SUCCESS ); /* don't actually calculate it */
-
 	}
-
-	start = clock();
 
 	for ( i = 0; i < array_num( &args ); i++ ) {
 
+	    start = clock();
+
 	    ent = &(args.elt[i]);
 
-	    tries_expected = report_speed( ent->bits, &time_est );
+	    tries_expected = report_speed( ent->bits, NULL, 
+					   verbose_flag||speed_flag );
 
 	    err = hashcash_mint( now_time, ent->width, ent->str, ent->bits, 
 				 ent->anon, &new_token, MAX_TOK, &anon_random, 
-				 &tries_taken, ext );
+				 verbose_flag ? &tries_taken : NULL, ext );
+
+	    /* verbose_flag ? ... above is work-around hashcash_mint
+	       calls hc_per_sec to reverse compute tries_taken from
+	       timer due to hashcash_fastmint not returning number of
+	       tries taken.  If we don't need to output tries_taken,
+	       we can avoid the effort of running hc_per_sec which is
+	       slower now we are using clock() in place of time().  
+	       this results in tries_taken being left at 0 */
 
 	    end = clock();
 
@@ -524,10 +540,10 @@ int main( int argc, char* argv[] )
 	    taken = (end-start)/(double)CLOCKS_PER_SEC;
 	    VPRINTF( stderr, "time: %.0f seconds\n", taken );
 	    if ( hdr_flag ) { 
-		QQ { printwrap( stderr, header, new_token, '\t', 
+		QQ { printwrap( stdout, header, new_token, '\t', 
 				HDR_LINE_LEN ); }
 	    }
-	    else { QPRINTF( stderr, "hashcash token: %s\n", new_token ); }
+	    else { QPRINTF( stdout, "hashcash token: %s\n", new_token ); }
 	    if ( hdr_flag ) { 
 		PP { printwrap( stdout, header, new_token, '\t',
 				HDR_LINE_LEN ); }
@@ -624,6 +640,7 @@ int main( int argc, char* argv[] )
 
 		    over = 0;
 
+		    if ( !case_flag ) { stolower( ent->str ); }
 		    valid_for = hashcash_check( token, ent->str, 
 						&(ent->regexp), &re_err,
 						ent->type, now_time, 
@@ -1248,44 +1265,47 @@ void trimspace( char* token ) {
     }
 }
 
-double report_speed( int bits, double* time_est ) 
+double report_speed( int bits, double* time_est, int display ) 
 {
+    double te = 0;
     double tries_expected = hashcash_expected_tries( bits );
     
     VPRINTF( stderr, "mint: %d bit partial hash collision\n", bits );
     VPRINTF( stderr, "expected: %.0f tries (= 2^%d tries)\n",
 	     tries_expected, bits );
 
-    if ( !quiet_flag ) {
-	*time_est = hc_est_time( bits );
-	QPRINTF( stderr, "time estimate: %.0f seconds", *time_est );
-	if ( *time_est > TIME_AEON ) {
-	    QPRINTF( stderr, " (%.0f aeons)", *time_est / TIME_AEON );
-	} else if ( *time_est > TIME_YEAR * 10 ) {
-	    QPRINTF( stderr, " (%.0f years)", *time_est / TIME_YEAR );
-	} else if ( *time_est > TIME_YEAR ) {
-	    QPRINTF( stderr, " (%.1f years)", *time_est / TIME_YEAR );
-	} else if ( *time_est > TIME_MONTH ) {
-	    QPRINTF( stderr, " (%.1f months)", *time_est / TIME_MONTH );
-	} else if ( *time_est > TIME_DAY * 10 ) {
-	    QPRINTF( stderr, " (%.0f days)", *time_est / TIME_DAY );
-	} else if ( *time_est > TIME_DAY ) {
-	    QPRINTF( stderr, " (%.1f days)", *time_est / TIME_DAY );
-	} else if ( *time_est > TIME_HOUR ) {
-	    QPRINTF( stderr, " (%.0f hours)", *time_est / TIME_HOUR );
-	} else if ( *time_est > TIME_MINUTE ) {
-	    QPRINTF( stderr, " (%.0f minutes)", *time_est / TIME_MINUTE );
-	} else if ( *time_est > 1 ) {
+    if ( time_est ) { *time_est = hc_est_time( bits ); }
+
+    if ( display ) {
+	te = hc_est_time( bits );
+	QPRINTF( stderr, "time estimate: %.0f seconds", te );
+	if ( te > TIME_AEON ) {
+	    QPRINTF( stderr, " (%.0f aeons)", te / TIME_AEON );
+	} else if ( te > TIME_YEAR * 10 ) {
+	    QPRINTF( stderr, " (%.0f years)", te / TIME_YEAR );
+	} else if ( te > TIME_YEAR ) {
+	    QPRINTF( stderr, " (%.1f years)", te / TIME_YEAR );
+	} else if ( te > TIME_MONTH ) {
+	    QPRINTF( stderr, " (%.1f months)", te / TIME_MONTH );
+	} else if ( te > TIME_DAY * 10 ) {
+	    QPRINTF( stderr, " (%.0f days)", te / TIME_DAY );
+	} else if ( te > TIME_DAY ) {
+	    QPRINTF( stderr, " (%.1f days)", te / TIME_DAY );
+	} else if ( te > TIME_HOUR ) {
+	    QPRINTF( stderr, " (%.0f hours)", te / TIME_HOUR );
+	} else if ( te > TIME_MINUTE ) {
+	    QPRINTF( stderr, " (%.0f minutes)", te / TIME_MINUTE );
+	} else if ( te > 1 ) {
 	    /* already printed seconds */
-	} else if ( *time_est > TIME_MILLI_SECOND ) {
+	} else if ( te > TIME_MILLI_SECOND ) {
 	    QPRINTF( stderr, " (%.0f milli-seconds)", 
-		     *time_est / TIME_MILLI_SECOND );
-	} else if ( *time_est > TIME_MICRO_SECOND ) {
+		     te / TIME_MILLI_SECOND );
+	} else if ( te > TIME_MICRO_SECOND ) {
 	    QPRINTF( stderr, " (%.0f micro-seconds)", 
-		     *time_est / TIME_MICRO_SECOND );
-	} else if ( *time_est > TIME_NANO_SECOND ) {
+		     te / TIME_MICRO_SECOND );
+	} else if ( te > TIME_NANO_SECOND ) {
 	    QPRINTF( stderr, " (%.0f nano-seconds)", 
-		     *time_est / TIME_NANO_SECOND );
+		     te / TIME_NANO_SECOND );
 	}
 	QPUTS( stderr, "\n" );
     }

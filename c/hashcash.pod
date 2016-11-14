@@ -427,7 +427,7 @@ subsequent release.
 
 =item I<-i>
 
-When checking and using the I<-X> or I<-x> flag, ignore the blank line
+When checking and using the I<-X> flag, ignore the blank line
 boundary between headers and body of the message, and check for
 collision in the body too if one is not found in the headers.
 
@@ -502,7 +502,7 @@ is the default.  See also I<-S>, I<-E> and I<-C>
 =item I<-S>
 
 When checking stamps use simple text compare to compare resource names
-to those in stamps.  See also I<-W>, <-E> and I<-C>.
+to those in stamps.  See also I<-W>, I<-E> and I<-C>.
 
 =item I<-E>
 
@@ -658,7 +658,7 @@ purely on their old date, so the space taken by expired stamps in the
 double spend database can be saved without risk of accepting an
 expired though otherwise valid stamp.
 
-The first field of the stamp is the UTC time since 1st January 1970.
+The third field of the stamp is the UTC time since 1st January 1970.
 The default time format is YYMMDD, time rounded down to the nearest
 day.  The default validity period is 28 days.
 
@@ -793,7 +793,7 @@ where
 
 =item I<ver> = 1
 
-=item I<bits> = how many bits of partial-collision the stamp has
+=item I<bits> = how many bits of partial-collision the stamp is claimed to have
 
 =item I<date> = YYMMDD[hhmm[ss]]
 

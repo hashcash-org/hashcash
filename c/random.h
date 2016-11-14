@@ -3,7 +3,9 @@
 #if !defined( _random_h )
 #define _random_h
 
+#ifdef __UNIX__
 #include <sys/types.h>
+#endif
 
 #if defined( __cplusplus )
 extern "C" {

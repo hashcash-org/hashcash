@@ -1,18 +1,27 @@
-HC_VERS = 1.02
+HC_VERS = 1.03
+CHANGEME = 1 # put PACKAGER = EBUILD|RPM etc here
+ifdef CFLAGS
+ifndef PACKAGER
+PACKAGER = MANUAL
+endif
+endif
 INSTALL_PATH = /usr/bin
 MAN_INSTALL_PATH = /usr/share/man/man1
 DOC_INSTALL_PATH = /usr/share/doc/hashcash-$(HC_VERS)
 MAKEDEPEND = makedepend
-# add -DCHROMATIX for libfastmint integration
-EXTRA_COPT = -O3 -funroll-loops
-COPT = -O $(EXTRA_COPT)
-OPT = -DREGEXP_POSIX
+# here you can choose the regexp style your system has
+# default is POSIX
+# 	CFLAGS = -DREGEXP_POSIX
 # if no POSIX regexp support, try BSD
-# OPT = -DREGEXP_BSD
+# 	CFLAGS = -DREGEXP_BSD
 # if no POSIX or BSD, disable, still have builtin basic wildcard support
-# OPT = -O
-LDFLAGS = $(CARCH)
-CFLAGS = $(COPT) $(OPT) $(CWARN) $(CARCH)
+# 	CFLAGS = 
+CFLAGS = -DREGEXP_POSIX -O3 -funroll-loops
+CFLAGS_X86 = -DREGEXP_POSIX -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx
+CFLAGS_G3_OSX = -DREGEXP_POSIX -O3 -funroll-loops -fno-inline -mcpu=750 \
+	-faltivec
+CFLAGS_PPC_LINUX = -DREGEXP_POSIX -O3 -funroll-loops -fno-inline -mcpu=604e \
+	-maltivec -mabi=altivec
 EXES = hashcash sha1 sha1test fastmint_benchtest
 INSTALL = /usr/bin/install
 POD2MAN = pod2man
@@ -20,18 +29,36 @@ POD2HTML = pod2html
 POD2TEXT = pod2text
 DELETE = /bin/rm -f
 ETAGS = etags
-# FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
-#	fastmint_ansi_compact_1.o fastmint_ansi_standard_1.o \
-#	fastmint_ansi_compact_2.o fastmint_ansi_standard_2.o \
-#	fastmint_altivec_standard_1.o fastmint_altivec_standard_2.o \
-#	fastmint_altivec_compact_2.o fastmint_ansi_ultracompact_1.o
-OBJS = hashcash.o libsha1.o libhc.o sdb.o utct.o random.o lock.o sstring.o
-# $(FASTLIBS)
-# FASTOBJS = fastmint_benchtest.o libsha1.o random.o $(FASTLIBS)
+FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
+	fastmint_ansi_compact_1.o fastmint_ansi_standard_1.o \
+	fastmint_ansi_compact_2.o fastmint_ansi_standard_2.o \
+	fastmint_altivec_standard_1.o fastmint_altivec_standard_2.o \
+	fastmint_altivec_compact_2.o fastmint_ansi_ultracompact_1.o
+OBJS = hashcash.o libsha1.o libhc.o sdb.o utct.o random.o lock.o sstring.o \
+	getopt.o $(FASTLIBS)
+FASTOBJS = fastmint_benchtest.o libsha1.o random.o $(FASTLIBS)
 
 DIST = ../dist.csh
 
-build:	hashcash sha1 #fastmint_benchtest
+ifndef PACKAGER
+help:
+	@echo "make <platform> where platform is x86, g3-osx, ppc-linux, generic"
+	@echo "other make targets are docs, install, clean, distclean, docclean"
+endif
+
+generic:
+	$(MAKE) "CFLAGS=$(CFLAGS)" build
+
+x86: 
+	$(MAKE) "CFLAGS=$(CFLAGS_X86)" build
+
+g3-osx:
+	$(MAKE) "CFLAGS=$(CFLAGS_G3_OSX)" build
+
+ppc-linux:
+	$(MAKE) "CFLAGS=$(CFLAGS_PPC_LINUX)" build
+
+build:	hashcash sha1 fastmint_benchtest
 
 hashcash:	$(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
@@ -42,8 +69,8 @@ sha1:	sha1.o libsha1.o
 sha1test:	sha1test.o libsha1.o 
 	$(CC) $(LDFLAGS) sha1test.o libsha1.o -o $@
 
-# fastmint_benchtest: $(FASTOBJS)
-# 	$(CC) $(LDFLAGS) $(FASTOBJS) -o $@
+fastmint_benchtest: $(FASTOBJS)
+	$(CC) $(LDFLAGS) $(FASTOBJS) -o $@
 
 all:	$(EXES)
 
@@ -106,17 +133,18 @@ fastmint_ansi_compact_1.o: libfastmint.h
 fastmint_ansi_compact_2.o: libfastmint.h
 fastmint_ansi_standard_1.o: libfastmint.h
 fastmint_ansi_standard_2.o: libfastmint.h
+fastmint_ansi_ultracompact_1.o: libfastmint.h
 fastmint_benchtest.o: libfastmint.h
 fastmint_mmx_compact_1.o: libfastmint.h
 fastmint_mmx_standard_1.o: libfastmint.h
 getopt.o: getopt.h
-gmp.o: gmp.h
-hashcash.o: sdb.h utct.h random.h types.h hashcash.h sstring.h sha1.h
+hashcash.o: sdb.h utct.h random.h hashcash.h types.h sstring.h getopt.h
+hashcash.o: sha1.h
 libfastmint.o: libfastmint.h random.h sha1.h types.h
 libhc.o: hashcash.h utct.h types.h sha1.h random.h sstring.h
 libsha1.o: sha1.h types.h
 lock.o: lock.h
-random.o: random.h types.h sha1.h
+random.o: random.h sha1.h types.h
 sdb.o: sdb.h types.h utct.h lock.h
 sha1.o: sha1.h types.h
 sha1test.o: sha1.h types.h

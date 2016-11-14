@@ -1,16 +1,24 @@
 This software can be distributed and used under any of the following
 licenses:
 
+	CPL
 	public domain
 	BSD (3 clause -- no advertising clause)
 	LGPL (2.1)
 	GPL (2)
 
-in the order of author preference.  
+in rough order of author preference.
 
-If your license or support requirements are not met by the above open
-source licenses please contact Adam Back <adam@cypherspace.org> for
-alternative licensing and/or support information.
+The CPL is probably unique to this package, and is described here:
+http://www.cypherspace.org/CPL/; if you can't be bothered to figure it
+out feel free to use one of the other licenses.  Earlier versions
+where distributed just under CPL.  CPL allows you to re-license under
+a license of your choice, I just include other specific licenses to
+save people having to read, understand and feel confident in the
+validity of the CPL.
+
+NOTE: on systems without a POSIX getopt this package will be linked
+with the included getopt.c which is distributed under GPL 2.
 
 The following are not licensing requirements, just comments from the
 author:

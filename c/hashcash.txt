@@ -379,7 +379,7 @@ OPTIONS
         come in a subsequent release.
 
     *-i*
-        When checking and using the *-X* or *-x* flag, ignore the blank line
+        When checking and using the *-X* flag, ignore the blank line
         boundary between headers and body of the message, and check for
         collision in the body too if one is not found in the headers.
 
@@ -446,7 +446,7 @@ OPTIONS
 
     *-S*
         When checking stamps use simple text compare to compare resource
-        names to those in stamps. See also *-W*, <-E> and *-C*.
+        names to those in stamps. See also *-W*, *-E* and *-C*.
 
     *-E*
         When checking stamps use regular expressions to specify resource
@@ -562,7 +562,7 @@ EXAMPLES
     spend database can be saved without risk of accepting an expired though
     otherwise valid stamp.
 
-    The first field of the stamp is the UTC time since 1st January 1970. The
+    The third field of the stamp is the UTC time since 1st January 1970. The
     default time format is YYMMDD, time rounded down to the nearest day. The
     default validity period is 28 days.
 
@@ -665,7 +665,7 @@ stamp format (version 1)
     where
 
     *ver* = 1
-    *bits* = how many bits of partial-collision the stamp has
+    *bits* = how many bits of partial-collision the stamp is claimed to have
     *date* = YYMMDD[hhmm[ss]]
     *resource* = resource string (eg IP address, email address)
     *ext* = extension -- ignored in the current version
