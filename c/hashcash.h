@@ -14,7 +14,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.08
+#define HASHCASH_VERSION 1.09
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -146,8 +146,6 @@ int hashcash_check( const char* token, int case_flag, const char* resource,
 extern long per_sec;
 
 #define hc_per_sec() ( per_sec ? per_sec : ( per_sec = hashcash_per_sec() ) )
-
-long hashcash_per_sec( void );
 
 /* estimate how many seconds it would take to mint a token of given size */
 

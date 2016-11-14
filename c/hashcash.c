@@ -786,9 +786,11 @@ int main( int argc, char* argv[] )
 				0 : claimed_bits;
 			}
 			QPRINTF( stderr, "token value: %d\n", count_bits );
-			if ( name_flag ) { PPUTS( stdout, " " ); }
+			if ( name_flag || verbose_flag ) { 
+			    PPUTS( stdout, " " ); 
+			}
 			PPRINTF( stdout, "%d", count_bits );
-		    } 
+		    }
 
 		    if ( left_flag || verbose_flag ) {
 			QPRINTF( stderr, "valid: " );
@@ -799,7 +801,7 @@ int main( int argc, char* argv[] )
 				PPUTS( stdout, " " );
 			    }
 			    PPRINTF( stdout, "%ld", (long)valid_for );
-			} else { 
+			} else {
 			    expiry_time = token_time + validity_period;
 			    switch ( valid_for ) {
 			    case 0:

@@ -1,3 +1,10 @@
+hashcash-1.09 - 17-Sep-2004 - Adam Back <adam@cypherspace.org>
+
+	* fix missing space between resource name and width with -cv
+	  reported by Panta Admin.
+
+	* apply cumulative patch of 3 patches from Jonathan Morton.
+
 hashcash-1.08 - 12-Sep-2004 - Adam Back <adam@cypherspace.org>
 
 	* fix bug reported by Panta Admin <admin@panta-rhei.dyndns.org>

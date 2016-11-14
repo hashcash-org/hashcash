@@ -17,7 +17,9 @@ typedef struct {
 	HC_Mint_Capable_Routine test;
 } HC_Minter;
 
-extern volatile int gIsMMXPresent;
+#define HC_CPU_SUPPORTS_ALTIVEC 0x01
+#define HC_CPU_SUPPORTS_MMX 0x02
+extern int gProcessorSupportFlags;
 
 extern const char *encodeAlphabets[];
 
@@ -47,7 +49,7 @@ extern void hashcash_select_minter();
 extern unsigned int hashcash_fastmint(const int bits, const char *token, char **result);
 
 /* Perform a quick benchmark of the selected minting backend.  Returns speed. */
-extern unsigned long hashcash_quickbench(void);
+extern unsigned long hashcash_per_sec(void);
 
 /* Test and benchmark available hashcash minting backends.  Returns the speed
  * of the fastest valid routine, and updates fastest_minter as appropriate.

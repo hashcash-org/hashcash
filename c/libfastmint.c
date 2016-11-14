@@ -1,7 +1,21 @@
+#if defined(__POWERPC__) && defined(__ALTIVEC__) && (!defined(__GNUC__) || !defined(__MACH__))
+#include <altivec.h>
+#endif
+
+#ifdef __CARBON__
+#include <CoreServices/CoreServices.h>
+#endif
+
+#if defined(__POWERPC__) && !defined(__MACH__) && !defined(__UNIX__) && !defined(__CARBON__)
+#include <Gestalt.h>
+#endif
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <setjmp.h>
 
 #include "libfastmint.h"
 #include "random.h"
@@ -20,7 +34,10 @@ const char *encodeAlphabets[] = {
 	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/"
 };
 
-volatile int gIsMMXPresent = -1;
+/* Keep track of what the CPU supports */
+static volatile int gIllegalInstructionTrapped = 0;
+static jmp_buf gEnv;
+int gProcessorSupportFlags = 0;
 
 /* SHA-1 magic gunge */
 #define H0 0x67452301
@@ -29,6 +46,94 @@ volatile int gIsMMXPresent = -1;
 #define H3 0x10325476
 #define H4 0xC3D2E1F0
 static const uInt32 SHA1_IV[ 5 ] = { H0, H1, H2, H3, H4 };
+
+/* SIGILL handler */
+static void sig_ill_handler(int sig)
+{
+	sig = sig;
+	gIllegalInstructionTrapped = 1;
+	longjmp(gEnv,1);
+}
+
+#if defined(__ALTIVEC__) && !defined(__GNUC__)
+#pragma dont_inline on
+/* Dummy Altivec operation for testing */
+static void dummy_altivec_fn(void)
+{
+	volatile vector unsigned int v;
+	v = vec_or(v,v);
+}
+#pragma dont_inline reset
+#endif
+
+/* Detect whether extended CPU features like Altivec, MMX, etc are supported */
+static void hashcash_detect_features(void)
+{
+#if defined(__POWERPC__) && defined(__ALTIVEC__)
+	int hasAltivec = 0;
+	
+	#if defined(__UNIX__) || defined(__MACH__)
+			/* Use generic SIGILL trap handler */
+			void *oldhandler;
+			
+			gIllegalInstructionTrapped = 0;
+			oldhandler = signal(SIGILL, sig_ill_handler);
+			
+			if(!setjmp(gEnv)) {
+				#ifdef __GNUC__
+				asm volatile ( "vor v0,v0,v0" );
+				#else
+				dummy_altivec_fn();
+				#endif
+			}
+			
+			signal(SIGILL, oldhandler);
+			
+			hasAltivec = !gIllegalInstructionTrapped;
+	#else
+			/* Carbon and MacOS Classic */
+			long cpuAttributes;
+			OSErr err = Gestalt(gestaltPowerPCProcessorFeatures, &cpuAttributes);
+			if(err == 0)
+				hasAltivec = ((1 << gestaltPowerPCHasVectorInstructions) & cpuAttributes) != 0;
+	#endif
+	
+	if(hasAltivec)
+		gProcessorSupportFlags |= HC_CPU_SUPPORTS_ALTIVEC;
+	else
+		gProcessorSupportFlags &= ~(HC_CPU_SUPPORTS_ALTIVEC);
+#elif defined(__i386__) && defined(__GNUC__)
+	void *oldhandler;
+	int hasMMX = 0;
+	
+	gIllegalInstructionTrapped = 0;
+	oldhandler = signal(SIGILL, sig_ill_handler);
+	
+	if(!setjmp(gEnv)) {
+		asm volatile (
+									"movl $1, %%eax\n\t"
+									"push %%ebx\n\t"
+									"cpuid\n\t"
+									"andl $0x800000, %%edx\n\t"
+									"pop %%ebx\n\t"
+									: "=d" (hasMMX)
+									: /* no input */
+									: "eax", "ecx"
+									);
+	}
+	
+	signal(SIGILL, oldhandler);
+	
+	if(hasMMX && !gIllegalInstructionTrapped)
+		gProcessorSupportFlags |= HC_CPU_SUPPORTS_MMX;
+	else
+		gProcessorSupportFlags &= ~(HC_CPU_SUPPORTS_MMX);
+#elif defined(__AMD64__)
+	gProcessorSupportFlags = HC_CPU_SUPPORTS_MMX;
+#else
+	gProcessorSupportFlags = 0;
+#endif
+}
 
 /* Statically guesstimate the fastest hashcash minting routine.  Takes
  * into account only the gross hardware architecture and features
@@ -112,6 +217,9 @@ void hashcash_select_minter()
 	#else
 	fastest_minter = 1;
 	#endif
+	
+	/* Detect actual CPU capabilities */
+	hashcash_detect_features();
 	
 	/* See if any of the vectorised minters work, choose the
 	   highest-numbered one that does */
@@ -227,8 +335,8 @@ unsigned long hashcash_benchtest(int verbose)
 	int best_minter = -1;
 	static const unsigned int test_bits = 22;
 	static const char *test_string = 
-		"1:22:040404:foo::0123456789abcdef:00000000000";
-	static const int test_tail = 45;  /* must be less than 56 */
+		"1:22:040404:foo@bar.net::0123456789abcdef:0000000000";
+	static const int test_tail = 52;  /* must be less than 56 */
 	static const int bit_stats[] = { 8, 10, 16, 20, 22, 
 					 24, 26, 28, 30, 0 };
 	char block[SHA1_INPUT_BYTES] = {0};
@@ -257,7 +365,7 @@ unsigned long hashcash_benchtest(int verbose)
 		}
 		
 		if(verbose) {
-			printf("          %s\n", minters[i].name);
+			printf("          %s\r", minters[i].name);
 			fflush(stdout);
 		}
 		
@@ -404,6 +512,8 @@ unsigned int hashcash_fastmint(const int bits, const char *token,
 	if(!minters || fastest_minter < 0)
 		hashcash_select_minter();
 	
+ again:
+
 	/* Set up string for hashing */
 	tail = strlen(token);
 	buflen = (tail - (tail % SHA1_INPUT_BYTES)) + 2*SHA1_INPUT_BYTES;
@@ -411,18 +521,8 @@ unsigned int hashcash_fastmint(const int bits, const char *token,
 	memset(buffer, 0, buflen);
 	strncpy(buffer, token, buflen);
 	
- again:
-
-	/* Add random data to taste, leaving at least 8 characters'
-	   worth after it in the final block, and 16 characters' worth
-	   overall */
-
-	t = (tail+16) % SHA1_INPUT_BYTES;
-	if(SHA1_INPUT_BYTES - t < 18) {
-		t = (tail - (tail % SHA1_INPUT_BYTES)) + SHA1_INPUT_BYTES - 1;
-	} else {
-		t = tail + 16;
-	}
+	/* Add 96 bits of random data */
+	t = tail + 16;
 	for( ; tail < t; tail++) {
 		random_getbytes(&c, 1);
 		buffer[tail] = encodeAlphabets[EncodeBase64][c & 0x3f];
@@ -430,7 +530,10 @@ unsigned int hashcash_fastmint(const int bits, const char *token,
 	
 	/* Add separator and zeroed count field (for v1 hashcash format) */
 	buffer[tail++] = ':';
-	for(t = tail+8; tail < t; tail++)
+	t = tail + 8;
+	for( ; tail < t; tail++)
+		buffer[tail] = '0';
+	for( ; (tail % SHA1_INPUT_BYTES) != 32 && (tail % SHA1_INPUT_BYTES) != 52; tail++)
 		buffer[tail] = '0';
 	
 	/* Hash all but the final block, due to invariance */
@@ -447,8 +550,9 @@ unsigned int hashcash_fastmint(const int bits, const char *token,
 	tail -= t;
 	
 	/* Run the minter over the last block */
-	gotbits = minters[fastest_minter].func(bits, block, IV, 
-					       tail, 0xFFFFFFFFU);
+	if(bits) {
+		gotbits = minters[fastest_minter].func(bits, block, IV, tail, 0xFFFFFFF0U);
+	}
 	block[tail] = 0;
 	
 	/* Verify solution using reference library */
@@ -474,7 +578,7 @@ unsigned int hashcash_fastmint(const int bits, const char *token,
 	if(b < bits) {
 		fprintf( stderr, "buffer = %s\n", buffer );
 		fprintf( stderr, "wrapped\n" );
-		tail = strlen( token );
+		free(buffer);
 		goto again;
 	}
 	

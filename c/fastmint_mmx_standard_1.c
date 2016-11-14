@@ -11,75 +11,14 @@ typedef int mmx_d_t __attribute__ ((mode(V2SI)));
 typedef int mmx_q_t __attribute__ ((mode(DI)));
 #endif
 
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
-#include <signal.h>
-
-#if defined(_WIN32)
-#define sigjmp_buf jmp_buf
-#define siglongjmp(x,y) longjmp((x),(y))
-#define sigsetjmp(x,y) setjmp(x)
-#define sighandler_t __p_sig_fn_t
-#endif
-
-static sigjmp_buf gEnv2;
-
-static void sig_ill_handler(int sig)
-{
-	gIsMMXPresent = 0;
-	siglongjmp(gEnv2,1);
-}
-#endif
-
 int minter_mmx_standard_1_test(void)
 {
   /* This minter runs only on x86 and AMD64 hardware supporting MMX - and will only compile on GCC */
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
-#if defined(_WIN32)
-        sighandler_t oldhandler;
-#else
-	sigset_t signame = {} ;
-	struct sigaction sa_new = {} , sa_old = {} ;
-#endif	
-	int mmx_available = 0 ;
-
-	if(gIsMMXPresent == -1) {
-		gIsMMXPresent = 1;
-#if defined(_WIN32)
-		oldhandler = signal(SIGILL,sig_ill_handler);
-#else
-		sigemptyset(&signame);
-		sigaddset(&signame, SIGILL);
-		
-		/* Install illegal-instruction handler in case CPUID isn't supported */
-		sa_new.sa_handler = sig_ill_handler;
-		sa_new.sa_mask = signame;
-		sa_new.sa_flags = 0;
-		sigaction(SIGILL, &sa_new, &sa_old);
-#endif		
-		if(!sigsetjmp(gEnv2, 0)) {
-		  asm volatile (
-			"movl $1, %%eax\n\t"
-			"cpuid\n\t"
-			"andl $0x800000, %%edx\n\t"
-			: "=d" (mmx_available)
-			: /* no input */
-			: "eax", /* "ebx", */ "ecx"
-			);
-		}
-		
-#if defined(_WIN32)
-		signal(SIGILL, oldhandler);
-#else
-		sigaction(SIGILL, &sa_old, &sa_new);
-#endif
-	} else {
-		mmx_available = gIsMMXPresent;
-	}
-	
-  return !!mmx_available;
+	return (gProcessorSupportFlags & HC_CPU_SUPPORTS_MMX) != 0;
 #endif
   
-  /* Not an x86 or AMD64, or compiler doesn't support MMX */
+  /* Not an x86 or AMD64, or compiler doesn't support MMX or GNU assembly */
   return 0;
 }
 
@@ -363,6 +302,10 @@ int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailInd
   unsigned char *X = (unsigned char*) W;
   unsigned char *output = (unsigned char*) block;
 	
+	/* Make sure we don't get into an infinite loop */
+	if(maxIter > 0xFFFFFFF0U)
+		maxIter = 0xFFFFFFF0U;
+	
   /* Splat Kn constants into MMX-style array */
   ((uInt32*)K)[0] = ((uInt32*)K)[1] = K1;
   ((uInt32*)K)[2] = ((uInt32*)K)[3] = K2;
@@ -404,16 +347,21 @@ int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailInd
     /* Further, we assume we're always little-endian */
     X[(((tailIndex - 1) & ~3) << 1) + (((tailIndex - 1) & 3) ^ 3) +  0] = p[(iters & 0x3e) + 0];
     X[(((tailIndex - 1) & ~3) << 1) + (((tailIndex - 1) & 3) ^ 3) +  4] = p[(iters & 0x3e) + 1];
-    X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  0] =
-		X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  4] = p[(iters >>  6) & 0x3f];
-    X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  0] =
-		X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  4] = p[(iters >> 12) & 0x3f];
-    X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  0] =
-		X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  4] = p[(iters >> 18) & 0x3f];
-    X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  0] =
-		X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  4] = p[(iters >> 24) & 0x3f];
-    X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  0] =
-		X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  4] = p[(iters >> 30) & 0x3f];
+    if(!(iters & 0x3f)) {
+	    X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  0] =
+			X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  4] = p[(iters >>  6) & 0x3f];
+	    X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  0] =
+			X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  4] = p[(iters >> 12) & 0x3f];
+	    X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  0] =
+			X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  4] = p[(iters >> 18) & 0x3f];
+	    X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  0] =
+			X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  4] = p[(iters >> 24) & 0x3f];
+	    X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  0] =
+			X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  4] = p[(iters >> 30) & 0x3f];
+		}
+		
+		/* Force compiler to flush and reload MMX registers */
+		asm volatile ( "nop" : : : "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7", "memory" );
 
     /* Bypass shortcuts below on certain iterations */
     if((!(iters & 0xffffff)) && (tailIndex == 52 || tailIndex == 32)) {

@@ -1,79 +1,14 @@
 #include <stdio.h>
-#include <setjmp.h>
 #include "libfastmint.h"
-
-#if defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
-	#if defined(__MACH__)
-		#include <sys/sysctl.h>
-	#elif defined(__CARBON__)
-		#include <CoreServices/CoreServices.h>
-	#elif defined(__UNIX__)
-		#include <signal.h>
-		
-		static volatile int gIsAltivecPresent = -1;
-		static sigjmp_buf gEnv;
-		
-		static void sig_ill_handler(int sig)
-		{
-			gIsAltivecPresent = 0;
-			siglongjmp(gEnv,0);
-		}
-	#else /* MacOS Classic */
-		#include <Gestalt.h>
-	#endif
-#endif
 
 int minter_altivec_standard_2_test(void)
 {
 	/* This minter runs only on PowerPC G4 and higher hardware */
-	#if defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
-		#if defined(__MACH__)
-			/* Native MacOS X - use sysctl interface */
-			int selectors[2] = { CTL_HW, HW_VECTORUNIT };
-			int hasVectorUnit = 0;
-			size_t length = sizeof(hasVectorUnit);
-			int error = sysctl(selectors, 2, &hasVectorUnit, &length, NULL, 0);
-			return (!error) && (!!hasVectorUnit);
-		#elif defined(__UNIX__)
-			/* Use generic SIGILL trap handler */
-			if(gIsAltivecPresent == -1) {
-				sig_t oldhandler;
-				sigset_t signame;
-				struct sigaction sa_new, sa_old;
-				
-				gIsAltivecPresent = 1;
-				sigemptyset(&signame);
-				sigaddset(&signame, SIGILL);
-				
-				sa_new.sa_handler = sig_ill_handler;
-				sa_new.sa_mask = signame;
-				sa_new.sa_flags = 0;
-				sigaction(SIGILL, &sa_new, &sa_old);
-				
-				if(!sigsetjmp(gEnv, 0)) {
-					#ifdef __GNUC__
-					asm volatile ( "vor v0,v0,v0" );
-					#else
-					asm { vor v0,v0,v0 }
-					#endif
-				}
-				
-				sigaction(SIGILL, &sa_old, &sa_new);
-			}
-			
-			return gIsAltivecPresent;
-		#else
-			/* Carbon and MacOS Classic */
-			long cpuAttributes;
-			Boolean hasAltivec = false;
-			OSErr err = Gestalt(gestaltPowerPCProcessorFeatures, &cpuAttributes);
-			if(err == NoErr)
-				hasAltivec = (1 << gestaltPowerPCHasVectorInstructions) & cpuAttributes;
-			return !!hasAltivec;
-		#endif
-	#endif
+#if defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
+	return (gProcessorSupportFlags & HC_CPU_SUPPORTS_ALTIVEC) != 0;
+#endif
 	
-	/* Not a PowerPC, or compiler doesn't support Altivec */
+	/* Not a PowerPC, or compiler doesn't support Altivec or GNU assembly */
 	return 0;
 }
 
@@ -400,6 +335,10 @@ int minter_altivec_standard_2(int bits, char *block, const uInt32 IV[5], int tai
 	unsigned char *X2 = (unsigned char*) W2;
 	unsigned char *output = (unsigned char*) block, *X;
 	
+	/* Make sure we don't get into an infinite loop */
+	if(maxIter > 0xFFFFFFF0U)
+		maxIter = 0xFFFFFFF0U;
+	
 	/* Work out which bits to mask out for test */
 	if(maxBits < 32) {
 		bitMask1Low = ~((((uInt32) 1) << (32 - maxBits)) - 1);
@@ -445,50 +384,52 @@ int minter_altivec_standard_2(int bits, char *block, const uInt32 IV[5], int tai
 		X1[(((tailIndex - 1) & ~3) << 2) + ((tailIndex - 1) & 3) + 12] = p[(iters & 0x3c) + 6];
 		X2[(((tailIndex - 1) & ~3) << 2) + ((tailIndex - 1) & 3) + 12] = p[(iters & 0x3c) + 7];
 		
-		X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
-		X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
-		X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
-		X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] =
-		X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
-		X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
-		X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
-		X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] = p[(iters >>  6) & 0x3f];
-		
-		X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
-		X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
-		X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
-		X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] =
-		X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
-		X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
-		X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
-		X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] = p[(iters >> 12) & 0x3f];
-		
-		X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
-		X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
-		X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
-		X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] =
-		X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
-		X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
-		X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
-		X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] = p[(iters >> 18) & 0x3f];
-		
-		X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
-		X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
-		X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
-		X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] =
-		X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
-		X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
-		X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
-		X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] = p[(iters >> 24) & 0x3f];
-		
-		X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
-		X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
-		X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
-		X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] =
-		X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
-		X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
-		X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
-		X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] = p[(iters >> 30) & 0x3f];
+    if(!(iters & 0x3f)) {
+			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
+			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
+			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
+			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] =
+			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
+			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
+			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
+			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] = p[(iters >>  6) & 0x3f];
+			
+			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
+			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
+			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
+			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] =
+			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
+			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
+			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
+			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] = p[(iters >> 12) & 0x3f];
+			
+			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
+			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
+			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
+			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] =
+			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
+			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
+			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
+			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] = p[(iters >> 18) & 0x3f];
+			
+			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
+			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
+			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
+			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] =
+			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
+			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
+			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
+			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] = p[(iters >> 24) & 0x3f];
+			
+			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
+			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
+			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
+			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] =
+			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
+			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
+			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
+			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] = p[(iters >> 30) & 0x3f];
+		}
 
 		/* Bypass shortcuts below on certain iterations */
 		if((!(iters & 0xffffff)) && (tailIndex == 52 || tailIndex == 32)) {

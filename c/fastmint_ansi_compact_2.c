@@ -105,6 +105,10 @@ int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailInd
 	const int W32[] = {21,23,24,26,27,29,30,31,0}, W52[] = {20,23,26,28,29,31,0};
 	char wordUpdate[80] = {0};
 	
+	/* Make sure we don't get into an infinite loop */
+	if(maxIter > 0xFFFFFFF0U)
+		maxIter = 0xFFFFFFF0U;
+	
 	/* Work out whether we need to swap bytes during encoding */
 	addressMask = ( *(char*)&endTest );
 	
@@ -146,14 +150,17 @@ int minter_ansi_compact_2(int bits, char *block, const uInt32 IV[5], int tailInd
 	
 	/* The Tight Loop - everything in here should be extra efficient */
 	for(iters=0; iters < maxIter; iters += 2) {
+
 		/* Encode iteration count into tail */
 		X1[(tailIndex - 1) ^ addressMask] = p[((iters+0)      ) & 0x3f];
 		X2[(tailIndex - 1) ^ addressMask] = p[((iters+1)      ) & 0x3f];
-		X1[(tailIndex - 2) ^ addressMask] = X2[(tailIndex - 2) ^ addressMask] = p[((iters) >>  6) & 0x3f];
-		X1[(tailIndex - 3) ^ addressMask] = X2[(tailIndex - 3) ^ addressMask] = p[((iters) >> 12) & 0x3f];
-		X1[(tailIndex - 4) ^ addressMask] = X2[(tailIndex - 4) ^ addressMask] = p[((iters) >> 18) & 0x3f];
-		X1[(tailIndex - 5) ^ addressMask] = X2[(tailIndex - 5) ^ addressMask] = p[((iters) >> 24) & 0x3f];
-		X1[(tailIndex - 6) ^ addressMask] = X2[(tailIndex - 6) ^ addressMask] = p[((iters) >> 30) & 0x3f];
+		if(!(iters & 0x3f)) {
+			X1[(tailIndex - 2) ^ addressMask] = X2[(tailIndex - 2) ^ addressMask] = p[((iters) >>  6) & 0x3f];
+			X1[(tailIndex - 3) ^ addressMask] = X2[(tailIndex - 3) ^ addressMask] = p[((iters) >> 12) & 0x3f];
+			X1[(tailIndex - 4) ^ addressMask] = X2[(tailIndex - 4) ^ addressMask] = p[((iters) >> 18) & 0x3f];
+			X1[(tailIndex - 5) ^ addressMask] = X2[(tailIndex - 5) ^ addressMask] = p[((iters) >> 24) & 0x3f];
+			X1[(tailIndex - 6) ^ addressMask] = X2[(tailIndex - 6) ^ addressMask] = p[((iters) >> 30) & 0x3f];
+		}
 
 		/* Bypass shortcuts below on certain iterations */
 		if((!(iters & 0xffffff)) && (tailIndex == 52 || tailIndex == 32)) {

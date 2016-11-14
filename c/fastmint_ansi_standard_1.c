@@ -59,6 +59,10 @@ int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIn
 	static const int endTest = 3;
 	unsigned char *output = (unsigned char*) block;
 	
+	/* Make sure we don't get into an infinite loop */
+	if(maxIter > 0xFFFFFFF0U)
+		maxIter = 0xFFFFFFF0U;
+	
 	/* Work out whether we need to swap bytes during encoding */
 	addressMask = ( *(char*)&endTest );
 	
@@ -82,11 +86,13 @@ int minter_ansi_standard_1(int bits, char *block, const uInt32 IV[5], int tailIn
 	for(iters=0; iters < maxIter; iters++) {
 		/* Encode iteration count into tail */
 		X[(tailIndex - 1) ^ addressMask] = p[(iters      ) & 0x3f];
-		X[(tailIndex - 2) ^ addressMask] = p[(iters >>  6) & 0x3f];
-		X[(tailIndex - 3) ^ addressMask] = p[(iters >> 12) & 0x3f];
-		X[(tailIndex - 4) ^ addressMask] = p[(iters >> 18) & 0x3f];
-		X[(tailIndex - 5) ^ addressMask] = p[(iters >> 24) & 0x3f];
-		X[(tailIndex - 6) ^ addressMask] = p[(iters >> 30) & 0x3f];
+    if(!(iters & 0x3f)) {
+			X[(tailIndex - 2) ^ addressMask] = p[(iters >>  6) & 0x3f];
+			X[(tailIndex - 3) ^ addressMask] = p[(iters >> 12) & 0x3f];
+			X[(tailIndex - 4) ^ addressMask] = p[(iters >> 18) & 0x3f];
+			X[(tailIndex - 5) ^ addressMask] = p[(iters >> 24) & 0x3f];
+			X[(tailIndex - 6) ^ addressMask] = p[(iters >> 30) & 0x3f];
+		}
 
 		/* Bypass shortcuts below on certain iterations */
 		if((!(iters & 0xffffff)) && (tailIndex == 52 || tailIndex == 32)) {
