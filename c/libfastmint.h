@@ -77,6 +77,7 @@ typedef enum {
 	EncodeBase64        /* 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/ */
 } EncodeAlphabet;
 
+
 typedef struct {
 	const char *name;
 	EncodeAlphabet encoding;
@@ -89,6 +90,7 @@ typedef struct {
 extern int gProcessorSupportFlags;
 
 extern const char *encodeAlphabets[];
+extern const int EncodeBitRate[];
 
 extern void hashcash_select_minter();
 
@@ -113,7 +115,7 @@ extern void hashcash_select_minter();
  * result buffer after use.
  * Returns the number of bits actually minted (may be more or less than requested).
  */
-extern double hashcash_fastmint(const int bits, const char *token, char **result, hashcash_callback cb, void* user_arg);
+extern double hashcash_fastmint(const int bits, const char *token, int small, char **result, hashcash_callback cb, void* user_arg);
 
 /* Perform a quick benchmark of the selected minting backend.  Returns speed. */
 extern unsigned long hashcash_per_sec(void);
@@ -123,7 +125,7 @@ extern unsigned long hashcash_per_sec(void);
  * Uses one or more known solutions to gauge both speed and accuracy.
  * Optionally displays status and benchmark results on console.
  */
-extern unsigned long hashcash_benchtest(int verbose);
+extern unsigned long hashcash_benchtest(int verbose, int core);
 
 /* Minting backend routines.
  * These are in two parts:
@@ -191,5 +193,12 @@ extern int minter_mmx_standard_1_test(void);
  */
 extern unsigned long minter_mmx_compact_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
 extern int minter_mmx_compact_1_test(void);
+
+/* use SHA1 library (integrated or openSSL depending on how compiled) */
+
+extern int minter_library_test(void);
+
+extern unsigned long minter_library(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS);
+
 
 #endif

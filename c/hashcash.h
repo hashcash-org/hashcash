@@ -26,7 +26,7 @@ extern "C" {
 extern int verbose_flag;
 extern int no_purge_flag;
 
-#define HASHCASH_VERSION 1.14
+#define HASHCASH_VERSION 1.15
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -114,6 +114,9 @@ const char* hashcash_version( void );
  *                    returned stamp.
  *
  * ext             -- extension field
+ *
+ * compress        -- compress the stamp 0 = fast (no compression), 1 = medium
+ *                    (some compression), 2 = very compressed (but slow)
  *
  * small           -- optimize for stamp size (true) or stamp generation speed
  *                    (false)
@@ -362,12 +365,13 @@ int hashcash_to_utctimestr( char utct[MAX_UTC+1], int len, time_t t );
  * arguments are:
  *
  * verbose     -- verbosity level 0 = no output, 1 = some, 2 = more, 3 = most
+ * core        -- core number CORE_ALL (= -1) = all cores, or specific
  */
 
 /* returns speed of hashcash */
 
 HCEXPORT
-unsigned long hashcash_benchtest( int verbose );
+unsigned long hashcash_benchtest( int verbose, int core );
 
 /* returns current core */
 

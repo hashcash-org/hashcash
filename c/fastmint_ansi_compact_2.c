@@ -106,10 +106,6 @@ unsigned long minter_ansi_compact_2(int bits, int* best, unsigned char *block, c
 	const int W32[] = {21,23,24,26,27,29,30,31,0}, W52[] = {20,23,26,28,29,31,0};
 	char wordUpdate[80] = {0};
 	
-	/* Make sure we don't get into an infinite loop */
-	if(maxIter > 0xFFFFFFF0U)
-		maxIter = 0xFFFFFFF0U;
-	
 	*best = 0;
 
 	/* Work out whether we need to swap bytes during encoding */
@@ -152,7 +148,7 @@ unsigned long minter_ansi_compact_2(int bits, int* best, unsigned char *block, c
 		wordUpdate[t] = 1;
 	
 	/* The Tight Loop - everything in here should be extra efficient */
-	for(iters=0; iters < maxIter; iters += 2) {
+	for(iters=0; iters < maxIter-2; iters += 2) {
 
 		/* Encode iteration count into tail */
 		X1[(tailIndex - 1) ^ addressMask] = p[((iters+0)      ) & 0x3f];

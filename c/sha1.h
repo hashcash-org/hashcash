@@ -3,6 +3,8 @@
 #if !defined( _sha1_h )
 #define _sha1_h
 
+/* for size_t */
+#include <string.h>
 #include "types.h"
 
 #if defined( __cplusplus )
@@ -13,6 +15,30 @@ extern "C" {
 #define SHA1_INPUT_WORDS ( SHA1_INPUT_BYTES >> 2 )
 #define SHA1_DIGEST_WORDS 5	/* 160 bits */
 #define SHA1_DIGEST_BYTES ( SHA1_DIGEST_WORDS * 4 )
+
+#if defined( OPENSSL )
+
+#include <openssl/sha.h>
+#define SHA1_ctx SHA_CTX
+#define SHA1_Final( ctx, digest ) SHA1_Final( digest, ctx )
+#undef SHA1_DIGEST_BYTES
+#define SHA1_DIGEST_BYTES SHA_DIGEST_LENGTH
+
+#define SHA1_Init_With_IV( ctx, iv )		\
+    do {					\
+        (ctx)->h0 = iv[0];			\
+        (ctx)->h1 = iv[1];			\
+        (ctx)->h2 = iv[2];			\
+        (ctx)->h3 = iv[3];			\
+        (ctx)->h4 = iv[4];			\
+        (ctx)->Nh = 0;				\
+        (ctx)->Nl = 0;				\
+        (ctx)->num = 0l				\
+    } while (0)
+
+#define SHA1_Transform( iv, data ) SHA1_Xform( iv, data )
+
+#else
 
 typedef struct {
     word32 H[ SHA1_DIGEST_WORDS ];
@@ -31,8 +57,11 @@ void SHA1_Final ( SHA1_ctx*, byte[ SHA1_DIGEST_BYTES ] );
 /* these provide extra access to internals of SHA1 for MDC and MACs */
 
 void SHA1_Init_With_IV( SHA1_ctx*, const byte[ SHA1_DIGEST_BYTES ] );
-void SHA1_Transform( word32[ SHA1_DIGEST_WORDS ], 
-		     const byte[ SHA1_INPUT_BYTES ] );
+
+#endif
+
+void SHA1_Xform( word32[ SHA1_DIGEST_WORDS ], 
+		 const byte[ SHA1_INPUT_BYTES ] );
 
 #if defined( __cplusplus )
 }

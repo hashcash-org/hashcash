@@ -1,4 +1,4 @@
-HC_VERS = 1.14
+HC_VERS = 1.15
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -14,6 +14,7 @@ MSLIB = mslib
 # 	CFLAGS = -DREGEXP_BSD
 # if no POSIX or BSD, disable, still have builtin basic wildcard support
 # 	CFLAGS = 
+COPT_DEBUG = -g
 COPT_GENERIC = -O3
 COPT_GNU = -O3 -funroll-loops
 COPT_X86 = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
@@ -35,7 +36,8 @@ FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
 	fastmint_ansi_compact_1.o fastmint_ansi_standard_1.o \
 	fastmint_ansi_compact_2.o fastmint_ansi_standard_2.o \
 	fastmint_altivec_standard_1.o fastmint_altivec_standard_2.o \
-	fastmint_altivec_compact_2.o fastmint_ansi_ultracompact_1.o
+	fastmint_altivec_compact_2.o fastmint_ansi_ultracompact_1.o \
+	fastmint_library.o
 OBJS = libsha1.o libhc.o sdb.o lock.o utct.o random.o sstring.o \
 	getopt.o $(FASTLIBS)
 DLLOBJS = libhc.o libsha1.o utct.o sdb.o lock.o sstring.o random.o $(FASTLIBS)
@@ -55,6 +57,9 @@ help:
 
 generic:
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_GENERIC) $(COPT)" build
+
+debug:
+	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_DEBUG) $(COPT)" build
 
 gnu:
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_GNU) $(COPT)" "CC=gcc" build
@@ -162,6 +167,7 @@ fastmint_ansi_compact_2.o: libfastmint.h hashcash.h
 fastmint_ansi_standard_1.o: libfastmint.h hashcash.h
 fastmint_ansi_standard_2.o: libfastmint.h hashcash.h
 fastmint_ansi_ultracompact_1.o: libfastmint.h hashcash.h
+fastmint_library.o: sha1.h types.h libfastmint.h hashcash.h
 fastmint_mmx_compact_1.o: libfastmint.h hashcash.h
 fastmint_mmx_standard_1.o: libfastmint.h hashcash.h
 getopt.o: getopt.h

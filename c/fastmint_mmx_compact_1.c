@@ -195,10 +195,6 @@ unsigned long minter_mmx_compact_1(int bits, int* best, unsigned char *block, co
   unsigned char *X = (unsigned char*) W;
   unsigned char *output = (unsigned char*) block;
 	
-  /* Make sure we don't get into an infinite loop */
-  if(maxIter > 0xFFFFFFF0U)
-    maxIter = 0xFFFFFFF0U;
-	
   *best = 0;
 
   /* Splat Kn constants into MMX-style array */
@@ -235,24 +231,34 @@ unsigned long minter_mmx_compact_1(int bits, int* best, unsigned char *block, co
 	}
 	
   /* The Tight Loop - everything in here should be extra efficient */
-  for(iters=0; iters < maxIter; iters += 2) {
+  for(iters=0; iters < maxIter-2; iters += 2) {
     /* Encode iteration count into tail */
     /* Iteration count is always 2-aligned, so only least-significant character needs multiple lookup */
     /* Further, we assume we're always little-endian */
     X[(((tailIndex - 1) & ~3) << 1) + (((tailIndex - 1) & 3) ^ 3) +  0] = p[(iters & 0x3e) + 0];
     X[(((tailIndex - 1) & ~3) << 1) + (((tailIndex - 1) & 3) ^ 3) +  4] = p[(iters & 0x3e) + 1];
     if(!(iters & 0x3f)) {
+      if ( iters >> 6 ) {
 	    X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  0] =
 			X[(((tailIndex - 2) & ~3) << 1) + (((tailIndex - 2) & 3) ^ 3) +  4] = p[(iters >>  6) & 0x3f];
+      }
+      if ( iters >> 12 ) {
 	    X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  0] =
 			X[(((tailIndex - 3) & ~3) << 1) + (((tailIndex - 3) & 3) ^ 3) +  4] = p[(iters >> 12) & 0x3f];
+      }
+      if ( iters >> 18 ) {
 	    X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  0] =
 			X[(((tailIndex - 4) & ~3) << 1) + (((tailIndex - 4) & 3) ^ 3) +  4] = p[(iters >> 18) & 0x3f];
+      }
+      if ( iters >> 24 ) {
 	    X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  0] =
 			X[(((tailIndex - 5) & ~3) << 1) + (((tailIndex - 5) & 3) ^ 3) +  4] = p[(iters >> 24) & 0x3f];
+      }
+      if ( iters >> 30 ) {
 	    X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  0] =
 			X[(((tailIndex - 6) & ~3) << 1) + (((tailIndex - 6) & 3) ^ 3) +  4] = p[(iters >> 30) & 0x3f];
-		}
+      }
+    }
 
 		/* Force compiler to flush and reload MMX registers */
 		asm volatile ( "nop" : : : "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7", "memory" );

@@ -77,7 +77,7 @@
 #define PPUTS(f,str) PP { fputs(str,f); }
 #define VPUTS(f,str) VV { fputs(str,f); }
 
-#define HDR_LINE_LEN 70
+#define HDR_LINE_LEN 79
 char *read_header( FILE* f, char** s, int* slen, int* alloc, 
 		   char* a, int alen );
 int read_eof( FILE* fp, char* a );
@@ -170,8 +170,9 @@ int main( int argc, char* argv[] )
     int mint_flag = 0, ignore_boundary_flag = 0, name_flag = 0, res_flag = 0;
     int auto_version = 0, version_flag = 0, checked = 0, comma = 0;
     char header[ MAX_HDR+1 ] = { 0 };
+    char header2[ MAX_HDR+1 ] = { 0 };
     char* header_wrapped = NULL;
-    int header_len, token_found = 0, headers_found = 0;
+    int hdr_len, hdr2_len, token_found = 0, token2_found = 0, hdrs_found = 0;
     char token[ MAX_TOK+1 ] = { 0 }, token_resource[ MAX_RES+1 ] = { 0 };
     char *new_token = NULL ;
     char line_arr[ MAX_LINE+1 ] = { 0 }, *line = line_arr;
@@ -191,9 +192,9 @@ int main( int argc, char* argv[] )
     time_t now_time = real_time;
     time_t token_time = 0, expiry_time = 0;
     int time_width_flag = 0;	/* -z option, default 6 YYMMDD */
-    int small_flag = 0;		/* fast by default */
+    int compress = 0;		/* fast by default */
     int inferred_time_width = 0, time_width = 6; /* default YYMMDD */
-    int core = 0, res = 0;
+    int core = 0, res = 0, core_flag = 0;
 
     double tries_taken = 0, taken = 0, tries_expected = 0, time_est = 0;
     int opt = 0, vers = 0, db_opened = 0, i = 0, t = 0, tty_info = 0;
@@ -222,7 +223,7 @@ int main( int argc, char* argv[] )
     array_alloc( &args, 32 );
 
     while ( (opt=getopt(argc, argv, 
-		"-a:b:cde:f:g:hij:klmnop:qr:sSt:uvwx:yz:CEMO:PSVXZ")) >0 ) {
+		"-a:b:cde:f:g:hij:klmnop:qr:st:uvwx:yz:CEMO:PSVXZ:")) >0 ) {
 	switch ( opt ) {
 	case 'a': anon_flag = 1; 
 	    if ( !parse_period( optarg, &anon_period ) ) {
@@ -283,7 +284,9 @@ int main( int argc, char* argv[] )
 	case 'l': left_flag = 1; break;
 	case 'n': name_flag = 1; break;
 	case 'o': over_flag = 1; break;
-	case 'O': core = atoi( optarg ); 
+	case 'O': 
+	    core_flag = 1; 
+	    core = atoi( optarg ); 
 	    res = hashcash_use_core( core );
 	    if ( res < 1 ) {
 		usage( res == -1 ? "error: -O no such core\n" : 
@@ -368,6 +371,7 @@ int main( int argc, char* argv[] )
 	case 'X':
 	    hdr_flag = 1;
 	    sstrncpy( header, "X-Hashcash: ", MAX_HDR );
+	    sstrncpy( header2, "Hashcash: ", MAX_HDR );
 	    break;
 	case 'y': yes_flag = 1; break;
 	case 'z': 
@@ -377,7 +381,7 @@ int main( int argc, char* argv[] )
 	        usage( "error: -z invalid time width: must be 6, 10 or 12" );
 	    }
 	    break;
-	case 'Z': small_flag = 1; break;
+	case 'Z': compress = atoi( optarg ); break;
 	case '?': 
 	    fprintf( stderr, "error: unrecognized option -%c", optopt );
 	    usage( "" );
@@ -471,7 +475,11 @@ int main( int argc, char* argv[] )
 	/* integrate the bench test */
 
 	if ( verbose_flag && speed_flag && !mint_flag ) {
-	    hashcash_benchtest( 3 );
+	    if ( core_flag ) {
+		hashcash_benchtest( 3, core );
+	    } else {
+		hashcash_benchtest( 3, -1 );
+	    }
 	    exit( EXIT_SUCCESS ); /* don't actually calculate it */
 	}
 
@@ -481,6 +489,7 @@ int main( int argc, char* argv[] )
 	    QPRINTF( stderr, "speed: %ld collision tests per second\n",
                      hashcash_per_sec() );
             PPRINTF( stdout, "%ld\n", hashcash_per_sec() );
+	    QPRINTF( stderr, "compression: %d\n", compress );
 	}
 
 	if ( verbose_flag || ( speed_flag && !bits_flag ) ) {
@@ -490,6 +499,9 @@ int main( int argc, char* argv[] )
                      hashcash_per_sec() );
 	    if ( speed_flag && !bits_flag && !mint_flag ) {
                 PPRINTF( stdout, "%ld\n", hashcash_per_sec() );
+	    }
+	    QPRINTF( stderr, "compression: %d\n", compress );
+	    if ( speed_flag && !bits_flag && !mint_flag ) {
 		exit( EXIT_SUCCESS ); /* don't actually calculate it */
 	    }
 	}
@@ -514,7 +526,7 @@ int main( int argc, char* argv[] )
 
 	    err = hashcash_mint( now_time, ent->width, ent->str, ent->bits, 
 				 ent->anon, &new_token, &anon_random, 
-				 &tries_taken, ext, small_flag, 
+				 &tries_taken, ext, compress, 
 				 callback, NULL );
 	    end = clock();
 
@@ -579,8 +591,13 @@ int main( int argc, char* argv[] )
 		left_flag || bits_flag || res_flag || db_flag ) {
 
 	/* check token is valid */
-	trimspace(header);	/* be forgiving about missing space */
-	header_len = strlen( header );
+	trimspace( header );	/* be forgiving about missing space */
+	hdr_len = strlen( header );
+
+	if ( header2[0] ) {
+	    trimspace( header2 );
+	    hdr2_len = strlen( header2 );
+	}
 
 	/* if no resources given create a kind of NULL entry to carry */
 	/* the other options along; hashcash_check knows to not check */
@@ -591,7 +608,7 @@ int main( int argc, char* argv[] )
 			grace_period, anon_period, time_width, bits, 0 );
 	}
 
-	headers_found = 0;
+	hdrs_found = 0;
 	tty_info = 0;
 	in_headers = 0;
 
@@ -626,10 +643,16 @@ int main( int argc, char* argv[] )
 		if ( line[0] == '\0' ) { continue; }
 		if ( hdr_flag )	{
 		    token_found = (strncasecmp( line, header, 
-						header_len ) == 0);
+						hdr_len ) == 0);
+		    token2_found = header2[0] && 
+			(strncasecmp( line, header2, hdr2_len ) == 0);
 		    if ( token_found ) { 
-			sstrncpy( token, line+header_len, MAX_TOK );
-			headers_found = 1; 
+			sstrncpy( token, line+hdr_len, MAX_TOK );
+			hdrs_found = 1; 
+		    } else if ( token2_found ) { 
+			sstrncpy( token, line+hdr2_len, MAX_TOK );
+			hdrs_found = 1;
+			token_found = 1;
 		    }
 		} else {
 		    token_found = 1; 
@@ -878,7 +901,7 @@ int main( int argc, char* argv[] )
 	    }
 	}
 	if ( !width_flag && !left_flag && !name_flag ) {
-	    if ( hdr_flag && !headers_found ) {
+	    if ( hdr_flag && !hdrs_found ) {
 		QPRINTF( stderr, "warning: no line matching %s found in input\n",
 			 header );
 	    } 
@@ -1018,6 +1041,7 @@ void usage( const char* msg )
     fprintf( stderr, "\t-E\t\tmatch following resources as regular expression\n" );
     fprintf( stderr, "\t-P\t\tshow progress while searching\n");
     fprintf( stderr, "\t-O core\t\tuse specified minting core\n");
+    fprintf( stderr, "\t-Z n\t\t0 = fast (default), 1 = medium, 2 = small/slow\n");
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -mb20 foo                               # mint 20 bit collision\n" );
     fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check collision\n" );

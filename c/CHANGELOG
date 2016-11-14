@@ -1,3 +1,18 @@
+hashcash-1.15rc1 - 19-Dec-2004 - Adam Back <adam@cypherspace.org>
+
+	* make "Hashcash:" be accepted as well as "X-Hashcash:"
+	  suggestion by Simon Josefsson <jas@extundo.com>.  This way
+	  if/when the X- is dropped from hashcash headers we will not
+	  have a backwards compatibility problem.  (Well not after
+	  version 1.15).
+
+	* implement the -Z option to compress stamps; in fact the
+	  usage changed so -Z takes an argument: 0, 1 or 2.  0 = not
+	  compressed, 1 = compressed but not so the counter + padding
+	  is split, and 2 = very compressed, but slow.
+
+	* added -O x -sv to request benchtest of core x only
+
 hashcash-1.14 - 14-Dec-2004 - Adam Back <adam@cypherspace.org>
 
 	* make hashcash -cX accept continuation lines starting with

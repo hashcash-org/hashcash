@@ -102,10 +102,6 @@ unsigned long minter_altivec_standard_1(int bits, int* best, unsigned char *bloc
 	unsigned char *X = (unsigned char*) W;
 	unsigned char *output = (unsigned char*) block;
 	
-	/* Make sure we don't get into an infinite loop */
-	if(maxIter > 0xFFFFFFF0U)
-		maxIter = 0xFFFFFFF0U;
-	
 	*best = 0;
 
 	/* Work out which bits to mask out for test */
@@ -135,7 +131,7 @@ unsigned long minter_altivec_standard_1(int bits, int* best, unsigned char *bloc
 	}
 	
 	/* The Tight Loop - everything in here should be extra efficient */
-	for(iters=0; iters < maxIter; iters += 4) {
+	for(iters=0; iters < maxIter-4; iters += 4) {
 		/* Encode iteration count into tail */
 		/* Iteration count is always 4-aligned, so only least-significant character needs multiple lookup */
 		/* Further, we assume we're always big-endian */
@@ -143,27 +139,37 @@ unsigned long minter_altivec_standard_1(int bits, int* best, unsigned char *bloc
 		X[(((tailIndex - 1) & ~3) << 2) + ((tailIndex - 1) & 3) +  4] = p[(iters & 0x3c) + 1];
 		X[(((tailIndex - 1) & ~3) << 2) + ((tailIndex - 1) & 3) +  8] = p[(iters & 0x3c) + 2];
 		X[(((tailIndex - 1) & ~3) << 2) + ((tailIndex - 1) & 3) + 12] = p[(iters & 0x3c) + 3];
-    if(!(iters & 0x3f)) {
-			X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
-			X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
-			X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
-			X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] = p[(iters >>  6) & 0x3f];
-			X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
-			X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
-			X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
-			X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] = p[(iters >> 12) & 0x3f];
-			X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
-			X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
-			X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
-			X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] = p[(iters >> 18) & 0x3f];
-			X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
-			X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
-			X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
-			X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] = p[(iters >> 24) & 0x3f];
-			X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
-			X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
-			X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
-			X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] = p[(iters >> 30) & 0x3f];
+		if(!(iters & 0x3f)) {
+			if ( iters >> 6 ) {
+				X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
+				X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
+				X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
+				X[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] = p[(iters >>  6) & 0x3f];
+			}
+			if ( iters >> 12 ) {
+				X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
+				X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
+				X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
+				X[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] = p[(iters >> 12) & 0x3f];
+			}
+			if ( iters >> 18 ) {
+				X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
+				X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
+				X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
+				X[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] = p[(iters >> 18) & 0x3f];
+			}
+			if ( iters >> 24 ) {
+				X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
+				X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
+				X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
+				X[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] = p[(iters >> 24) & 0x3f];
+			}
+			if ( iters >> 30 ) {
+				X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
+				X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
+				X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
+				X[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] = p[(iters >> 30) & 0x3f];
+			}
 		}
 
 		/* Bypass shortcuts below on certain iterations */

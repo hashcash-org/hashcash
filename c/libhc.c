@@ -190,7 +190,7 @@ int hashcash_mint( time_t now_time, int time_width, const char* resource,
     sprintf( token, "%d:%d:%s:%s:%s:", 
 	     HASHCASH_FORMAT_VERSION, bits, now_utime, resource, ext );
 
-    taken = hashcash_fastmint( bits, token, new_token, cb, user_arg );
+    taken = hashcash_fastmint( bits,token,compress,new_token,cb,user_arg );
     if ( taken < 0 ) {
 	free( token );
 	return HASHCASH_USER_ABORT;

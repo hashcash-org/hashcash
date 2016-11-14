@@ -37,6 +37,8 @@ const char *encodeAlphabets[] = {
 	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/"
 };
 
+const int EncodeBitRate[] = { 4, 4, 4, 4, 6 };
+
 /* Keep track of what the CPU supports */
 static volatile int gIllegalInstructionTrapped = 0;
 static jmp_buf gEnv;
@@ -144,9 +146,24 @@ static void hashcash_detect_features(void)
  * the available minter array if necessary.
  */
 
+static const EncodeAlphabet encodings[] = {
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64,
+	EncodeBase64 
+};
+
 void hashcash_select_minter()
 {
 	static const HC_Mint_Routine funcs[] = {
+		minter_library,
 		minter_ansi_compact_1,
 		minter_ansi_standard_1,
 		minter_ansi_ultracompact_1,
@@ -159,6 +176,7 @@ void hashcash_select_minter()
 		minter_mmx_standard_1,
 		NULL };
 	static const HC_Mint_Capable_Routine tests[] = {
+		minter_library_test,
 		minter_ansi_compact_1_test,
 		minter_ansi_standard_1_test,
 		minter_ansi_ultracompact_1_test,
@@ -171,6 +189,11 @@ void hashcash_select_minter()
 		minter_mmx_standard_1_test,
 		NULL };
 	static const char *names[] = {
+#if defined( OPENSSL )
+		"SHA1 library (openSSL)",
+#else
+		"SHA1 library (hashcash)",
+#endif
 		"ANSI Compact 1-pipe",
 		"ANSI Standard 1-pipe",
 		"ANSI Ultra-Compact 1-pipe",
@@ -182,17 +205,6 @@ void hashcash_select_minter()
 		"AMD64/x86 MMX Compact 1x2-pipe",
 		"AMD64/x86 MMX Standard 1x2-pipe",
 		NULL };
-	static const EncodeAlphabet encodings[] = {
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64,
-		EncodeBase64 };
 	int i = 0 ;
 	
 	/* Populate array */
@@ -216,11 +228,11 @@ void hashcash_select_minter()
 	   and standard_1 elsewhere */
 
 	#ifdef __i386__
-	fastest_minter = 0;
-	#elif defined(__M68000__)
-	fastest_minter = 2;
-	#else
 	fastest_minter = 1;
+	#elif defined(__M68000__)
+	fastest_minter = 3;
+	#else
+	fastest_minter = 2;
 	#endif
 	
 	/* Detect actual CPU capabilities */
@@ -229,14 +241,14 @@ void hashcash_select_minter()
 	/* See if any of the vectorised minters work, choose the
 	   highest-numbered one that does */
 
-	for(i=5; i < num_minters; i++) {
+	for(i=6; i < num_minters; i++) {
 		if(minters[i].test()) {	fastest_minter = i; }
 	}
 }
 
 /* Do a quick, silent benchmark of the selected backend.  Assumes it
  * works. */
-unsigned long hashcash_per_sec_calc(void)
+unsigned long hashcash_per_sec_calc( void )
 {
 	static const unsigned int test_bits = 64;
 	static const char *test_string = 
@@ -351,7 +363,7 @@ unsigned long hashcash_per_sec(void)
  * the speed of the fastest valid routine, and updates fastest_minter
  * as appropriate.
  */
-unsigned long hashcash_benchtest(int verbose)
+unsigned long hashcash_benchtest(int verbose, int core)
 {
 	unsigned long i, a, b;
 	int best_minter = -1, got_bits = 0;
@@ -361,12 +373,13 @@ unsigned long hashcash_benchtest(int verbose)
 	static const int test_tail = 52;  /* must be less than 56 */
 	static const int bit_stats[] = { 8, 10, 16, 20, 22, 
 					 24, 26, 28, 30, 0 };
-	unsigned char block[SHA1_INPUT_BYTES] = {0};
-	volatile clock_t begin = 0 , end = 0 , tmp = 0 ;
-	double elapsed = 0 , rate = 0 , peak_rate = 0;
+	unsigned char block[SHA1_INPUT_BYTES+1] = {0};
+	volatile clock_t begin = 0, end = 0, tmp = 0;
+	double elapsed = 0, rate = 0, peak_rate = 0;
 	SHA1_ctx crypter;
 	unsigned char hash[SHA1_DIGEST_BYTES] = {0};
 	const char *p = NULL , *q = NULL ;
+	int start = 0, stop = 0;
 
 	/* If minter list isn't valid, make it so */
 	hashcash_select_minter();
@@ -377,7 +390,12 @@ unsigned long hashcash_benchtest(int verbose)
 	}
 	if(verbose >= 3) { printf("\n"); }
 	
-	for(i=0; i < num_minters; i++) {
+	if ( core >= 0 ) { 
+	  start = core; stop = start+1; 
+	} else { 
+	  start = 0; stop = num_minters;
+	}
+	for(i = start; i < stop; i++) {
 		/* If the minter can't run... */
 		if(!minters[i].test()) {
 			if(verbose >= 2) {
@@ -396,6 +414,7 @@ unsigned long hashcash_benchtest(int verbose)
 		block[test_tail] = 0x80;
 		memset(block+test_tail+1, 0, 59-test_tail);
 		PUT_WORD(block+60, test_tail << 3);
+		block[SHA1_INPUT_BYTES] = 0x0;
 		
 		/* Run minter, with clock running */
 		end = clock();
@@ -520,30 +539,34 @@ unsigned long hashcash_benchtest(int verbose)
  * than requested).
  */
 
-#define BIG_ITER 0xFFFFFFF0U	/* 2^32 - 16 */
+#define BIG_ITER 0x40000000U	/* 2^30 */
 
-double hashcash_fastmint(const int bits, const char *token, 
+double hashcash_fastmint(const int bits, const char *token, int compress,
 			 char **result, hashcash_callback cb, void* user_args)
 {
 	SHA1_ctx crypter;
 	unsigned char hash[SHA1_DIGEST_BYTES] = {0};
 	unsigned int IV[SHA1_DIGEST_WORDS] = {0};
 	unsigned char *buffer = NULL, *block = NULL, c = 0;
-	unsigned int buflen = 0, tail = 0, a = 0, b = 0;
-	unsigned long t = 0, loop = 0, iters = 0;
+	unsigned int buflen = 0, tail = 0, a = 0, b = 0, save_tail = 0;
+	unsigned long t = 0, loop = 0, iters = 0, i = 0;
 	HC_Mint_Routine best_minter;
 	double counter = 0, expected = 0;
 	/* this is to allow this fn to call the same callback macro */
 	MINTER_CALLBACK_VARS;
-	int gotBits = 0;
-	int* best;
+	int gotBits = 0, bit_rate = 6, chars = 0, blocks = 1;
+	int* best;		/* NB this is needed for CALLBACK macros */
 
 	best = &gotBits;
 	
 	/* Make sure list of minters is valid */
 	if(fastest_minter < 0) { hashcash_select_minter(); }
+
+	/* only the library minter can cope with split blocks */
+	if ( compress > 1 ) { fastest_minter = 0; }
+
 	best_minter = minters[fastest_minter].func;
-	
+
 	expected = hashcash_expected_tries( bits );
 
 	/* Set up string for hashing */
@@ -563,35 +586,74 @@ double hashcash_fastmint(const int bits, const char *token,
 	
 	/* Add separator and zeroed count field (for v1 hashcash format) */
 	buffer[tail++] = ':';
-	t = tail + 8;
-	for( ; tail < t; tail++)
-		buffer[tail] = '0';
-	for( ; (tail % SHA1_INPUT_BYTES) != 32 && (tail % SHA1_INPUT_BYTES) != 52; tail++)
-		buffer[tail] = '0';
-	
-	/* Hash all but the final block, due to invariance */
-	t = tail - (tail % SHA1_INPUT_BYTES);
-	SHA1_Init(&crypter);
-	SHA1_Update(&crypter, buffer, t);
-	for(a=0; a < 5; a++)
-		IV[a] = crypter.H[a];
-	block = buffer + t;
-	
-	/* Fill in the padding and trailer */
-	buffer[tail] = 0x80;
-	PUT_WORD(block+60, tail << 3);
-	tail -= t;
-	
-	if(bits) {
-	/* Run the minter over the last block */
-		loop=best_minter(bits,&gotBits,block,IV,tail,
-				 BIG_ITER,cb,user_args,counter,expected);
-		if (loop==0) {
-			  free(buffer);
-			  if (*best==-1) {return -1;}
-			  else { return 0; }
+	save_tail = tail;
+
+	bit_rate = EncodeBitRate[encodings[fastest_minter]];
+	chars = 31/bit_rate;
+	for ( i = compress ? 1 : chars; i <= chars && gotBits < bits; i++ ) {
+		tail = save_tail;
+		t = tail + i;
+		for( ; tail < t; tail++) { buffer[tail] = '0'; }
+		switch (compress) {
+		case 0:		/* fast stamps */
+        	        /* Align to optimal counting positions */
+			for( ; (tail % SHA1_INPUT_BYTES) != 32 && 
+			       (tail % SHA1_INPUT_BYTES) != 52; tail++) {
+				buffer[tail] = '0';
+			}
+			break;
+		case 1:	       /* produce moderately compact stamps */
+		  	/* ensure counting is all within one SHA-1 block */
+			for( ; (tail % SHA1_INPUT_BYTES) < i ||
+			       (tail % SHA1_INPUT_BYTES) >= 56; tail++) {
+	                	buffer[tail] = '0';
+			}
+			break;
+		default:	/* produce very compact stamps */
+			if ( (tail % SHA1_INPUT_BYTES) < i ||
+			     (tail % SHA1_INPUT_BYTES) >= 56 ) {
+				blocks = 2; /* split across block */
+			}
+			/* no padding at all! */
 		}
+
+		/* Hash all but the final block, due to invariance */
+		t = tail - (tail % SHA1_INPUT_BYTES);
+		if ( blocks > 1 && t >= 64 && (tail % SHA1_INPUT_BYTES) < i ) {
+			t -= 64;
+		}
+		SHA1_Init(&crypter);
+		SHA1_Update(&crypter, buffer, t);
+#if defined(OPENSSL)
+		IV[0]=crypter.h0;
+		IV[1]=crypter.h1;
+		IV[2]=crypter.h2;
+		IV[3]=crypter.h3;
+		IV[4]=crypter.h4;
+#else
+		for(a=0; a < 5; a++) { IV[a] = crypter.H[a]; }
+#endif
+		block = buffer + t;
+		if ( blocks > 1 && block[SHA1_INPUT_BYTES] == 0 ) {
+			block[SHA1_INPUT_BYTES] = blocks-1;
+		}
+		/* Fill in the padding and trailer */
+		buffer[tail] = 0x80;
+		PUT_WORD(block+(blocks>1?64:0)+60, tail << 3);
+		tail -= t;
+	
+		/* Run the minter over the last block */
+		loop=best_minter(bits, &gotBits, block, IV, tail,
+				 0x1U << (i*bit_rate), cb,
+				 user_args,counter,expected);
+		if (loop==0) {
+			free(buffer);
+		  	if (*best==-1) {return -1;}
+		  	else { return 0; }
+		}
+		counter += (double)loop;
 	}
+
 	/* if we succeeded call the callback also */
 	if ( gotBits >= bits ) { MINTER_CALLBACK(); }
 	block[tail] = 0;
@@ -613,8 +675,6 @@ double hashcash_fastmint(const int bits, const char *token,
 		exit(3);
 	}
 	
-	counter += (double)loop;
-
 	/* The minter might not be able to detect unusually large
 	 * (32+) bit counts, so we're allowed to give it another try.
 	 */

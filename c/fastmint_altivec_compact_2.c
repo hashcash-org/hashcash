@@ -648,10 +648,6 @@ unsigned long minter_altivec_compact_2(int bits, int* best, unsigned char *block
 	unsigned char *X2 = (unsigned char*) W2;
 	unsigned char *output = (unsigned char*) block, *X;
 	
-	/* Make sure we don't get into an infinite loop */
-	if(maxIter > 0xFFFFFFF0U)
-		maxIter = 0xFFFFFFF0U;
-	
 	*best = 0;
 
 	/* Work out which bits to mask out for test */
@@ -686,7 +682,7 @@ unsigned long minter_altivec_compact_2(int bits, int* best, unsigned char *block
 	}
 	
 	/* The Tight Loop - everything in here should be extra efficient */
-	for(iters=0; iters < maxIter; iters += 8) {
+	for(iters=0; iters < maxIter-8; iters += 8) {
 		/* Encode iteration count into tail */
 		/* Iteration count is always 8-aligned, so only least-significant character needs multiple lookup */
 		/* Further, we assume we're always big-endian */
@@ -699,51 +695,57 @@ unsigned long minter_altivec_compact_2(int bits, int* best, unsigned char *block
 		X1[(((tailIndex - 1) & ~3) << 2) + ((tailIndex - 1) & 3) + 12] = p[(iters & 0x38) + 6];
 		X2[(((tailIndex - 1) & ~3) << 2) + ((tailIndex - 1) & 3) + 12] = p[(iters & 0x38) + 7];
 		
-    if(!(iters & 0x3f)) {
-			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
-			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
-			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
-			X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] =
-			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
-			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
-			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
-			X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] = p[(iters >>  6) & 0x3f];
-			
-			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
-			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
-			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
-			X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] =
-			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
-			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
-			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
-			X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] = p[(iters >> 12) & 0x3f];
-			
-			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
-			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
-			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
-			X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] =
-			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
-			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
-			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
-			X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] = p[(iters >> 18) & 0x3f];
-			
-			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
-			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
-			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
-			X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] =
-			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
-			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
-			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
-			X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] = p[(iters >> 24) & 0x3f];
-			
-			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
-			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
-			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
-			X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] =
-			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
-			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
-			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
-			X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] = p[(iters >> 30) & 0x3f];
+		if(!(iters & 0x3f)) {
+			if ( iters >> 6 ) {
+				X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
+				X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
+				X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
+				X1[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] =
+				X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  0] =
+				X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  4] =
+				X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) +  8] =
+				X2[(((tailIndex - 2) & ~3) << 2) + ((tailIndex - 2) & 3) + 12] = p[(iters >>  6) & 0x3f];
+			}
+			if ( iters >> 12 ) { 
+				X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
+				X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
+				X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
+				X1[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] =
+				X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  0] =
+				X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  4] =
+				X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) +  8] =
+				X2[(((tailIndex - 3) & ~3) << 2) + ((tailIndex - 3) & 3) + 12] = p[(iters >> 12) & 0x3f];
+			}
+			if ( iters >> 18 ) {
+				X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
+				X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
+				X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
+				X1[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] =
+				X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  0] =
+				X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  4] =
+				X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) +  8] =
+				X2[(((tailIndex - 4) & ~3) << 2) + ((tailIndex - 4) & 3) + 12] = p[(iters >> 18) & 0x3f];
+			}
+			if ( iters >> 24 ) {
+				X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
+				X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
+				X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
+				X1[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] =
+				X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  0] =
+				X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  4] =
+				X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) +  8] =
+				X2[(((tailIndex - 5) & ~3) << 2) + ((tailIndex - 5) & 3) + 12] = p[(iters >> 24) & 0x3f];
+			}
+			if ( iters >> 30 ) {
+				X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
+				X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
+				X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
+				X1[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] =
+				X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  0] =
+				X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  4] =
+				X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) +  8] =
+				X2[(((tailIndex - 6) & ~3) << 2) + ((tailIndex - 6) & 3) + 12] = p[(iters >> 30) & 0x3f];
+			}
 		}
 		
 		/* Bypass shortcuts below on certain iterations */

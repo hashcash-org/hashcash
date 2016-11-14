@@ -540,6 +540,13 @@ Not all cores work on all architectures.  Eg some are x86 specific
 assembler, others PPC specific assembler.  If a core is not valid
 hashcash returns failure and explains what happened.
 
+=item I<-Z n>
+
+Compress the stamp.  This is a time vs space trade off.  Larger stamps
+are faster, but arguably slightly ugly.  For fastest stamps (the
+default) use -Z 0; for partly compressed stamps use -Z 1; for very
+compressed, but somewhat slow stamps use -Z 2.
+
 =back
 
 =head1 EXAMPLES

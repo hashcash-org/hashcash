@@ -18,6 +18,68 @@
 #include <string.h>
 #include "sha1.h"
 
+static int swap_endian32( void*, size_t );
+
+/* A run time endian test.  
+
+   little_endian is the broken one: 80x86s, VAXs
+   big_endian is: most unix machines, RISC chips, 68000, etc
+
+   The endianess is stored in macros:
+
+         little_endian
+   and   big_endian
+
+   These boolean values can be checked in your code in C expressions.
+
+   They should NOT be tested with conditional macro statements (#ifdef
+   etc).
+*/
+
+static const int endian_test = 1;
+
+#define little_endian ( *(char*)&endian_test == 1 )
+
+#define big_endian ( ! little_endian )
+
+#define make_big_endian32( data, len ) \
+    ( little_endian ? swap_endian32( data, len ) : 0 )
+
+#define make_little_endian32( data, len ) \
+    ( little_endian ? 0 : swap_endian32( data, len ) )
+
+#define make_local_endian32( data, len ) \
+    ( little_endian ? swap_endian32( data, len ) : 0 )
+#if defined( OPENSSL )
+
+void SHA1_Xform( word32* iv, const byte* data ) {
+    SHA1_ctx c;
+    byte d[SHA1_INPUT_BYTES];
+
+    c.h0=iv[0]; c.h1=iv[1]; c.h2=iv[2]; c.h3=iv[3]; c.h4=iv[4];
+
+/* openSSL SHA1_Transform is in data order, trying to be helpful */
+/* #undef SHA1_Transform */
+/*    SHA1_Transform( &c, data ); */
+
+    /* but they offer a host order version */
+    /* but they don't export it :-( */
+    /* sha1_block_asm_host_order( &c, data ); */
+
+/* plan C, copy & convert the data on input */
+#undef SHA1_Transform
+    if ( little_endian ) { 
+	memcpy( d, data, SHA1_INPUT_BYTES );
+	make_local_endian32( d, SHA1_INPUT_WORDS );
+	SHA1_Transform( &c, d );
+    } else {			/* not necessary on big endian */
+	SHA1_Transform( &c, data ); 
+    }
+    iv[0]=c.h0; iv[1]=c.h1; iv[2]=c.h2; iv[3]=c.h3; iv[4]=c.h4;
+}
+
+#else
+
 #define min( x, y ) ( ( x ) < ( y ) ? ( x ) : ( y ) )
 
 /********************* function used for rounds 0..19 ***********/
@@ -62,40 +124,6 @@ word32 SHA1_IV[ 5 ] = { H0, H1, H2, H3, H4 };
 /* rotate X n bits left   ( X <<< n ) */
 
 #define S(n, X) ( ( (X) << (n) ) | ( (X) >> ( 32 - (n) ) ) )
-
-/* A run time endian test.  
-
-   little_endian is the broken one: 80x86s, VAXs
-   big_endian is: most unix machines, RISC chips, 68000, etc
-
-   The endianess is stored in macros:
-
-         little_endian
-   and   big_endian
-
-   These boolean values can be checked in your code in C expressions.
-
-   They should NOT be tested with conditional macro statements (#ifdef
-   etc).
-*/
-
-static const int endian_test = 1;
-
-#define little_endian ( *(char*)&endian_test == 1 )
-
-#define big_endian ( ! little_endian )
-
-static int swap_endian32( void*, size_t );
-
-#define make_big_endian32( data, len ) \
-    ( little_endian ? swap_endian32( data, len ) : 0 )
-
-#define make_little_endian32( data, len ) \
-    ( little_endian ? 0 : swap_endian32( data, len ) )
-
-#define make_local_endian32( data, len ) \
-    ( little_endian ? swap_endian32( data, len ) : 0 )
-
 
 #if defined( word64 )
     #define SHA1_zero_bitcount( ctx )		\
@@ -336,6 +364,8 @@ void SHA1_Final( SHA1_ctx* ctx, byte digest[ SHA1_DIGEST_BYTES ] )
     memcpy( digest, ctx->H, SHA1_DIGEST_BYTES );
     make_big_endian32( digest, SHA1_DIGEST_WORDS );
 }
+
+#endif
 
 static int swap_endian32( void* data, size_t len )
 {

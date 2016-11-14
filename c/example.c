@@ -30,8 +30,8 @@ int main( int argc, char* argv[] ) {
     int err = 0;
     int opt, bits=20, str_type = TYPE_WILD, ignore_boundary_flag;
     int case_flag = 0, check_flag = 0, db_flag = 0, core, res = HASHCASH_FAIL;
-    int mint_flag = 0, purge_flag = 0;
-    int time_width = 6, small_flag = 0, checked = 0;
+    int mint_flag = 0, purge_flag = 0, core_flag = 0;
+    int time_width = 6, compress = 0, checked = 0;
     long anon_random = 0, anon_period = 0, purge_period = 0, time_period = 0;
     time_t real_time = time(0); /* now, in UTCTIME */
     time_t now_time = real_time, token_time;
@@ -55,7 +55,7 @@ int main( int argc, char* argv[] ) {
     hashcash_callback callback = NULL;
 
     while ( (opt=getopt( argc, argv, 
-	 "-a:b:cde:f:g:hij:klmnop:qr:sSt:uvwx:yz:CEMO:PSVXZ")) >0 ) {
+	 "-a:b:cde:f:g:hij:klmnop:qr:sSt:uvwx:yz:CEMO:PSVXZ:")) >0 ) {
 	switch( opt ) {
 	case 'a': 
 	    if ( !parse_period( optarg, &anon_period ) ) {
@@ -90,7 +90,8 @@ int main( int argc, char* argv[] ) {
 	case 'k': purge_all = 1; break;
 	case 'm': mint_flag = 1; break;
 	case 'M': str_type = TYPE_WILD; break;
-	case 'O': core = atoi( optarg ); 
+	case 'O': core_flag = 1; 
+	    core = atoi( optarg ); 
 	    res = hashcash_use_core( core );
 	    if ( res < 1 ) {
 		usage( res == -1 ? "error: -O no such core\n" : 
@@ -136,7 +137,7 @@ int main( int argc, char* argv[] ) {
 	        usage( "error: -z invalid time width: must be 6, 10 or 12" );
 	    }
 	    break;
-	case 'Z': small_flag = 1; break;
+	case 'Z': compress = atoi( optarg ); break;
 	case '?': 
 	    fprintf( stderr, "error: unrecognized option -%c", optopt );
 	    usage( "" );
@@ -157,14 +158,18 @@ int main( int argc, char* argv[] ) {
     }
 
     if ( speed_flag ) {
-	hashcash_benchtest( 3 );
+	if ( core_flag ) { 
+	    hashcash_benchtest( 3, core );
+	} else {
+	    hashcash_benchtest( 3, -1 );
+	}
 	exit( EXIT_FAILURE ); 
     }
 
     if ( mint_flag ) {
 	err = hashcash_mint( now_time, time_width, resource, bits, 
 			     anon_period, &new_token, &anon_random, 
-			     &tries_taken, ext, small_flag, 
+			     &tries_taken, ext, compress, 
 			     callback, NULL );
     } else if ( purge_flag ) {
 	if ( !hashcash_db_open( &db, db_filename, &err ) ) {
