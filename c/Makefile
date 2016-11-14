@@ -1,4 +1,4 @@
-HC_VERS = 0.29
+HC_VERS = 0.30
 INSTALL_PATH = /usr/local/bin
 MAN_INSTALL_PATH = /usr/share/man/man1
 DOC_INSTALL_PATH = /usr/share/doc/hashcash-$(HC_VERS)

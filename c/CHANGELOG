@@ -1,4 +1,9 @@
-hashcash-0.29 pre-release - 04-Mar-2004 - Adam Back <adam@cypherspace.org>
+hashcash-0.30 - 04-Mar-2004 - Adam Back <adam@cypherspace.org>
+
+	* make -cX check multiple X-Hashcash lines until it finds the
+	  right one.  Bug reported by Kyle Hasselbacher <kyle@toehold.com>.
+
+hashcash-0.29 - 04-Mar-2004 - Adam Back <adam@cypherspace.org>
 
 	* fix prototype mismatch of function hashcash_check in
 	  hashcash.h vs libhc.c which caused compile failure on

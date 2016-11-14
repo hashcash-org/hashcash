@@ -124,6 +124,9 @@ int main( int argc, char* argv[] )
     int in_db;
     char header[ MAX_HDR+1 ];
     int header_len;
+    int header_found = 0;
+    int headers_found = 0;
+    int resource_found = 0;
     char token[ MAX_TOK+1 ];
     char line[ MAX_LINE+1 ];
     char token_resource[ MAX_RES+1 ];
@@ -592,19 +595,47 @@ int main( int argc, char* argv[] )
 	    if ( hdr_flag )
 	    {
 		trimspace(header); /* be forgiving about missing space */
-		for ( found = 0, boundary = 0, header_len = strlen( header );
-		      !found && !boundary && !feof( stdin ) && 
-			  fgets( line, MAX_LINE, stdin ); )
+		header_len = strlen( header );
+		headers_found = 0;
+		for ( header_found = 0,	boundary = 0, resource_found = 0;
+		      !resource_found && !boundary && !feof( stdin ) && 
+		      fgets( line, MAX_LINE, stdin ); )
 		{
 		    chomplf( line );
-		    found = (strncmp( line, header, header_len ) == 0);
-		    if ( !found && !ignore_boundary_flag )
+		    header_found = (strncmp( line, header, header_len ) == 0);
+		    if ( header_found ) {
+			if ( !headers_found ) { headers_found = 1; }
+			sstrncpy( token, line+header_len, MAX_TOK );
+			trimspace( token );
+			if ( !hashcash_parse( token, &vers, token_utime, 
+					      MAX_UTC, token_resource, 
+					      MAX_RES ) ) 
+			{
+			    VPRINTF( stderr, "rejected: malformed token: %s",
+				     token );
+			}
+			trimspace( token_resource );
+
+			if ( res_flag ) 
+			{
+			    trimspace( resource );
+			    if ( strcmp( resource, token_resource ) == 0 ) 
+			    {
+				resource_found = 1;
+			    }
+			}
+			else
+			{
+			    resource_found = 1; /* any resource will do */
+			}
+		    }
+
+		    if ( !ignore_boundary_flag )
 		    {
 			if ( line[0] == '\0' ) { boundary = 1; }
 		    }
 		}
-		sstrncpy( token, line+header_len, MAX_TOK );
-		if ( !found )
+		if ( !headers_found )
 		{
 		    QPRINTF( stderr, 
 			     "error: no line matching %s found in input\n",
@@ -613,8 +644,9 @@ int main( int argc, char* argv[] )
 		}
 		else
 		{ 
-		    QPRINTF( stderr, "input text contained:\n%s%s\n", 
+		    QPRINTF( stderr, "input text contained:\n%s %s\n", 
 			     header, token );
+		    VPRINTF( stderr, "token: %s\n", token );
 		}
 	    }
 	    else 
@@ -626,25 +658,19 @@ int main( int argc, char* argv[] )
 		fgets( token, MAX_TOK, stdin );
 		chomplf( token );
 	    }
-	    if ( hdr_flag ) { VPRINTF( stderr, "token: %s\n", token ); }
 	}
 
-	trimspace( token );
-
-	if ( !hashcash_parse( token, &vers, token_utime, MAX_UTC,
-			      token_resource, MAX_RES ) ) 
-	{ 
-	    QPUTS( stderr, "rejected: malformed token\n" );
-	    valid_for = HASHCASH_INVALID;
-	    goto leave;
-	}
-	trimspace( token_resource );
-
-	if ( vers != 0 ) 
+	if ( !hdr_flag || non_opt_argc > 0 )  
 	{
-	    QPUTS( stderr, "rejected: unsupported version\n" );
-	    valid_for = HASHCASH_INVALID;
-	    goto leave;
+	    trimspace( token );
+	    if ( !hashcash_parse( token, &vers, token_utime, MAX_UTC,
+				  token_resource, MAX_RES ) ) 
+	    { 
+		QPUTS( stderr, "rejected: malformed token\n" );
+		valid_for = HASHCASH_INVALID;
+		goto leave;
+	    }
+	    trimspace( token_resource );
 	}
 
 	if ( res_flag ) 
@@ -652,14 +678,27 @@ int main( int argc, char* argv[] )
 	    trimspace( resource );
 	    if ( strcmp( resource, token_resource ) != 0 ) 
 	    {
-		VPRINTF( stderr, "required resource name: %s\n", 
-			 token_resource );
-		QPUTS( stderr, "rejected: wrong resource name\n" );
+		if ( headers_found ) {
+		    QPUTS( stderr, "rejected: no matching resource found\n" );
+		} 
+		else
+		{
+		    VPRINTF( stderr, "found resource name: %s\n", 
+			     token_resource );
+		    QPUTS( stderr, "rejected: wrong resource name\n" );
+		}
 		valid_for = HASHCASH_INVALID;
 		goto leave;
 	    }
 	} 
 	
+	if ( vers != 0 ) 
+	{
+	    QPUTS( stderr, "rejected: unsupported version\n" );
+	    valid_for = HASHCASH_INVALID;
+	    goto leave;
+	}
+
 	VPRINTF( stderr, "current time: %s\n", strtime(&now_time, utc_flag) );
 
 	token_time = from_utctimestr( token_utime, 1 );
