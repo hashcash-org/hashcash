@@ -15,7 +15,7 @@ POD2MAN = pod2man
 POD2HTML = pod2html
 POD2TEXT = pod2text
 DELETE = /bin/rm -f
-OBJS = hashcash.o libsha1.o timer.o sdb.o utct.o random.o
+OBJS = hashcash.o libsha1.o libhc.o timer.o sdb.o utct.o random.o
 TAR = tar
 COMPRESS = gzip
 
@@ -60,7 +60,9 @@ distclean:
 
 # DO NOT DELETE
 
+getopt.o: getopt.h
 hashcash.o: sdb.h utct.h random.h timer.h types.h hashcash.h
+libhc.o: hashcash.h utct.h types.h sha1.h
 libsha1.o: sha1.h types.h
 random.o: random.h timer.h types.h
 sdb.o: sdb.h types.h utct.h
@@ -68,5 +70,6 @@ sha1.o: sha1.h types.h
 sha1test.o: sha1.h types.h timer.h
 timer.o: timer.h types.h
 utct.o: utct.h
+hashcash.o: utct.h
 sha1.o: types.h
 timer.o: types.h

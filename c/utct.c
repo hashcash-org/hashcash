@@ -93,13 +93,11 @@ time_t from_utctimestr( const char utct[MAX_UTCTIME+1] )
     int utct_len = strlen( utct );
     int century_offset;
 
-    if ( utct_len > MAX_UTCTIME || utct_len < 2 ||
-	 ( utct_len % 2 == 1 && utct[utct_len-1] != 'Z' ) )
+    if ( utct_len > MAX_UTCTIME || utct_len < 2 || ( utct_len % 2 == 1 ) )
     {
 	return failed;
     }
 
-    if ( utct_len % 2 == 1 ) { utct_len--; } /* remove Z */
 /* defaults */
     tms.tm_mon = 0; tms.tm_mday = 1;
     tms.tm_hour = 0; tms.tm_min = 0; tms.tm_sec = 0;
@@ -136,10 +134,8 @@ time_t from_utctimestr( const char utct[MAX_UTCTIME+1] )
 int to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t  )
 {
     struct tm* tms = localtime( &t );
-    int z = 0;
 
     if ( tms == NULL || len > MAX_UTCTIME || len < 2 ) { return 0; }
-    if ( len % 2 == 1 ) { z = 1; len--; }
     sprintf( utct, "%02d", tms->tm_year % 100 );
     if ( len == 2 ) { goto leave; }
     sprintf( utct+2, "%02d", tms->tm_mon+1 );
@@ -153,6 +149,5 @@ int to_utctimestr( char utct[MAX_UTCTIME+1], int len, time_t t  )
     sprintf( utct+10, "%02d", tms->tm_sec );
 
  leave:
-    if ( z ) { utct[len] = 'Z'; utct[len+1] = '\0'; }
     return 1;
 }

@@ -1,3 +1,9 @@
+hashcash-0.17 - 23-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+	* add programming API for hashcash_mint
+	* separate hashcash tool program from hashcash library code
+	* remove trailing 'Z' option for times -- adds no value
+
 hashcash-0.16 - 15-Mar-2002 - Adam Back <adam@cypherspace.org>
 
 	* minor clean up stuff:

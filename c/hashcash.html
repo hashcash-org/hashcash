@@ -361,7 +361,7 @@ the body too if one is not found in the headers.
 Pretend the current time is the time given for purposes of minting
 tokens, verifying tokens and purging old tokens from the database.
 Time is given in a format based on UTCTIME format
-YYMMDD[hh[mm[ss]]]['Z'] -- the 'Z' is optional.
+YYMMDD[hh[mm[ss]]].
 <P>Time is expressed in local time by default.  Use with <EM>-u</EM> flag to
 give time in UTC (GMT).</P>
 <P>You can also give time relative to the current time by prefixing the
@@ -373,13 +373,6 @@ and s = seconds).</P>
 <DT><STRONG><A NAME="item_%2Du"><EM>-u</EM></A></STRONG><BR>
 <DD>
 Input and output absolute times in UTC (GMT) instead of local time.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dz"><EM>-z</EM></A></STRONG><BR>
-<DD>
-Use strict UTCTIME format: YYMMDDhhmm[ss]'Z' rather than the UTCTIME
-based extension normally used which omits 'Z', and makes more time
-units optional for lower resolution times as described under the <EM>-t</EM>
-option.
 <P></P>
 <DT><STRONG><A NAME="item_%2Da_period"><EM>-a period</EM></A></STRONG><BR>
 <DD>

@@ -53,22 +53,8 @@
 
 #define MAX_DATE 50		/* Sun Mar 10 19:25:06 2002 (EST) */
 #define MAX_PERIOD 11		/* max time_t = 10 plus 's' */
-#define MAX_RES 256
 #define MAX_HDR 256
-#define MAX_CTR 64
-#define MAX_STR 256
-#define MAX_TOK ((MAX_RES)+1+(MAX_UTCTIME)+1+(MAX_STR))
 #define MAX_LINE 1024
-
-#define TIME_MINUTE 60
-#define TIME_HOUR (TIME_MINUTE*60)
-#define TIME_DAY (TIME_HOUR*24)
-#define TIME_YEAR (TIME_DAY*365)
-#define TIME_MONTH (TIME_YEAR/12)
-#define TIME_AEON (TIME_YEAR*1000000000.0)
-#define TIME_MILLI_SECOND (1.0/1000)
-#define TIME_MICRO_SECOND (TIME_MILLI_SECOND/1000)
-#define TIME_NANO_SECOND (TIME_MICRO_SECOND/1000)
 
 #define VALID_FOREVER 0
 #define VALID_IN_FUTURE -1
@@ -89,14 +75,10 @@
 #define PPUTS(f,str) if (!out_is_tty) { fputs(str,f); }
 #define VPUTS(f,str) if (verbose_flag) { fputs(str,f); }
 
-#define sstrncpy(d,s,l) (d[l]='\0',strncpy(d,s,l))
-
 void chomplf( char* token );
 void die( int err );
 void die_msg( const char* );
 void usage( const char* );
-word32 find_collision( char utct[MAX_UTCTIME+1], char*, int, char*, 
-		       word32, char* );
 int count_collision_bits( char*, char* );
 double estimate_time( int );
 double expected_tries( int );
@@ -105,22 +87,10 @@ int parse_token( const char*, char*, char* );
 int parse_period( const char* aperiod, long* resp );
 word32 hashes_per_sec( void );
 
-#define GROUP_SIZE 0xFFFFFFFFU
-#define GROUP_DIGITS 8
-#define GFORMAT "%08x"
-
-#if 0
-/* smaller base for debugging */
-#define GROUP_SIZE 255
-#define GROUP_DIGITS 2
-#define GFORMAT "%02x"
-#endif
-
 int quiet_flag;
 int verbose_flag;
 int in_is_tty;
 
-time_t round_off( time_t now_time, int digits );
 int do_purge( DB* db, time_t expires_before, time_t now, int all, 
 	      char* purge_resource, int* err );
 
@@ -128,8 +98,6 @@ int do_purge( DB* db, time_t expires_before, time_t now, int all,
 
 int main( int argc, char* argv[] )
 {
-    word32 i0;
-    word32 ran0, ran1;
     const char* db_filename = "hashcash.db";
     int db_exists = 0;
     int boundary;
@@ -137,15 +105,13 @@ int main( int argc, char* argv[] )
     int err;
     int non_opt_argc = 0;
     int anon_flag = 0;
-    long anon_period;
+    long anon_period = 0;
     long anon_random;
     int bits = 0;
     int collision_bits;
     int check_flag = 0;
     int hdr_flag = 0;
     int left_flag = 0;
-    int time_width = 10;
-    int z_flag = 0;		/* default no trailing Z on UTCTIME */
     int speed_flag = 0;
     int utc_flag = 0;
     int bits_flag = 0;
@@ -184,13 +150,10 @@ int main( int argc, char* argv[] )
     char token_utime[ MAX_UTCTIME+1 ];	/* time token created */
     time_t token_time;
     time_t local_time;
-    char now_utime[ MAX_UTCTIME+1 ]; /* current time */
     time_t real_time = utctime(0); /* now, in UTCTIME */
     time_t now_time = real_time;
     long time_period;
 
-    char counter[ MAX_CTR+1 ];
-    char* counter_ptr;
     double tries_expected = 1;	/* suppress dumb warning */
     double tries_taken;
     double time_estimated;
@@ -213,7 +176,7 @@ int main( int argc, char* argv[] )
     opterr = 0;
 
     while ( ( opt = getopt( argc, argv, 
-			    "a:b:cde:f:hij:klmnp:qr:st:uvwx:yz" ) ) > 0 )
+			    "a:b:cde:f:hij:klmnp:qr:st:uvwx:y" ) ) > 0 )
     {
 	switch ( opt )
 	{
@@ -291,7 +254,6 @@ int main( int argc, char* argv[] )
 	    sstrncpy( header, optarg, MAX_HDR );
 	    break;
 	case 'y': yes_flag = 1; break;
-	case 'z': z_flag = 1; break;
 	case '?': 
 	    fprintf( stderr, "error: unrecognized option -%c\n\n", optopt );
 	    usage( "" );
@@ -304,11 +266,6 @@ int main( int argc, char* argv[] )
 	    usage( "error with argument processing\n\n" );
 	    break;
 	}
-    }
-
-    if ( now_time < 0 )
-    {
-	die_msg( "error: outside unix time Epoch\n" );
     }
 
     if ( name_flag + left_flag + width_flag + check_flag > 1 )
@@ -336,6 +293,11 @@ int main( int argc, char* argv[] )
 	if ( last_time < 0 ) /* not first time, but corrupted */
 	{ 
 	    purge_period = 0; /* purge now */
+	}
+
+	if ( now_time < 0 )
+	{
+	    die_msg( "error: outside unix time Epoch\n" );
 	}
 
 	if ( purge_period == 0 || now_time >= last_time + purge_period )
@@ -524,78 +486,37 @@ int main( int argc, char* argv[] )
 	    }
 	}
 
-	if ( !random_getbytes( &ran0, sizeof( word32 ) ) ||
-	     !random_getbytes( &ran1, sizeof( word32 ) ) )
-	{
-	    die_msg( "error: random number generator failed\n" );
-	}
-
 	timer_start();
+	err = hashcash_mint( now_time, resource, bits, 
+			     validity_period, anon_period, 
+			     token, MAX_TOK, &anon_random, &tries_taken );
+	switch ( err )
+	{
+	case HASHCASH_INVALID_TOK_LEN:
+	    die_msg( "error: maximum collision with sha1 is 160 bits\n" );
+	case HASHCASH_RNG_FAILED:
+	    die_msg( "error: random number generator failed\n" );
+	case HASHCASH_INVALID_TIME:
+	    die_msg( "error: outside unix time Epoch\n" );
+	case HASHCASH_TOO_MANY_TRIES:
+	    die_msg( "error: failed to find collision in 2^64 tries!\n" );
+	case HASHCASH_EXPIRED_ON_CREATION:
+	    die_msg( "error: -a token may expire on creation\n" );
+	case HASHCASH_INVALID_VALIDITY_PERIOD:
+	    die_msg( "error: negative validity period\n" );
+	case HASHCASH_NULL_ARG:
+	    die_msg( "error: internal error\n" );
+	case HASHCASH_OK:
+	    break;
+	default:
+	    die_msg( "error: unknown failure\n" );
+	}
    
-	counter_ptr = counter;
-	found = 0;
-
 	if ( anon_flag )
 	{
-	    if ( validity_flag && anon_period > validity_period )
-	    {
-		die_msg( "error: -a token may expire on creation\n" );
-	    }
-	    if ( !random_rectangular( (long)anon_period, &anon_random ) )
-	    {
-		die_msg( "error: random number generator failed\n\n" );
-	    }
 	    VPRINTF( stderr, "anon period: %ld seconds\n", (long)anon_period );
 	    VPRINTF( stderr, "adding: %ld seconds\n", anon_random );
-	    now_time += anon_random;
 	}
-
-	if ( validity_flag )
-	{  /* YYMMDDhhmmss or YYMMDDhhmm or YYMMDDhh or YYMMDD or YYMM or YY */
-	    if ( validity_period < 2*TIME_MINUTE ) { time_width = 12; } 
-	    else if ( validity_period < 2*TIME_HOUR ) {	time_width = 10; }
-	    else if ( validity_period < 2*TIME_DAY ) { time_width = 8; }
-	    else if ( validity_period < 2*TIME_MONTH ) { time_width = 6; }
-	    else if ( validity_period < 2*TIME_YEAR ) {	time_width = 4; }
-	    else { time_width = 2; }
-	}
-	else
-	{
-	    time_width = 6;	/* default to YYMMDD */
-	}
-
-	now_time = round_off( now_time, 12-time_width );
-	if ( z_flag )		/* generate standard UTC  */
-	{ 
-	    if ( time_width < 10 ) { time_width = 10; }
-	    time_width++; 
-	}
-
-	to_utctimestr( now_utime, time_width, now_time );
-
-	for ( i0 = 0; !found; )
-	{
-	    sprintf( counter_ptr, GFORMAT GFORMAT, ( i0 + ran0 ) & GROUP_SIZE,
-		     ran1 & GROUP_SIZE );
-	    found = find_collision( now_utime, resource, bits, token,
-				    GROUP_SIZE, counter_ptr );
-	    if ( !found )
-	    {
-		i0 = ( i0 + 1 ) & GROUP_SIZE;
-		if ( i0 == 0 )	/* ie if wrapped */
-		{ 
-		    QPRINTF( stderr, 
-			     "error: failed to find collision in 2^64 tries!\n" );
-		    exit( EXIT_ERROR );
-		    /* shouldn't get here without trying  */
-		    /* for a very long time */
-		}
-	    }
-	}
-
-	counter_ptr = counter;
-   
-	tries_taken = ( (double) i0 ) * ULONG_MAX + ( (double) found );
 
 	VPRINTF( stderr, "tries: %.0f", tries_taken );
 	VPRINTF( stderr, " %.2f x expected\n", tries_taken / tries_expected );
@@ -1040,135 +961,6 @@ int count_collision_bits( char* resource, char* token )
     return collision_bits;
 }
 
-word32 find_collision( char utct[ MAX_UTCTIME+1 ], char* resource, int bits, 
-		       char* token, word32 tries, char* counter )
-{
-    char* hex = "0123456789abcdef";
-    char target[ MAX_TOK+1 ];
-    char ctry[ MAX_TOK+1 ];
-    char* changing_part_of_try;
-    SHA1_ctx ctx;
-    SHA1_ctx precomputed_ctx;
-    word32 i;
-    int j;
-    word32 trial;
-    word32 tries2;
-    int counter_len;
-    int try_len;
-    int try_strlen;
-    byte target_digest[ 20 ];
-    byte try_digest[ 20 ];
-    int partial_byte = bits & 7;
-    int check_bytes;
-    int partial_byte_index = 0;	/* suppress dumb warning */
-    int partial_byte_mask = 0xFF; /* suppress dumb warning */
-    char last_char;
-   
-    sstrncpy( target, utct, MAX_TOK );
-    strcat( target, ":" );
-    strncat( target, resource, MAX_RES );
-
-    counter_len = (int)(strlen( counter ) - GROUP_DIGITS);
-    sscanf( counter + counter_len, "%08x", &trial );
-    trial -= trial % 16;		/* lop off last digit */
-
-    SHA1_Init( &ctx );
-    SHA1_Update( &ctx, target, strlen( target ) );
-    SHA1_Final( &ctx, target_digest );
-
-    if ( partial_byte )
-    {
-	partial_byte_index = bits / 8;
-	partial_byte_mask = ~ (( 1 << (8 - (bits & 7))) -1 );
-	check_bytes = partial_byte_index + 1;
-	target_digest[ partial_byte_index ] &= partial_byte_mask;
-    }
-    else
-    {
-	check_bytes = bits / 8;
-    }
-
-    sstrncpy( ctry, target, MAX_TOK ); 
-    strcat( ctry, ":" );
-    strncat( ctry, counter, counter_len );
-    try_len = (int)strlen( ctry );
-
-/* length of try is fixed, GFORMAT is %08x, so move strlen outside loop */
-
-    changing_part_of_try = ctry + try_len;
-    sprintf( changing_part_of_try, GFORMAT, 0 );
-    try_strlen = (int)strlen( ctry );
-
-/* part of the ctx context can be precomputed as not all of the
-   message is changing
-*/
-
-    tries2 = (int) ( (double) tries / 16.0 + 0.5 );
-    for ( i = 0; i < tries2; i++, trial = (trial + 16) & GROUP_SIZE )
-    {
-/* move precompute closer to the inner loop to precompute more */
-
-	SHA1_Init( &precomputed_ctx );
-
-	sprintf( changing_part_of_try, GFORMAT, trial );
-
-	SHA1_Update( &precomputed_ctx, ctry, try_strlen - 1 );
-
-	for ( j = 0; j < 16; j++ )
-	{
-#if defined( DEBUG )
-	    fprintf( stderr, "try: %s\n", ctry );
-#endif
-	    memcpy( &ctx, &precomputed_ctx, sizeof( SHA1_ctx ) );
-	    last_char = hex[ j ];
-	    SHA1_Update( &ctx, &last_char, 1 );
-	    SHA1_Final( &ctx, try_digest );
-
-	    if ( bits > 7 )
-	    {
-		if ( try_digest[ 0 ] != target_digest[ 0 ] )
-		{
-		    continue;
-		}
-	    }
-	    if ( partial_byte )
-	    {
-		try_digest[ partial_byte_index ] &= partial_byte_mask;
-	    }
-	    if ( memcmp( target_digest, try_digest, check_bytes ) == 0 )
-	    {
-		changing_part_of_try[ GROUP_DIGITS - 1 ] = hex[ j ];
-		sstrncpy( token, ctry, MAX_TOK );
-		return i * 16 + j + 1;
-	    }
-	}
-    }
-    return 0;
-}
-
-time_t round_off( time_t now_time, int digits )
-{
-    struct tm* now;
-
-    if ( digits != 2 && digits != 4 && digits != 6 && 
-	 digits != 8 && digits != 10 )
-    {
-	return now_time;
-    }
-    now_time = utctime_to_local( now_time ); /* to counter act gmtime */
-    now = gmtime( &now_time );	/* converts local -> utct as side effect */
-
-    switch ( digits )
-    {
-    case 10: now->tm_mon = 0;
-    case 8: now->tm_mday = 1;
-    case 6: now->tm_hour = 0;
-    case 4: now->tm_min = 0;
-    case 2: now->tm_sec = 0;
-    }
-    return mktime( now );
-}
-
 void usage( const char* msg )
 {
     fputs( msg, stderr );
@@ -1187,7 +979,6 @@ void usage( const char* msg )
     fprintf( stderr, "\t-t time\t\tmodify current time token created at\n" );
     fprintf( stderr, "\t-a time\t\tmodify time by random amount in range given\n" );
     fprintf( stderr, "\t-u\t\tgive time in UTC instead of local time\n" );
-    fprintf( stderr, "\t-z\t\tproduce standard UTCTIME format\n" );
     fprintf( stderr, "\t-q\t\tquiet -- suppress all informational output\n" );
     fprintf( stderr, "\t-v\t\tprint verbose informational output\n" );
     fprintf( stderr, "\t-h\t\tprint this usage info\n" );

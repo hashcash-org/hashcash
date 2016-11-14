@@ -341,7 +341,7 @@ the body too if one is not found in the headers.
 Pretend the current time is the time given for purposes of minting
 tokens, verifying tokens and purging old tokens from the database.
 Time is given in a format based on UTCTIME format
-YYMMDD[hh[mm[ss]]]['Z'] -- the 'Z' is optional.
+YYMMDD[hh[mm[ss]]].
 
 Time is expressed in local time by default.  Use with I<-u> flag to
 give time in UTC (GMT).
@@ -355,13 +355,6 @@ and s = seconds).
 =item I<-u>
 
 Input and output absolute times in UTC (GMT) instead of local time.
-
-=item I<-z>
-
-Use strict UTCTIME format: YYMMDDhhmm[ss]'Z' rather than the UTCTIME
-based extension normally used which omits 'Z', and makes more time
-units optional for lower resolution times as described under the I<-t>
-option.
 
 =item I<-a period>
 
