@@ -11,7 +11,7 @@
 static int char_pair_atoi( const char* pair )
 {
     char str[3];
-    str[0] = pair[0]; str[1] = pair[1]; str[3] = '\0';
+    str[0] = pair[0]; str[1] = pair[1]; str[2] = '\0';
     if ( !isdigit( str[0] ) || !isdigit( str[1] ) ) { return -1; }
     return atoi( str );
 }

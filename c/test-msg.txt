@@ -1,0 +1,7 @@
+From: Someone <test@test.invalid>
+To: Adam Back <adam@cypherspace.org>
+Subject: test hashcash
+Date: Thu, 14 Mar 2002 11:12:02 +0000
+X-Hashcash: 020314:adam@cypherspace.org:0cf048784294f5fc
+
+blah blah

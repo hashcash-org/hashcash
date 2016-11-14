@@ -12,8 +12,12 @@
 #if defined( THINK_C )
     #include <console.h>
     #include <unix.h>
-#else
+#elif defined( unix )
     #include <unistd.h>
+#elif defined ( WIN32 ) || defined ( MSDOS )
+    #include <io.h>
+    #include "getopt.h"
+#else
 #endif
 
 #include <stdio.h>
@@ -87,6 +91,7 @@
 
 #define sstrncpy(d,s,l) (d[l]='\0',strncpy(d,s,l))
 
+void chomplf( char* token );
 void die( int err );
 void die_msg( const char* );
 void usage( const char* );
@@ -127,6 +132,7 @@ int main( int argc, char* argv[] )
     word32 ran0, ran1;
     const char* db_filename = "hashcash.db";
     int db_exists = 0;
+    int boundary;
     int found;
     int err;
     int non_opt_argc = 0;
@@ -149,6 +155,7 @@ int main( int argc, char* argv[] )
     int width_flag = 0;
     int purge_flag = 0;
     int mint_flag = 0;
+    int ignore_boundary_flag = 0;
     int name_flag = 0;
     int res_flag = 0;
     int checked = 0;
@@ -157,7 +164,6 @@ int main( int argc, char* argv[] )
     char header[ MAX_HDR+1 ];
     int header_len;
     char token[ MAX_TOK+1 ];
-    int tok_len;
     char line[ MAX_LINE+1 ];
     char token_resource[ MAX_RES+1 ];
     char resource[ MAX_RES+1 ];
@@ -185,7 +191,6 @@ int main( int argc, char* argv[] )
 
     char counter[ MAX_CTR+1 ];
     char* counter_ptr;
-    char iformat[ 10 ];		/* holds "%100s" where MAX_RES = 256 */
     double tries_expected = 1;	/* suppress dumb warning */
     double tries_taken;
     double time_estimated;
@@ -208,7 +213,7 @@ int main( int argc, char* argv[] )
     opterr = 0;
 
     while ( ( opt = getopt( argc, argv, 
-			    "a:b:cde:f:hj:klmnp:qr:st:uvwx:yz" ) ) > 0 )
+			    "a:b:cde:f:hij:klmnp:qr:st:uvwx:yz" ) ) > 0 )
     {
 	switch ( opt )
 	{
@@ -235,6 +240,7 @@ int main( int argc, char* argv[] )
 	    break;
 	case 'f': db_filename = optarg; break;
 	case 'h': usage( "" ); break;
+	case 'i': ignore_boundary_flag = 1; break;
 	case 'j': 
 	    just_flag = 1;
 	    sstrncpy( purge_resource, optarg, MAX_RES );
@@ -395,8 +401,8 @@ int main( int argc, char* argv[] )
 		    {
 			QPRINTF( stderr, "resource name to mint: " );
 		    }
-		    sprintf( iformat, "%%%ds", MAX_TOK );
-		    scanf( iformat, token ); token[MAX_TOK] = '\0';
+		    fgets( token, MAX_TOK, stdin );
+		    chomplf( token );
 		}
 	    }
 
@@ -612,17 +618,18 @@ int main( int argc, char* argv[] )
 	{
 	    if ( hdr_flag )
 	    {
-		if ( in_is_tty ) 
-		{ 
-		    fprintf( stderr, "input text contained header %s: ", 
-			     header );
-		}
-		for ( found = 0, header_len = strlen( header );
-		      !found && !feof( stdin ) && 
+		for ( found = 0, boundary = 0, header_len = strlen( header );
+		      !found && !boundary && !feof( stdin ) && 
 			  fgets( line, MAX_LINE, stdin ); )
 		{
+		    chomplf( line );
 		    found = (strncmp( line, header, header_len ) == 0);
+		    if ( !found && !ignore_boundary_flag )
+		    {
+			if ( line[0] == '\0' ) { boundary = 1; }
+		    }
 		}
+		sstrncpy( token, line+header_len, MAX_TOK );
 		if ( !found )
 		{
 		    QPRINTF( stderr, 
@@ -630,7 +637,11 @@ int main( int argc, char* argv[] )
 			     header );
 		    exit( EXIT_ERROR );
 		}
-		sstrncpy( token, line+header_len, MAX_TOK );
+		else
+		{ 
+		    QPRINTF( stderr, "input text contained:\n%s%s\n", 
+			     header, token );
+		}
 	    }
 	    else 
 	    {
@@ -639,9 +650,8 @@ int main( int argc, char* argv[] )
 		    fputs ( "input token to check: ", stderr ); 
 		}
 		fgets( token, MAX_TOK, stdin );
+		chomplf( token );
 	    }
-	    tok_len = strlen(token);
-	    if ( token[tok_len-1] == '\n' ) { token[tok_len-1] = '\0'; }
 	    if ( hdr_flag ) { VPRINTF( stderr, "token: %s\n", token ); }
 	}
 
@@ -1179,6 +1189,7 @@ void usage( const char* msg )
     fprintf( stderr, "\t-j resource\twith -p delete just tokens matching the given resource\n" );
     fprintf( stderr, "\t-k\t\twith -p delete all not just expired\n" );
     fprintf( stderr, "\t-x string\tprepend token output to string (or input match string)\n" );
+    fprintf( stderr, "\t-i\t\twith -x and -c, check msg body as well\n" );
     fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -b20 foo                               # mint 20 bit collision\n" );
@@ -1290,4 +1301,14 @@ void die_msg( const char* str )
 {
     QPUTS( stderr, str );
     exit( EXIT_ERROR );
+}
+
+/* remove unix, DOS and MAC linefeeds from line ending */
+
+void chomplf( char* token )
+{
+    int tok_len = strlen(token);
+    if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
+    if ( token[tok_len-1] == '\r' ) { token[--tok_len] = '\0'; }
+    if ( token[tok_len-1] == '\n' ) { token[--tok_len] = '\0'; }
 }

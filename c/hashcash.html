@@ -344,7 +344,17 @@ When minting, prints the string before the token.  An example might be
 just the bare token is printed.
 <P>When checking, if no token is given as an argument, scans stdin for a
 line starting with the given string, and use the rest of the matching
-as the token.</P>
+as the token.  Only the lines up to and ending at the first blank line
+are scanned.  A blank line is the separator used to separate the
+headers from the body of a mail message or USENET article.  This is
+meant to make it convenient to pipe a mail message or USENET article
+to hashcash on stdin.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Di"><EM>-i</EM></A></STRONG><BR>
+<DD>
+When checking and using the <EM>-x</EM> flag, ignore the blank line boundary
+between headers and body of the message, and check for collision in
+the body too if one is not found in the headers.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dt_time"><EM>-t time</EM></A></STRONG><BR>
 <DD>

@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#if defined( unix )
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include "sdb.h"
@@ -84,7 +86,6 @@ int sdb_findnext( DB* h, char* key, int klen, char* val, int vlen, int* err )
     int line_len;
     char* fkey = line;
     char* fval;
-    char* eptr;
 
     *err = 0;
     if ( h->file == NULL ) { return 0; }
@@ -92,7 +93,13 @@ int sdb_findnext( DB* h, char* key, int klen, char* val, int vlen, int* err )
     if ( fgets( line, MAX_LINE, h->file ) == NULL ) { return 0; }
     line_len = strlen( line );
     if ( line_len == 0 ) { return 0; }
-    if ( ( eptr = strchr( line, '\n' ) ) ) { *eptr = '\0'; }
+
+    /* remove unix, DOS, and MAC linefeeds */
+
+    if ( line[line_len-1] == '\n' ) { line[--line_len] = '\0'; }
+    if ( line[line_len-1] == '\r' ) { line[--line_len] = '\0'; }
+    if ( line[line_len-1] == '\n' ) { line[--line_len] = '\0'; }
+
     fval = strchr( line, ' ' );
     if ( fval != NULL ) { *fval = '\0'; fval++; } 
     else { fval = ""; }		/* empty */

@@ -1,3 +1,10 @@
+hashcash-0.15 - 14-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+	* deal with unix, DOS, and mac lf endings (rather than just unix)
+	* fix bug reported by Doc.Cypher <doc_cypher@redneck.gacracker.org>
+	* modifications to compile under VC++ 6.0 on win32
+	* add -i feature
+
 hashcash-0.14 - 13-Mar-2002 - Adam Back <adam@cypherspace.org>
 
 	* revamped flags and arguments

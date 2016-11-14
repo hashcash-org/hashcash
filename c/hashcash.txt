@@ -290,7 +290,16 @@ OPTIONS
 
         When checking, if no token is given as an argument, scans stdin for
         a line starting with the given string, and use the rest of the
-        matching as the token.
+        matching as the token. Only the lines up to and ending at the first
+        blank line are scanned. A blank line is the separator used to
+        separate the headers from the body of a mail message or USENET
+        article. This is meant to make it convenient to pipe a mail message
+        or USENET article to hashcash on stdin.
+
+    *-i*
+        When checking and using the *-x* flag, ignore the blank line
+        boundary between headers and body of the message, and check for
+        collision in the body too if one is not found in the headers.
 
     *-t time*
         Pretend the current time is the time given for purposes of minting

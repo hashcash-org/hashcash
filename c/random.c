@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 #include "random.h"
 
 /* on machines that have /dev/urandom -- use it */
@@ -32,7 +33,9 @@ int random_getbytes( void* data, size_t len )
 
 /* WARNING: this is not of cryptographic quality */
 
+#if defined( unix )
 #include <unistd.h>
+#endif
 #include "timer.h"
 #if defined( OPENSSL )
     #include <openssl/sha.h>
@@ -41,6 +44,11 @@ int random_getbytes( void* data, size_t len )
     #define SHA1_DIGEST_BYTES SHA_DIGEST_LENGTH
 #else
     #include "sha1.h"
+#endif
+
+#if defined( WIN32 ) || defined( MSDOS )
+    #include <process.h>
+    #define pid_t int
 #endif
 
 byte state[ SHA1_DIGEST_BYTES ];
