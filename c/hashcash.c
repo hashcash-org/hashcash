@@ -12,12 +12,11 @@
 #if defined( THINK_C )
     #include <console.h>
     #include <unix.h>
-#elif defined( unix )
+#elif defined( unix ) || defined( VMS )
     #include <unistd.h>
-#elif defined ( WIN32 ) || defined ( MSDOS )
+#elif defined ( WIN32 )
     #include <io.h>
     #include "getopt.h"
-#else
 #endif
 
 #include <stdio.h>
@@ -57,7 +56,8 @@
 #define MAX_RES 256
 #define MAX_HDR 256
 #define MAX_CTR 64
-#define MAX_TOK ((MAX_RES)+1+(MAX_UTCTIME)+1+(MAX_CTR))
+#define MAX_STR 256
+#define MAX_TOK ((MAX_RES)+1+(MAX_UTCTIME)+1+(MAX_STR))
 #define MAX_LINE 1024
 
 #define TIME_MINUTE 60
@@ -70,10 +70,10 @@
 #define TIME_MICRO_SECOND (TIME_MILLI_SECOND/1000)
 #define TIME_NANO_SECOND (TIME_MICRO_SECOND/1000)
 
-#define VALID_FOREVER ((time_t)0)
-#define VALID_IN_FUTURE ((time_t)-1)
-#define VALID_EXPIRED ((time_t)-2)
-#define VALID_NOT ((time_t)-3)
+#define VALID_FOREVER 0
+#define VALID_IN_FUTURE -1
+#define VALID_EXPIRED -2
+#define VALID_NOT -3
 
 /* WARNING: the *PRINTF macros assume a coding style which always uses
  * braces {} around conditional code -- unfortunately there is no
@@ -100,9 +100,9 @@ word32 find_collision( char utct[MAX_UTCTIME+1], char*, int, char*,
 int count_collision_bits( char*, char* );
 double estimate_time( int );
 double expected_tries( int );
-time_t still_valid_for( time_t, time_t, time_t );
+long still_valid_for( time_t, time_t, time_t );
 int parse_token( const char*, char*, char* );
-int parse_period( const char* aperiod, time_t* resp );
+int parse_period( const char* aperiod, long* resp );
 word32 hashes_per_sec( void );
 
 #define GROUP_SIZE 0xFFFFFFFFU
@@ -137,7 +137,7 @@ int main( int argc, char* argv[] )
     int err;
     int non_opt_argc = 0;
     int anon_flag = 0;
-    time_t anon_period;
+    long anon_period;
     long anon_random;
     int bits = 0;
     int collision_bits;
@@ -170,15 +170,15 @@ int main( int argc, char* argv[] )
     char* zone = "UTC";
     char date[ MAX_DATE+1 ];
 
-    time_t purge_period = 0;
+    long purge_period = 0;
     char purge_utime[ MAX_UTCTIME+1 ];	/* time token created */
     int purge_all = 0;
     int just_flag = 0;
     char purge_resource[ MAX_RES+1 ];
     time_t last_time;
-    time_t valid_for = 0;
+    long valid_for = 0;
 
-    time_t validity_period = 0;	/* default validity period: forever */
+    long validity_period = 0;	/* default validity period: forever */
     char period[ MAX_PERIOD+1 ];
 
     char token_utime[ MAX_UTCTIME+1 ];	/* time token created */
@@ -187,7 +187,7 @@ int main( int argc, char* argv[] )
     char now_utime[ MAX_UTCTIME+1 ]; /* current time */
     time_t real_time = utctime(0); /* now, in UTCTIME */
     time_t now_time = real_time;
-    time_t time_period;
+    long time_period;
 
     char counter[ MAX_CTR+1 ];
     char* counter_ptr;
@@ -749,8 +749,7 @@ int main( int argc, char* argv[] )
 
         /* if we're checking the database */
 	/* don't add unchecked or invalid tokens to the database */
-	if ( database_flag && checked &&
-	     ( valid_for == VALID_FOREVER || valid_for > 0 ) )
+	if ( database_flag && checked && valid_for >= 0 )
 	{
 	    /* new file add empty purged time */
 	    if ( !file_exists( db_filename, &err ) )
@@ -806,10 +805,10 @@ int main( int argc, char* argv[] )
 	    exit( yes_flag ? EXIT_SUCCESS : EXIT_UNCHECKED );
 	}
 	QPRINTF( stderr, "token check: %s", 
-		 ( valid_for > 0 || valid_for == VALID_FOREVER ) ? 
+		 ( valid_for >= 0 ) ? 
 		 ( checked ? "ok" : "ok but not fully checked as" ) : 
 		 "failed" );
-	if ( valid_for > 0 || valid_for == VALID_FOREVER )
+	if ( valid_for >= 0 )
 	{
 	    if ( !checked )
 	    {
@@ -831,12 +830,7 @@ int main( int argc, char* argv[] )
 	    }
 	}
 	QPUTS( stderr, "\n" );
-	if ( valid_for == VALID_IN_FUTURE ||
-	     valid_for == VALID_EXPIRED ||
-	     valid_for == VALID_NOT )
-	{
-	    exit( EXIT_FAILURE ); 
-	}
+	if ( valid_for < 0 ) { exit( EXIT_FAILURE ); }
 	exit( checked ? EXIT_SUCCESS : 
 	      ( yes_flag ? EXIT_SUCCESS : EXIT_UNCHECKED ) );
     }
@@ -844,10 +838,16 @@ int main( int argc, char* argv[] )
     return 0;
 }
 
+/* all chars from ascii(32) to ascii(126) inclusive */
+
+#define VALID_STR_CHARS "!\"#$%&'()*+,-./0123456789:;<=>?@" \
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+
 int parse_token( const char* token, char* utct, char* token_resource ) 
 {
     char* first_colon;
     char* second_colon;
+    char* str;
     int utct_len;
     int res_len;
 
@@ -866,14 +866,20 @@ int parse_token( const char* token, char* utct, char* token_resource )
     memcpy( utct, token, utct_len ); utct[utct_len] = '\0';
     sstrncpy( token_resource, first_colon+1, res_len );
 
+    str = second_colon+1;
+    if ( strlen( str ) != strspn( str, VALID_STR_CHARS ) )
+    {
+	return 0;
+    }
+
     return 1;
 }
 
-int parse_period( const char* aperiod, time_t* resp )
+int parse_period( const char* aperiod, long* resp )
 {
     int period_len;
     char last_char;
-    time_t res = 1;
+    long res = 1;
     char period_array[MAX_PERIOD+1];
     char* period = period_array;
 
@@ -965,8 +971,8 @@ word32 hashes_per_sec( void )
 		      + 0.499999999 );
 }
 
-time_t still_valid_for( time_t token_time, 
-			time_t validity_period, time_t now_time )
+long still_valid_for( time_t token_time, 
+		      time_t validity_period, time_t now_time )
 {
     int expiry_time;
 

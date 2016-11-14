@@ -4,13 +4,19 @@
 #include <time.h>
 #include <stdlib.h>
 #if defined( unix )
-#include <unistd.h>
+    #include <unistd.h>
+#elif defined( VMS )
+    #include <unixio.h>
 #endif
 #include <string.h>
 #include <errno.h>
 #include "sdb.h"
 #include "types.h"
 #include "utct.h"
+
+#if defined( VMS )
+    #define unlink(x) delete(x)
+#endif
 
 /* simple though inefficient implementation of a database function */
 

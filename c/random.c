@@ -33,8 +33,10 @@ int random_getbytes( void* data, size_t len )
 
 /* WARNING: this is not of cryptographic quality */
 
-#if defined( unix )
-#include <unistd.h>
+#if defined( unix ) || defined( VMS )
+    #include <unistd.h>
+#elif defined( WIN32 )
+    #include <process.h>
 #endif
 #include "timer.h"
 #if defined( OPENSSL )
@@ -46,8 +48,7 @@ int random_getbytes( void* data, size_t len )
     #include "sha1.h"
 #endif
 
-#if defined( WIN32 ) || defined( MSDOS )
-    #include <process.h>
+#if defined( WIN32 )
     #define pid_t int
 #endif
 

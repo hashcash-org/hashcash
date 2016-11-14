@@ -148,7 +148,7 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
 
 /* Wc = access W as 16 word circular buffer */
 
-#define Wc( t ) ( W[ (t) & 15 ] )
+#define Wc( t ) ( W[ (t) & 0x0F ] )
 
 /* Calculate access to W array on the fly for entries 16 .. 79 */
 
@@ -157,7 +157,7 @@ void SHA1_Transform(  word32 H[ SHA1_DIGEST_WORDS ],
 
 /* Calculate access to W virtual array calculating access to W on the fly */
 
-#define Wfly( t ) ( (t) < 16 ? W[ (t) ] : Wf( (t) ) )
+#define Wfly( t ) ( (t) < 16 ? Wc( (t) ) : Wf( (t) ) )
 
 #if defined( VERBOSE )
 #define REPORT( t ) \

@@ -1,3 +1,15 @@
+hashcash-0.16 - 15-Mar-2002 - Adam Back <adam@cypherspace.org>
+
+	* minor clean up stuff:
+	* allow longer collision strings for compatibility with future
+	  versions
+	* reject collision strings with non-printable and non ascii
+          chars (< ascii(32) and > ascii(127)
+	* make install now installs man page
+	* fix VMS compile warning
+	* fix bad portability assumption about time_t being signed
+	* simple VMS scripting build script
+
 hashcash-0.15 - 14-Mar-2002 - Adam Back <adam@cypherspace.org>
 
 	* deal with unix, DOS, and mac lf endings (rather than just unix)

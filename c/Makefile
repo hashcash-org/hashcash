@@ -1,5 +1,6 @@
 HC_VERS = 0.14
 INSTALL_PATH = /usr/local/bin
+MAN_INSTALL_PATH = /usr/local/man/man1
 MAKEDEPEND = makedepend
 #CWARN = -Wall -pedantic # gcc warnings
 #CARCH = -64   # MIPS 64 bit integers
@@ -15,6 +16,8 @@ POD2HTML = pod2html
 POD2TEXT = pod2text
 DELETE = /bin/rm -f
 OBJS = hashcash.o libsha1.o timer.o sdb.o utct.o random.o
+TAR = tar
+COMPRESS = gzip
 
 hashcash:	$(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
@@ -27,9 +30,9 @@ sha1test:	sha1test.o libsha1.o timer.o
 
 all:	$(EXES)
 
-docs:	hashcash.man hashcash.html hashcash.txt 
+docs:	hashcash.1 hashcash.html hashcash.txt 
 
-hashcash.man:	hashcash.pod
+hashcash.1:	hashcash.pod
 	$(POD2MAN) -s 1 -c hashcash -r $(HC_VERS) $? > $@
 
 hashcash.html:	hashcash.pod
@@ -39,14 +42,15 @@ hashcash.html:	hashcash.pod
 hashcash.txt: hashcash.pod
 	$(POD2TEXT) $? > $@
 
-install:	hashcash sha1
+install:	hashcash sha1 hashcash.1
 	$(INSTALL) hashcash sha1 $(INSTALL_PATH)
+	$(INSTALL) hashcash.1 $(MAN_INSTALL_PATH)
 
 depend:
 	$(MAKEDEPEND) -- -Y *.c *.h
 
 docclean:
-	$(DELETE) hashcash.txt hashcash.man hashcash.html pod2htm*
+	$(DELETE) hashcash.txt hashcash.1 hashcash.html pod2htm*
 
 clean:
 	$(DELETE) *.o *~
