@@ -221,7 +221,8 @@ unsigned long hashcash_per_sec(void)
  */
 unsigned long hashcash_benchtest(int verbose)
 {
-	unsigned long best_minter = -1, i, a, b, got_bits;
+	unsigned long i, a, b, got_bits;
+	int best_minter = -1;
 	static const unsigned int test_bits = 22;
 	static const char *test_string = 
 		"1:22:040404:foo::0123456789abcdef:00000000000";
@@ -254,7 +255,7 @@ unsigned long hashcash_benchtest(int verbose)
 		}
 		
 		if(verbose) {
-			printf("          %s\r", minters[i].name);
+			printf("          %s\n", minters[i].name);
 			fflush(stdout);
 		}
 		

@@ -1,4 +1,4 @@
-HC_VERS = 1.05
+HC_VERS = 1.06
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
@@ -48,7 +48,7 @@ DIST = ../dist.csh
 
 ifndef PACKAGER
 help:
-	@echo "make <platform> where platform is x86, g3-osx, ppc-linux, generic"
+	@echo "make <platform> where platform is x86, mingw-x86, g3-osx, ppc-linux, generic"
 	@echo "other make targets are docs, install, clean, distclean, docclean"
 endif
 
@@ -57,6 +57,9 @@ generic:
 
 x86: 
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_X86) $(COPT)" build
+
+mingw-x86: 
+	$(MAKE) "CC=gcc" "CFLAGS=$(COPT_X86) $(COPT)" build
 
 g3-osx:
 	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_G3_OSX) $(COPT)" build

@@ -4,12 +4,17 @@ To compile type:
 
 to see a list of platforms.  Current platforms are:
 
-	x86, g3-osx, ppc-linux, generic
+	x86, mingw-x86, g3-osx, ppc-linux, generic
 
 Choose platform (or generic if your platform is not listed) and then
 type:
 
 	make <platform>
+
+Note the mingw-x86 target is using the minimum gnu for windows
+(http://www.mingw.org) system.  On that system you have to type:
+
+	mingw32-make mingw-x86
 
 To install the compiled binaries type:
 

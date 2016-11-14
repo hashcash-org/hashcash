@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#if defined( unix )
+#if defined( unix ) || defined(_WIN32 )
     #include <unistd.h>
 #elif defined( VMS )
     #include <unixio.h>
@@ -20,6 +20,10 @@
 
 #if defined( VMS )
     #define unlink(x) delete(x)
+#endif
+
+#if defined( _WIN32 )
+    #define ftruncate chsize
 #endif
 
 /* simple though inefficient implementation of a database function */

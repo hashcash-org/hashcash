@@ -1,3 +1,20 @@
+hashcash-1.06 - 10-Sep-2004 - Adam Back <adam@cypherspace.org>
+
+	* patch from Justin Guyett <justin@soze.net> to fix unsigned
+	  error which would have made libfastmint do something odd if
+	  no minter worked.
+
+	* Makefile changes to compile under MINGW (gnu for windows
+	  portability layer which produces win32 exes).  new target
+	  mingw-exe
+
+	* #ifdefs to avoid locking on MINGW (seems no lock support!)
+
+	* #ifdefs to use longjmp instead of siglongjmp, signal instead
+	  of sigaction on MINGW
+
+	* #ifdef to use chsize instead of ftruncate on MINGW
+
 hashcash-1.05 - 08-Sep-2004 - Adam Back <adam@cypherspace.org>
 
 	* and another issue (last I promise!) with case comparison.

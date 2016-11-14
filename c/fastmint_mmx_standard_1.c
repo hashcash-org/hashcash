@@ -2,14 +2,23 @@
 #include <setjmp.h>
 #include "libfastmint.h"
 
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__MMX__) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
 typedef int mmx_d_t __attribute__ ((mode(V2SI)));
 typedef int mmx_q_t __attribute__ ((mode(DI)));
 #endif
 
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__MMX__) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
 #include <signal.h>
+
+#if defined(_WIN32)
+#define sigjmp_buf jmp_buf
+#define siglongjmp(x,y) longjmp((x),(y))
+#define sigsetjmp(x,y) setjmp(x)
+#define sighandler_t __p_sig_fn_t
+#endif
+
 static volatile int gIsMMXPresent = -1;
+
 static sigjmp_buf gEnv;
 
 static void sig_ill_handler(int sig)
@@ -22,14 +31,20 @@ static void sig_ill_handler(int sig)
 int minter_mmx_standard_1_test(void)
 {
   /* This minter runs only on x86 and AMD64 hardware supporting MMX - and will only compile on GCC */
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__MMX__) && defined(__GNUC__)
-  int mmx_available;
-	sig_t oldhandler;
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
+#if defined(_WIN32)
+        sighandler_t oldhandler;
+#else
 	sigset_t signame;
 	struct sigaction sa_new, sa_old;
-	
+#endif	
+	int mmx_available;
+
 	if(gIsMMXPresent == -1) {
 		gIsMMXPresent = 1;
+#if defined(_WIN32)
+		oldhandler = signal(SIGILL,sig_ill_handler);
+#else
 		sigemptyset(&signame);
 		sigaddset(&signame, SIGILL);
 		
@@ -38,7 +53,7 @@ int minter_mmx_standard_1_test(void)
 		sa_new.sa_mask = signame;
 		sa_new.sa_flags = 0;
 		sigaction(SIGILL, &sa_new, &sa_old);
-		
+#endif		
 		if(!sigsetjmp(gEnv, 0)) {
 		  asm volatile (
 										"movl $1, %%eax\n\t"
@@ -50,7 +65,11 @@ int minter_mmx_standard_1_test(void)
 										);
 		}
 		
+#if defined(_WIN32)
+		signal(SIGILL, oldhandler);
+#else
 		sigaction(SIGILL, &sa_old, &sa_new);
+#endif
 	} else {
 		mmx_available = gIsMMXPresent;
 	}
@@ -70,7 +89,7 @@ int minter_mmx_standard_1_test(void)
 #define OR(a,b) ( (mmx_d_t) __builtin_ia32_por( (mmx_q_t) a, (mmx_q_t) b) )
 #define ADD(a,b) ( __builtin_ia32_paddd(a,b) )
 
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__MMX__) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
 static inline mmx_d_t S(int n, mmx_d_t X)
 {
   mmx_d_t G;
@@ -325,7 +344,7 @@ static inline mmx_d_t S(int n, mmx_d_t X)
 
 int minter_mmx_standard_1(int bits, char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter)
 {
-#if (defined(__i386__) || defined(__AMD64__)) && defined(__MMX__) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__)
   unsigned long iters;
   int n, t, gotBits, maxBits = (bits > 16) ? 16 : bits;
   uInt32 bitMask1Low, bitMask1High, s;
