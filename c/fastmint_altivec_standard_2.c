@@ -1,15 +1,16 @@
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
+
 #include <stdio.h>
 #include "libfastmint.h"
 
-int minter_altivec_standard_2_test(void)
-{
+int minter_altivec_standard_2_test( void ) {
 	/* This minter runs only on PowerPC G4 and higher hardware */
-#if defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
-	return (gProcessorSupportFlags & HC_CPU_SUPPORTS_ALTIVEC) != 0;
+#if !defined( COMPACT ) && defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
+    return (gProcessorSupportFlags & HC_CPU_SUPPORTS_ALTIVEC) != 0;
 #endif
 	
-	/* Not a PowerPC, or compiler doesn't support Altivec or GNU assembly */
-	return 0;
+    /* Not a PowerPC, or compiler doesn't support Altivec or GNU assembly */
+    return 0;
 }
 
 /* Define low-level primitives in terms of operations */
@@ -314,7 +315,7 @@ int minter_altivec_standard_2_test(void)
 
 unsigned long minter_altivec_standard_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
-	#if defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
+#if !defined( COMPACT ) && defined(__POWERPC__) && defined(__ALTIVEC__) && defined(__GNUC__)
   	MINTER_CALLBACK_VARS;
 	unsigned long iters;
 	unsigned int m, n, o, t, gotBits = 0, maxBits = (bits > 16) ? 16 : bits;
@@ -671,7 +672,7 @@ unsigned long minter_altivec_standard_2(int bits, int* best, unsigned char *bloc
 	return iters+8;
 
 	/* For other platforms */
-	#else
+#else	/* defined( COMPACT ) */
 	return 0;
-	#endif
+#endif
 }

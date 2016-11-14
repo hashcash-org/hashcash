@@ -52,6 +52,12 @@ int hashcash_db_add( DB* db, char* token, char *period, int* err );
 HCEXPORT
 int hashcash_db_close( DB* db, int* err );
 
+HCEXPORT
+int hashcash_db_purge( DB* db, const char* purge_resource, int type,
+		       int case_flag, long validity_period, long grace_period,
+		       int purge_all, long purge_period, time_t now_time,
+		       int* err );
+
 
 /* low level functions */
 

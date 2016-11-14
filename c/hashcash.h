@@ -23,10 +23,7 @@ extern "C" {
     #endif
 #endif
 
-extern int verbose_flag;
-extern int no_purge_flag;
-
-#define HASHCASH_VERSION 1.22
+#define HASHCASH_VERSION 1.23
 #define HASHCASH_FORMAT_VERSION 1
 #define stringify( x ) stringify2( x )
 #define stringify2( x ) #x
@@ -76,6 +73,9 @@ extern int no_purge_flag;
 #define HASHCASH_REGEXP_ERROR -17
 #define HASHCASH_OUT_OF_MEMORY -18
 #define HASHCASH_USER_ABORT -19
+
+#define EOK 0			/* no error */
+#define EINPUT -1		/* error invalid input */
 
 /* return hashcash version number major.minor eg "1.13" */
 

@@ -1,10 +1,15 @@
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
+
 #include <stdio.h>
 #include "libfastmint.h"
 
-int minter_ansi_compact_2_test(void)
-{
-	/* This minter runs on any hardware */
-	return 1;
+int minter_ansi_compact_2_test( void ) {
+#if defined( COMPACT )
+    return 0;
+#else
+    /* This minter runs on any hardware */
+    return 1;
+#endif
 }
 
 /* Define low-level primitives in terms of operations */
@@ -87,6 +92,7 @@ int minter_ansi_compact_2_test(void)
 
 unsigned long minter_ansi_compact_2(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
+#if !defined( COMPACT )
 	MINTER_CALLBACK_VARS;
 	unsigned long iters = 0 ;
 	int n = 0, t = 0, gotBits = 0, maxBits = (bits > 16) ? 16 : bits;
@@ -347,4 +353,7 @@ unsigned long minter_ansi_compact_2(int bits, int* best, unsigned char *block, c
 	}
 	
 	return iters+2;
+#else
+	return 0;
+#endif
 }

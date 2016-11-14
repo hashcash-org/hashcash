@@ -1,9 +1,14 @@
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
+
 #include "libfastmint.h"
 
-int minter_ansi_standard_1_test(void)
-{
-	/* This minter runs on any hardware */
-	return 1;
+int minter_ansi_standard_1_test( void ) {
+#if defined( COMPACT )
+    return 0;
+#else
+    /* This minter runs on any hardware */
+    return 1;
+#endif
 }
 
 #define F1( B, C, D ) ( ( (B) & (C) ) | ( ~(B) & (D) ) )
@@ -47,6 +52,7 @@ int minter_ansi_standard_1_test(void)
 
 unsigned long minter_ansi_standard_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
+#if !defined( COMPACT )
         MINTER_CALLBACK_VARS;
 	unsigned long iters = 0;
 	int t = 0, gotBits = 0, maxBits = (bits > 16) ? 16 : bits ;
@@ -286,4 +292,7 @@ unsigned long minter_ansi_standard_1(int bits, int* best, unsigned char *block, 
 	}
 	
 	return iters+1;
+#else
+	return 0;
+#endif
 }

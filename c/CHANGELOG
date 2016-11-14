@@ -1,3 +1,21 @@
+hashcash-1.23 - 12-Oct-2010 - Adam Back <adam@cypherspace.org>
+
+	* add $(DESTDIR) to Makefile - more .spec friendly
+
+	* apply patch from Floris Bos
+  	  - Compilation on Windows. with latest mingw
+	  - Unset the "TZ" time zone environement variable correctly 
+	    under Windows.
+	  - avoid a segfault if re_err is NULL in libhc.c
+
+	* move hashash_db_purge to hashcash library interface for example.c
+
+	* change some of Jothan Morton's fast mint code to same pretty
+          print as rest of code
+
+	* new compile flag COMPACT links on fastmint_library to
+          optionally make smaller code
+
 hashcash-1.22 - 08-Apr-2006 - Adam Back <adam@cypherspace.org>
 
 	* fix progress display bug reported by Phil Marek.  (When the

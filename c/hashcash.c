@@ -34,6 +34,7 @@
 #include "libfastmint.h"
 #include "sstring.h"
 #include "getopt.h"
+#include "array.h"
 
 #if defined( OPENSSL )
 #include <openssl/sha.h>
@@ -44,9 +45,6 @@
 #include "sha1.h"
 #endif
 
-#define EOK 0			/* no error */
-#define EINPUT -1		/* error invalid input */
-
 #define EXIT_UNCHECKED 2	/* don't consider the token valid because */
                                 /* there are aspects of the token that */
 				/* were not checked */
@@ -55,27 +53,6 @@
 #define MAX_PERIOD 11		/* max time_t = 10 plus 's' */
 #define MAX_HDR 256
 #define MAX_LINE 1024+MAX_EXT+1
-
-/* WARNING: the *PRINTF macros assume a coding style which always uses
- * braces {} around conditional code -- unfortunately there is no
- * portable way to do vararg macros or functions which call other
- * vararg functions
- */
-
-#define QQE (!quiet_flag)
-#define PPE (!out_is_tty||quiet_flag)
-#define VVE (verbose_flag)
-
-#define QQ if (QQE) 
-#define PP if (PPE) 
-#define VV if (VVE) 
-#define QPRINTF QQ fprintf
-#define PPRINTF PP fprintf
-#define VPRINTF VV fprintf
-
-#define QPUTS(f,str) QQ { fputs(str,f); }
-#define PPUTS(f,str) PP { fputs(str,f); }
-#define VPUTS(f,str) VV { fputs(str,f); }
 
 #define HDR_LINE_LEN 80
 char *read_header( FILE* f, char** s, int* slen, int* alloc, 
@@ -100,44 +77,13 @@ double report_speed( int bits, double* time_est, int display );
 void mystolower( char* str );
 #define stolower mystolower
 
-typedef struct {
-    char* str;
-    void* regexp;		/* compiled regexp */
-    int type;
-    int case_flag;
-    long validity;
-    long grace;
-    long anon;
-    int width;
-    int bits;
-    int over;
-} ELEMENT;
-
-typedef struct {
-    int num;
-    int max;
-    ELEMENT* elt;
-} ARRAY;
-
 void db_open( DB* db, const char* db_filename );
 void db_purge_arr( DB* db, ARRAY* purge_resource, int purge_all, 
 		   long purge_period, time_t now_time, long validity_period,
 		   long grace_period );
-int db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
-	      long purge_period, time_t now_time, long validity_period,
-	      long grace_period, int verbose, int* err );
 int db_in( DB* db, char* token, char *period );
 void db_add( DB* db, char* token, char *token_utime );
 void db_close( DB* db ) ;
-
-void array_alloc( ARRAY* array, int num );
-void array_push( ARRAY* array, const char *str, int type, int case_flag, 
-		 long validity, long grace, long anon, int width, int bits, 
-		 int over );
-#define array_num( a ) ( (a)->num )
-int bit_cmp( const void* ap, const void* bp );
-void array_sort( ARRAY* array, int(*cmp)(const void*, const void*) );
-
 
 #define hc_est_time(b) ( hashcash_expected_tries(b) / \
         (double)hashcash_per_sec() )
@@ -1076,100 +1022,6 @@ void usage( const char* msg )
     exit( EXIT_ERROR );
 }
 
-typedef struct {
-    time_t expires_before;
-    char now_utime[ MAX_UTC+1 ];
-    int all;
-    long validity;
-    long grace;
-    ARRAY* resource;
-} db_arg;
-
-/* compile time assert */
-
-#if MAX_UTC > MAX_VAL
-#error "MAX_UTC must be less than MAX_VAL"
-#endif
-
-static int sdb_cb_token_matcher( const char* key, char* val,
-				 void* argp, int* err ) {
-    db_arg* arg = (db_arg*)argp;
-    char token_utime[ MAX_UTC+1 ] = {0};
-    char token_res[ MAX_RES+1 ] = {0}, lower_token_res[ MAX_RES+1 ] = {0};
-    char *res = NULL;
-    time_t expires = 0;
-    time_t expiry_period = 0;
-    time_t created = 0;
-    int vers = 0, i = 0, bits = 0, matched = 0, type = 0, case_flag = 0;
-    int lowered = 0 ;
-    void** compile = NULL;
-    char* re_err = NULL;
-
-    *err = 0;
-    if ( strcmp( key, PURGED_KEY ) == 0 ) {
-	sstrncpy( val, arg->now_utime, MAX_UTC ); 
-	return 1;		/* update purge time */
-    }
-
-    if ( !hashcash_parse( key, &vers, &bits, token_utime, MAX_UTC, 
-			  token_res, MAX_RES, NULL, 0 ) ) {
-	*err = EINPUT;		/* corrupted token in DB */
-	return 0;
-    }
-    if ( vers != 0 && vers != 1 ) {
-	*err = EINPUT; 		/* unsupported version number in DB */
-	return 0; 
-    }
-    /* if purging only for given resource */
-    if ( array_num( arg->resource ) > 0 ) {
-	matched = 0;
-	for ( i = 0; !matched && i < array_num( arg->resource ); i++ ) {
-	    res = arg->resource->elt[i].str;
-	    type = arg->resource->elt[i].type;
-	    case_flag = arg->resource->elt[i].case_flag;
-	    compile = &(arg->resource->elt[i].regexp);
-	    if ( !case_flag && !lowered ) {
-		strncpy( lower_token_res, token_res, MAX_RES );
-		stolower( lower_token_res );
-		lowered = 1;
-	    }
-	    matched = hashcash_resource_match( type, case_flag ? 
-					       token_res : lower_token_res, 
-					       res, compile, &re_err );
-	    if ( re_err != NULL ) { 
-		fprintf( stderr, "regexp error: " ); 
-		die_msg( re_err ); 
-	    }
-	}
-	if ( !matched ) { return 1; } /* if it doesn't match, keep it */
-    }
-    if ( arg->all ) { return 0; } /* delete all regardless of expiry */
-    if ( val[0] == '0' && val[1] == '\0' ) { return 1; } /* keep forever */
-    if ( strlen( val ) != strspn( val, "0123456789" ) ) {
-	*err = EINPUT; return 0;
-    }
-    expiry_period = atoi( val );
-    if ( expiry_period < 0 ) { *err = EINPUT; return 0; } /* corrupted */
-    created = hashcash_from_utctimestr( token_utime, 1 );
-    if ( created < 0 ) { *err = EINPUT; return 0; } /* corrupted */
-    expires = created 
-	+ (arg->validity ? arg->validity : expiry_period) + arg->grace;
-    if ( expires <= arg->expires_before ) { return 0; }	/* delete if expired */
-    return 1;			/* otherwise keep */
-}
-
-int hashcash_db_purge( DB* db, const char* purge_resource, int type,
-		       int case_flag, long validity_period, long grace_period,
-		       int purge_all, long purge_period, time_t now_time,
-		       int* err ) {
-    ARRAY* purge_resource_arr = NULL;
-    array_alloc( purge_resource_arr, 1 );
-    array_push( purge_resource_arr, purge_resource, type, case_flag,
-		validity_period, grace_period, 0, 0, 0, 0 );
-    return db_purge( db, purge_resource_arr, purge_all, purge_period, 
-		     now_time, validity_period, grace_period, 0, err );
-}
-
 void db_purge_arr( DB* db, ARRAY* purge_resource, int purge_all, 
 	       long purge_period, time_t now_time, long validity_period,
 	       long grace_period ) {
@@ -1183,45 +1035,6 @@ void db_purge_arr( DB* db, ARRAY* purge_resource, int purge_all,
     case HASHCASH_OK: break;
     default: die( err );
     }
-}
-
-int db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
-	       long purge_period, time_t now_time, long validity_period,
-	       long grace_period, int verbose, int* err ) {
-    time_t last_time = 0 ;
-    char purge_utime[ MAX_UTC+1 ] = {0}; /* time token created */
-    int ret = 0;
-    db_arg arg;
-
-    if ( now_time < 0 ) { return HASHCASH_INVALID_TIME; }
-
-    if ( !sdb_lookup( db, PURGED_KEY, purge_utime, MAX_UTC, err ) ) {
-	return 0;
-    }
-
-    last_time = hashcash_from_utctimestr( purge_utime, 1 );
-    if ( last_time < 0 ) { /* not first time, but corrupted */
-	purge_period = 0; /* purge now */
-    }
-
-    if ( !hashcash_to_utctimestr( arg.now_utime, MAX_UTC, now_time ) ) {
-	return HASHCASH_INVALID_TIME;
-    }
-
-    arg.expires_before = now_time;
-    arg.resource = purge_resource;
-    arg.all = purge_all;
-    arg.validity = validity_period;
-    arg.grace = grace_period;
-
-    if ( purge_period == 0 || now_time >= last_time + purge_period ) {
-	VPRINTF( stderr, "purging database: ..." );
-	ret = sdb_updateiterate( db, sdb_cb_token_matcher, (void*)&arg, err );
-	VPRINTF( stderr, ret ? "done\n" : "failed\n" ); 
-    } else {
-	ret = 1;
-    }
-    return ret;
 }
 
 void db_open( DB* db, const char* db_filename ) {
@@ -1250,59 +1063,6 @@ void db_close( DB* db ) {
     if ( !hashcash_db_close( db, &err ) ) {
 	die( err );
     }
-}
-
-/* num = start size, auto-grows */ 
-
-void array_alloc( ARRAY* array, int num ) {
-    array->num = 0;
-    array->max = num;
-    array->elt = malloc( sizeof( ELEMENT ) * num );
-    if ( array->elt == NULL ) { die_msg( "out of memory" ); }
-}
-
-/* auto-grow array */
-
-void array_push( ARRAY* array, const char *str, int type, int case_flag, 
-		 long validity, long grace, long anon, int width, int bits, 
-		 int over ) 
-{
-    if ( array->num >= array->max ) {
-	array->elt = realloc( array->elt, sizeof( ELEMENT) * array->max * 2 );
-	if ( array->elt == NULL ) { die_msg( "out of memory" ); }
-	array->max *= 2;
-    }
-    array->elt[array->num].regexp = NULL; /* compiled regexp */
-    array->elt[array->num].type = type;
-    array->elt[array->num].case_flag = case_flag;
-    array->elt[array->num].validity = validity;
-    array->elt[array->num].grace = grace;
-    array->elt[array->num].anon = anon;
-    array->elt[array->num].width = width;
-    array->elt[array->num].bits = bits;
-    array->elt[array->num].over = over;
-    if ( str ) {
-	array->elt[array->num].str = strdup( str );
-	if ( array->elt[array->num].str == NULL ) { 
-	    die_msg( "out of memory" ); 
-	}
-    } else {
-	array->elt[array->num].str = NULL;
-    }
-    array->num++;
-}
-
-int bit_cmp( const void* ap, const void* bp )
-{
-    ELEMENT* a = (ELEMENT*) ap;
-    ELEMENT* b = (ELEMENT*) bp;
-
-    return a->bits == b->bits ? 0 : ( a->bits < b->bits ? 1 : -1 );
-}
-
-void array_sort( ARRAY* array, int(*cmp)(const void*, const void*) )
-{
-    qsort( array->elt, array->num, sizeof( ELEMENT ), cmp );
 }
 
 void die( int err ) 

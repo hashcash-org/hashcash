@@ -1,3 +1,5 @@
+/* -*- Mode: C; c-file-style: "stroustrup" -*- */
+
 #include "libfastmint.h"
 
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
@@ -5,15 +7,18 @@ typedef int mmx_d_t __attribute__ ((vector_size (8)));
 typedef int mmx_q_t __attribute__ ((vector_size (8)));
 #endif
 
-int minter_mmx_compact_1_test(void)
-{
+int minter_mmx_compact_1_test( void ) {
   /* This minter runs only on x86 and AMD64 hardware supporting MMX - and will only compile on GCC */
+#if defined( COMPACT )
+    return 0;
+#else
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
-	return (gProcessorSupportFlags & HC_CPU_SUPPORTS_MMX) != 0;
+    return (gProcessorSupportFlags & HC_CPU_SUPPORTS_MMX) != 0;
 #endif
   
   /* Not an x86 or AMD64, or compiler doesn't support MMX or GNU assembly */
   return 0;
+#endif
 }
 
 /* Define low-level primitives in terms of operations */
@@ -177,6 +182,7 @@ static inline mmx_d_t S(int n, mmx_d_t X)
 
 unsigned long minter_mmx_compact_1(int bits, int* best, unsigned char *block, const uInt32 IV[5], int tailIndex, unsigned long maxIter, MINTER_CALLBACK_ARGS)
 {
+#if !defined( COMPACT )
 #if (defined(__i386__) || defined(__AMD64__)) && defined(__GNUC__) && defined(__MMX__)
   MINTER_CALLBACK_VARS;
   unsigned long iters = 0 ;
@@ -475,6 +481,9 @@ unsigned long minter_mmx_compact_1(int bits, int* best, unsigned char *block, co
   return iters+2;
 
   /* For other platforms */
+#else
+  return 0;
+#endif
 #else
   return 0;
 #endif

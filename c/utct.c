@@ -79,7 +79,7 @@ time_t mk_utctime( struct tm* tms ) {
         sprintf( set_tz, "TZ=%s", tz );
 	putenv( set_tz );
 	free( set_tz );
-    } else { putenv( "TZ" ); }
+    } else { putenv("TZ="); putenv( "TZ" ); }
     return res;
 }
 

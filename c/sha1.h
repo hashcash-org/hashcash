@@ -3,6 +3,10 @@
 #if !defined( _sha1_h )
 #define _sha1_h
 
+#if defined(WIN32)
+#include <windows.h>
+#endif
+
 /* for size_t */
 #include <string.h>
 #include "types.h"

@@ -1,10 +1,10 @@
-HC_VERS = 1.22
+HC_VERS = 1.23
 CHANGEME1 = 1 # put PACKAGER = EBUILD|RPM etc here
 CHANGEME2 = 2
 CHANGEME3 = 3
-INSTALL_PATH = /usr/bin
-MAN_INSTALL_PATH = /usr/share/man/man1
-DOC_INSTALL_PATH = /usr/share/doc/hashcash-$(HC_VERS)
+INSTALL_PATH = $(DESTDIR)/usr/bin
+MAN_INSTALL_PATH = $(DESTDIR)/usr/share/man/man1
+DOC_INSTALL_PATH = $(DESTDIR)/usr/share/doc/hashcash-$(HC_VERS)
 MAKEDEPEND = makedepend
 MSLIB = mslib 
 # here you can choose the regexp style your system has
@@ -43,7 +43,8 @@ FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
 	fastmint_library.o
 OBJS = libsha1.o libhc.o sdb.o lock.o utct.o random.o sstring.o \
 	getopt.o $(FASTLIBS)
-LIBOBJS = libhc.o libsha1.o utct.o sdb.o lock.o sstring.o random.o $(FASTLIBS)
+LIBOBJS = libhc.o libsha1.o utct.o sdb.o array.o lock.o sstring.o random.o \
+	$(FASTLIBS)
 EXEOBJS = hashcash.o
 
 DIST = ../dist.csh
@@ -192,6 +193,7 @@ dist:
 
 # DO NOT DELETE
 
+array.o: array.h
 example.o: sstring.h sdb.h hashcash.h getopt.h
 fastmint_altivec_compact_2.o: libfastmint.h hashcash.h
 fastmint_altivec_standard_1.o: libfastmint.h hashcash.h
@@ -206,13 +208,13 @@ fastmint_mmx_compact_1.o: libfastmint.h hashcash.h
 fastmint_mmx_standard_1.o: libfastmint.h hashcash.h
 getopt.o: getopt.h
 hashcash.o: sdb.h utct.h random.h hashcash.h libfastmint.h sstring.h getopt.h
-hashcash.o: sha1.h types.h
+hashcash.o: array.h sha1.h types.h
 libfastmint.o: random.h sha1.h types.h libfastmint.h hashcash.h
 libhc.o: hashcash.h utct.h libfastmint.h sha1.h types.h random.h sstring.h
 libsha1.o: sha1.h types.h
 lock.o: lock.h
 random.o: random.h sha1.h types.h
-sdb.o: types.h lock.h sdb.h utct.h
+sdb.o: types.h lock.h array.h sdb.h utct.h
 sha1.o: sha1.h types.h
 sha1test.o: sha1.h types.h
 sstring.o: sstring.h

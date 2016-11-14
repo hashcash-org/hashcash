@@ -15,6 +15,9 @@
 #include <fcntl.h>
 #include "types.h"
 #include "lock.h"
+#include "array.h"
+#include "hashcash.h"
+#include "sstring.h"
 
 #define BUILD_DLL
 #include "sdb.h"
@@ -258,6 +261,130 @@ int hashcash_db_add( DB* db, char* token, char *period, int* err ) {
 	return 0; 
     }
     return 1;
+}
+
+/* compile time assert */
+
+#if MAX_UTC > MAX_VAL
+#error "MAX_UTC must be less than MAX_VAL"
+#endif
+
+static int sdb_cb_token_matcher( const char* key, char* val,
+				 void* argp, int* err ) {
+    db_arg* arg = (db_arg*)argp;
+    char token_utime[ MAX_UTC+1 ] = {0};
+    char token_res[ MAX_RES+1 ] = {0}, lower_token_res[ MAX_RES+1 ] = {0};
+    char *res = NULL;
+    time_t expires = 0;
+    time_t expiry_period = 0;
+    time_t created = 0;
+    int vers = 0, i = 0, bits = 0, matched = 0, type = 0, case_flag = 0;
+    int lowered = 0 ;
+    void** compile = NULL;
+    char* re_err = NULL;
+
+    *err = 0;
+    if ( strcmp( key, PURGED_KEY ) == 0 ) {
+	sstrncpy( val, arg->now_utime, MAX_UTC ); 
+	return 1;		/* update purge time */
+    }
+
+    if ( !hashcash_parse( key, &vers, &bits, token_utime, MAX_UTC, 
+			  token_res, MAX_RES, NULL, 0 ) ) {
+	*err = EINPUT;		/* corrupted token in DB */
+	return 0;
+    }
+    if ( vers != 0 && vers != 1 ) {
+	*err = EINPUT; 		/* unsupported version number in DB */
+	return 0; 
+    }
+    /* if purging only for given resource */
+    if ( array_num( arg->resource ) > 0 ) {
+	matched = 0;
+	for ( i = 0; !matched && i < array_num( arg->resource ); i++ ) {
+	    res = arg->resource->elt[i].str;
+	    type = arg->resource->elt[i].type;
+	    case_flag = arg->resource->elt[i].case_flag;
+	    compile = &(arg->resource->elt[i].regexp);
+	    if ( !case_flag && !lowered ) {
+		strncpy( lower_token_res, token_res, MAX_RES );
+		stolower( lower_token_res );
+		lowered = 1;
+	    }
+	    matched = hashcash_resource_match( type, case_flag ? 
+					       token_res : lower_token_res, 
+					       res, compile, &re_err );
+	    if ( re_err != NULL ) { 
+		fprintf( stderr, "regexp error: " ); 
+		die_msg( re_err ); 
+	    }
+	}
+	if ( !matched ) { return 1; } /* if it doesn't match, keep it */
+    }
+    if ( arg->all ) { return 0; } /* delete all regardless of expiry */
+    if ( val[0] == '0' && val[1] == '\0' ) { return 1; } /* keep forever */
+    if ( strlen( val ) != strspn( val, "0123456789" ) ) {
+	*err = EINPUT; return 0;
+    }
+    expiry_period = atoi( val );
+    if ( expiry_period < 0 ) { *err = EINPUT; return 0; } /* corrupted */
+    created = hashcash_from_utctimestr( token_utime, 1 );
+    if ( created < 0 ) { *err = EINPUT; return 0; } /* corrupted */
+    expires = created 
+	+ (arg->validity ? arg->validity : expiry_period) + arg->grace;
+    if ( expires <= arg->expires_before ) { return 0; }	/* delete if expired */
+    return 1;			/* otherwise keep */
+}
+
+int db_purge( DB* db, ARRAY* purge_resource, int purge_all, 
+	       long purge_period, time_t now_time, long validity_period,
+	       long grace_period, int verbose_flag, int* err ) {
+    time_t last_time = 0 ;
+    char purge_utime[ MAX_UTC+1 ] = {0}; /* time token created */
+    int ret = 0;
+    db_arg arg;
+
+    if ( now_time < 0 ) { return HASHCASH_INVALID_TIME; }
+
+    if ( !sdb_lookup( db, PURGED_KEY, purge_utime, MAX_UTC, err ) ) {
+	return 0;
+    }
+
+    last_time = hashcash_from_utctimestr( purge_utime, 1 );
+    if ( last_time < 0 ) { /* not first time, but corrupted */
+	purge_period = 0; /* purge now */
+    }
+
+    if ( !hashcash_to_utctimestr( arg.now_utime, MAX_UTC, now_time ) ) {
+	return HASHCASH_INVALID_TIME;
+    }
+
+    arg.expires_before = now_time;
+    arg.resource = purge_resource;
+    arg.all = purge_all;
+    arg.validity = validity_period;
+    arg.grace = grace_period;
+
+    if ( purge_period == 0 || now_time >= last_time + purge_period ) {
+	VPRINTF( stderr, "purging database: ..." );
+	ret = sdb_updateiterate( db, sdb_cb_token_matcher, (void*)&arg, err );
+	VPRINTF( stderr, ret ? "done\n" : "failed\n" ); 
+    } else {
+	ret = 1;
+    }
+    return ret;
+}
+
+int hashcash_db_purge( DB* db, const char* purge_resource, int type,
+		       int case_flag, long validity_period, long grace_period,
+		       int purge_all, long purge_period, time_t now_time,
+		       int* err ) {
+    ARRAY* purge_resource_arr = NULL;
+    array_alloc( purge_resource_arr, 1 );
+    array_push( purge_resource_arr, purge_resource, type, case_flag,
+		validity_period, grace_period, 0, 0, 0, 0 );
+    return db_purge( db, purge_resource_arr, purge_all, purge_period, 
+		     now_time, validity_period, grace_period, 0, err );
 }
 
 int hashcash_db_close( DB* db, int* err ) {

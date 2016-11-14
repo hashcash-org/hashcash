@@ -19,9 +19,6 @@ int parse_period( const char* aperiod, long* resp );
 int progress_callback(int percent, int largest, int target, 
 		      double counter, double expected, void* user);
 
-#define EOK 0			/* no error */
-#define EINPUT -1		/* error invalid input */
-
 #define MAX_PERIOD 11		/* max time_t = 10 plus 's' */
 #define MAX_HDR 256
 #define EXIT_ERROR 3
@@ -354,7 +351,7 @@ void die( int err )
 
 void die_msg( const char* str ) 
 {
-    fprintf( stderr, str );
+    fputs( str, stderr );
     fprintf( stderr, "\n" );
     exit( EXIT_ERROR );
 }
