@@ -49,6 +49,7 @@
 		<LI><A HREF="#purging old tokens on demand">Purging old tokens on Demand</A></LI>
 	</UL>
 
+	<LI><A HREF="#token format">token format</A></LI>
 	<LI><A HREF="#files">FILES</A></LI>
 	<LI><A HREF="#exit status">EXIT STATUS</A></LI>
 	<LI><A HREF="#author">AUTHOR</A></LI>
@@ -444,7 +445,7 @@ reduce risk of timing-correlations.
 <P>
 <H2><A NAME="examining tokens">Examining Tokens</A></H2>
 <DL>
-<DT><STRONG><A NAME="item_hashcash_%2Dw_020312%3Afoo%3A88dab6b5cb593991"><CODE>hashcash -w 020312:foo:88dab6b5cb593991</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dw_0%3A020814%3Afoo%3A4333957e84db47f6"><CODE>hashcash -w 0:020814:foo:4333957e84db47f6</CODE></A></STRONG><BR>
 <DD>
 Report the value of the token (how many bits of collision) there are.
 The example is a 33 bit collision, which would take on average 13
@@ -457,12 +458,12 @@ have it print how many bits there were.  Note: half of the time you
 get a token 1 bit larger; similarly with decreasing probability you
 can get even larger tokens.
 <P></P>
-<DT><STRONG><A NAME="item_hashcash_%2Dn_020312%3Afoo%3A72dcdc01a42589a0"><CODE>hashcash -n 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dn_0%3A020814%3Afoo%3A21c8cf3099cbf467"><CODE>hashcash -n 0:020814:foo:21c8cf3099cbf467</CODE></A></STRONG><BR>
 <DD>
 Report the resource name from the token.  The resource name in the
 example is foo.
 <P></P>
-<DT><STRONG><A NAME="item_hashcash_%2Dl_%2De_30y_020312%3Afoo%3A72dcdc01a425"><CODE>hashcash -l -e 30y 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dl_%2De_30y_0%3A020814%3Afoo%3A21c8cf30"><CODE>hashcash -l -e 30y 0:020814:foo:21c8cf3099cbf467</CODE></A></STRONG><BR>
 <DD>
 Report how long until the token expires if it expires in 30 years from
 it's creation date.  (Note dates too far into the future run into the
@@ -471,7 +472,7 @@ it's creation date.  (Note dates too far into the future run into the
 <P>
 <H2><A NAME="verifying tokens">Verifying Tokens</A></H2>
 <DL>
-<DT><STRONG><A NAME="item_hashcash_%2Dc_020312%3Afoo%3A72dcdc01a42589a0"><CODE>hashcash -c 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dc_0%3A020814%3Afoo%3A21c8cf3099cbf467"><CODE>hashcash -c 0:020814:foo:21c8cf3099cbf467</CODE></A></STRONG><BR>
 <DD>
 Check if the token is valid.  Note as we are not checking the token in
 a double spend database, and did not specify a resource name or
@@ -479,14 +480,14 @@ required number of bits of collision and hashcash will consider the
 token not fully checked, and it will report it as valid but not fully
 unchecked, or as invalid if there is any problem with the token.
 <P></P>
-<DT><STRONG><A NAME="item_hashcash_%2Dc_%2Db24_020312%3Afoo%3A72dcdc01a42589"><CODE>hashcash -c -b24 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dc_%2Db24_0%3A020814%3Afoo%3A21c8cf3099"><CODE>hashcash -c -b24 0:020814:foo:21c8cf3099cbf467</CODE></A></STRONG><BR>
 <DD>
 Check that the value of the token is greater or equal to 24 bits.
 This example has 24 bit value.  If you increase the requested number
 of bits or replace the token with one with less than 24 bit collision
 the token will be rejected.
 <P></P>
-<DT><STRONG><A NAME="item_hashcash_%2Dc_%2Db_24_%2Dr_foo_020312%3Afoo%3A72dc"><CODE>hashcash -c -b 24 -r foo 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dc_%2Db24_%2Dr_foo_0%3A020814%3Afoo%3A2"><CODE>hashcash -c -b24 -r foo 0:020814:foo:21c8cf3099cbf467</CODE></A></STRONG><BR>
 <DD>
 As above check if the token has sufficient value, but in addition
 check that the resource name given matches the resource name in the
@@ -500,12 +501,12 @@ twice.  Note a token will only be checked in and added to the database
 if it is otherwise valid and fully checked (a required number of bits
 of collision has been specified and a resource has been specified).</P>
 <DL>
-<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2Dr_foo_020312%3Afoo%3A72d"><CODE>hashcash -cd -b 10 -r foo 020312:foo:72dcdc01a42589a0</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2Dr_foo_0%3A020814%3Afoo%3"><CODE>hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467</CODE></A></STRONG><BR>
 <DD>
 Check the token and add to double spent database if it's valid (has
 correct resource name and sufficient value).
 <P></P>
-<DT><STRONG><CODE>hashcash -cd -b 10 -r foo 020312:foo:72dcdc01a42589a0</CODE></STRONG><BR>
+<DT><STRONG><CODE>hashcash -cd -b 10 -r foo 0:020814:foo:21c8cf3099cbf467</CODE></STRONG><BR>
 <DD>
 Try to double spend the token.  It will be rejected as double spent.
 <P></P></DL>
@@ -523,9 +524,9 @@ The default time format is YYMMDD, time rounded down to the nearest
 day.  The default validity period is forever.</P>
 <P>You can provide an alternative validity period with the <EM>-e</EM> option.</P>
 <DL>
-<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2De_2d_%2Dr_foo_020311%3Af"><CODE>hashcash -cd -b 10 -e 2d -r foo 020311:foo:835fa2b0b8c692cc</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2De_2d_%2Dr_foo_0%3A020811"><CODE>hashcash -cd -b 10 -e 2d -r foo 0:020811:foo:21dd87d4c9f5aae1</CODE></A></STRONG><BR>
 <DD>
-Try verifying an old token, the above token was created 11 Mar 2002.
+Try verifying an old token, the above token was created 11 Aug 2002.
 <P>We gave option <EM>-e 2d</EM> so the tokens expiry date is 2 days after
 creation, which is now in the past.</P>
 <P>Note: if the creation time is expressed in the token in days, the
@@ -538,7 +539,7 @@ in days relative to your relative view of what day it is, as the
 calculation is based on current time in UTC, and the creation time of
 the token is expressed in UTC time.</P>
 <P></P>
-<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2Dr_foo_020311%3Afoo%3A835"><CODE>hashcash -cd -b 10 -r foo 020311:foo:835fa2b0b8c692cc</CODE></A></STRONG><BR>
+<DT><STRONG><A NAME="item_hashcash_%2Dcd_%2Db_10_%2Dr_foo_0%3A020811%3Afoo%3"><CODE>hashcash -cd -b 10 -r foo 0:020811:foo:21dd87d4c9f5aae1</CODE></A></STRONG><BR>
 <DD>
 Test whether the token is otherwise valid, apart from having expired.
 Omitting the <EM>-e</EM> tells hashcash that the token will never expire.
@@ -615,6 +616,24 @@ once per month.
 <DD>
 tells <A HREF="#item_hashcash"><CODE>hashcash</CODE></A> to purge all tokens (expired and unexpired) now.
 <P></P></DL>
+<P>
+<HR>
+<H1><A NAME="token format">token format</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_ver%3Adate%3Aresource%3Acollision"><EM>ver</EM>:<EM>date</EM>:<EM>resource</EM>:<EM>collision</EM></A></STRONG><BR>
+<DD>
+</DL>
+<P>where</P>
+<DL>
+<DT><STRONG><A NAME="item_ver_%3D_0%2C_this_version_of_hashcash_only_support"><EM>ver</EM> = 0, this version of hashcash only supports version 0</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_date_%3D_YYMMDD%5Bhh%5Bmm%5Bss%5D%5D%5D"><EM>date</EM> = YYMMDD[hh[mm[ss]]]</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_string"><EM>resource</EM> = resource string (eg IP address, email address)</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_collision_%3D_printable_string_of_random_alpha%2Dn"><EM>collision</EM> = printable string of random alpha-numeric chars</A></STRONG><BR>
+<DD>
+</DL>
 <P>
 <HR>
 <H1><A NAME="files">FILES</A></H1>

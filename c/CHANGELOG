@@ -1,3 +1,9 @@
+hashcash-0.20 - 13-Aug-2002 - Adam Back <adam@cypherspace.org>
+
+	* change format to include version number
+	* change collision to be on 0^k string instead of on
+	  SHA1(date:resource)
+
 hashcash-0.19 - 25-Apr-2002 - Adam Back <adam@cypherspace.org>
 
 	* fix bug reported that minting always returns failure

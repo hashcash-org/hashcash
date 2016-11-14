@@ -152,6 +152,7 @@ int main( int argc, char* argv[] )
     int isopen;
     int out_is_tty = isatty( fileno( stdout ) );
     int opt;
+    int vers;
     DB db;
 
 #if defined( THINK_C )
@@ -572,10 +573,17 @@ int main( int argc, char* argv[] )
 	    if ( hdr_flag ) { VPRINTF( stderr, "token: %s\n", token ); }
 	}
 
-	if ( !hashcash_parse( token, token_utime, MAX_UTC,
+	if ( !hashcash_parse( token, &vers, token_utime, MAX_UTC,
 			      token_resource, MAX_RES ) ) 
 	{ 
 	    QPUTS( stderr, "rejected: malformed token\n" );
+	    valid_for = HASHCASH_INVALID;
+	    goto leave;
+	}
+
+	if ( vers != 0 ) 
+	{
+	    QPUTS( stderr, "rejected: unsupported version\n" );
 	    valid_for = HASHCASH_INVALID;
 	    goto leave;
 	}
@@ -829,7 +837,7 @@ void usage( const char* msg )
     fprintf( stderr, "\t-y\t\treturn success if token is valid but not fully checked\n" );
     fprintf( stderr, "examples:\n" );
     fprintf( stderr, "\thashcash -b20 foo                               # mint 20 bit collision\n" );
-    fprintf( stderr, "\thashcash -cdb20 -r foo 020313:foo:65b411397aabeaec    # check collision\n" );
+    fprintf( stderr, "\thashcash -cdb20 -r foo 0:020814:foo:55f4316f29cd98f2    # check collision\n" );
     fprintf( stderr, "\n" );
     fprintf( stderr, "see man page or http://www.cypherspace.org/hashcash/ for more details.\n" );
     exit( EXIT_ERROR );
@@ -858,6 +866,7 @@ static int sdb_cb_token_matcher( const char* key, char* val,
     time_t expires;
     time_t expiry_period;
     time_t created;
+    int vers;
 
     *err = 0;
     if ( strcmp( key, PURGED_KEY ) == 0 ) 
@@ -866,10 +875,16 @@ static int sdb_cb_token_matcher( const char* key, char* val,
 	return 1;		/* update purge time */
     } 
 
-    if ( !hashcash_parse( key, token_utime, MAX_UTC, resource, MAX_RES ) )
+    if ( !hashcash_parse( key, &vers, token_utime, MAX_UTC, resource, 
+			  MAX_RES ) )
     {
 	*err = EINPUT;	/* corrupted token in DB */
 	return 0;
+    }
+    if ( vers != 0 )
+    {
+	*err = EINPUT; 		/* unsupported version number in DB */
+	return 0; 
     }
     if ( arg->resource != NULL ) /* if purging only for given resource */
     {

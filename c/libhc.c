@@ -119,7 +119,6 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
 		       int bits, char* token, word32 tries, char* counter )
 {
     char* hex = "0123456789abcdef";
-    char target[ MAX_TOK+1 ];
     char ctry[ MAX_TOK+1 ];
     char* changing_part_of_try;
     SHA1_ctx ctx;
@@ -131,25 +130,26 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
     int counter_len;
     int try_len;
     int try_strlen;
-    byte target_digest[ 20 ];
-    byte try_digest[ 20 ];
+    byte target_digest[ SHA1_DIGEST_BYTES ];
+    byte try_digest[ SHA1_DIGEST_BYTES ];
     int partial_byte = bits & 7;
     int check_bytes;
     int partial_byte_index = 0;	/* suppress dumb warning */
     int partial_byte_mask = 0xFF; /* suppress dumb warning */
     char last_char;
    
-    sstrncpy( target, utct, MAX_TOK );
-    strcat( target, ":" );
-    strncat( target, resource, MAX_RES );
+    ctry[0] = '0';		/* hardcode to version 0 */
+    ctry[1] = '\0';
+    strcat( ctry, ":" );
+    strncat( ctry, utct, MAX_TOK );
+    strcat( ctry, ":" );
+    strncat( ctry, resource, MAX_RES );
 
     counter_len = (int)(strlen( counter ) - GROUP_DIGITS);
     sscanf( counter + counter_len, "%08x", &trial );
     trial -= trial % 16;		/* lop off last digit */
 
-    SHA1_Init( &ctx );
-    SHA1_Update( &ctx, target, strlen( target ) );
-    SHA1_Final( &ctx, target_digest );
+    memset( target_digest, 0, SHA1_DIGEST_BYTES );
 
     if ( partial_byte )
     {
@@ -163,7 +163,6 @@ word32 find_collision( char utct[ MAX_UTCTIME+1 ], const char* resource,
 	check_bytes = bits / 8;
     }
 
-    sstrncpy( ctry, target, MAX_TOK ); 
     strcat( ctry, ":" );
     strncat( ctry, counter, counter_len );
     try_len = (int)strlen( ctry );
@@ -265,35 +264,45 @@ int validity_to_width( time_t validity_period )
 #define VALID_STR_CHARS "!\"#$%&'()*+,-./0123456789:;<=>?@" \
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 
-int hashcash_parse( const char* token, char* utct, int utct_max,
+int hashcash_parse( const char* token, int* vers, char* utct, int utct_max,
 		    char* token_resource, int res_max ) 
 {
+    char ver[MAX_VER+1];
     char* first_colon;
+    char* second_colon;
     char* last_colon;
     char* str;
+    int ver_len;
     int utct_len;
     int res_len;
 
     first_colon = strchr( token, ':' );
 
     if ( first_colon == NULL ) { return 0; }
-    utct_len = (int)(first_colon - token);
+    ver_len = (int)(first_colon - token);
+    if ( ver_len > MAX_VER ) { return 0; }
+    sstrncpy( ver, token, ver_len );
+    *vers = atoi( ver );
+    if ( *vers < 0 ) { return 0; }
+    second_colon = strchr( first_colon+1, ':' );
+    if ( second_colon == NULL ) { return 0; }
+    utct_len = (int)(second_colon - (first_colon+1));
     if ( utct_len > utct_max ) { return 0; }
 
     /* parse out the resource name component 
-     * format:   utctime:resource:counter  
+     * format:   ver:utctime:resource:counter
      * where utctime is [YY[MM[DD[hh[mm[ss]]]]]] 
      * note the resource may itself include :s if it is a URL
      * for example
      *
-     * the resource name is part between first colon and last colon */
+     * the resource name is part between second colon and last colon */
 
-    last_colon = strrchr( first_colon+1, ':' );
+    last_colon = strrchr( second_colon+1, ':' );
     if ( last_colon == NULL ) { return 0; }
-    res_len = (int)(last_colon-1 - first_colon);
+    res_len = (int)(last_colon-1 - second_colon);
     if ( res_len > res_max ) { return 0; }
-    memcpy( utct, token, utct_len ); utct[utct_len] = '\0';
-    sstrncpy( token_resource, first_colon+1, res_len );
+    memcpy( utct, first_colon+1, utct_len ); utct[utct_len] = '\0';
+    sstrncpy( token_resource, second_colon+1, res_len );
 
     str = last_colon+1;
     if ( strlen( str ) != strspn( str, VALID_STR_CHARS ) )
@@ -306,11 +315,14 @@ int hashcash_parse( const char* token, char* utct, int utct_max,
 
 unsigned hashcash_count( const char* resource, const char* token )
 {
-    char target[ MAX_TOK+1 ];	/* bigger than it needs to be */
     SHA1_ctx ctx;
-    byte target_digest[ 20 ];
-    byte token_digest[ 20 ];
+    byte target_digest[ SHA1_DIGEST_BYTES ];
+    byte token_digest[ SHA1_DIGEST_BYTES ];
+    char ver[MAX_VER+1];
+    int vers;
     char* first_colon;
+    char* second_colon;
+    int ver_len;
     int utct_len;
     int i;
     int last;
@@ -318,19 +330,24 @@ unsigned hashcash_count( const char* resource, const char* token )
 
     first_colon = strchr( token, ':' );
     if ( first_colon == NULL ) { return 0; } /* should really fail */
-    utct_len = first_colon - token;
-    memcpy( target, token, utct_len+1 ); target[utct_len+1] = '\0';
-    strncat( target, resource, MAX_RES );
+    ver_len = (int)(first_colon - token);
+    if ( ver_len > MAX_VER ) { return 0; }
+    sstrncpy( ver, token, ver_len );
+    vers = atoi( ver );
+    if ( vers < 0 ) { return 0; }
+    if ( vers != 0 ) { return 0; } /* unsupported version number */
+    second_colon = strchr( first_colon+1, ':' );
+    if ( second_colon == NULL ) { return 0; } /* should really fail */
 
-    SHA1_Init( &ctx );
-    SHA1_Update( &ctx, target, strlen( target ) );
-    SHA1_Final( &ctx, target_digest );
-      
+    memset( target_digest, 0, SHA1_DIGEST_BYTES );
+
     SHA1_Init( &ctx );
     SHA1_Update( &ctx, token, strlen( token ) );
     SHA1_Final( &ctx, token_digest );
    
-    for ( i = 0; i < 20 && token_digest[ i ] == target_digest[ i ]; i++ )
+    for ( i = 0; 
+	  i < SHA1_DIGEST_BYTES && token_digest[ i ] == target_digest[ i ]; 
+	  i++ )
     {
     }
 
@@ -379,11 +396,16 @@ int hashcash_check( const char* token, const char* resource, time_t now_time,
     char token_utime[ MAX_UTC+1 ];
     char token_resource[ MAX_RES+1 ];
     int bits = 0;
+    int vers = 0;
     
-    if ( !hashcash_parse( token, token_utime, MAX_UTC, 
+    if ( !hashcash_parse( token, &vers, token_utime, MAX_UTC, 
 			  token_resource, MAX_RES ) )
     {
 	return HASHCASH_INVALID;
+    }
+
+    if ( vers != 0 ) {
+	return HASHCASH_UNSUPPORTED_VERSION;
     }
 
     token_time = from_utctimestr( token_utime );

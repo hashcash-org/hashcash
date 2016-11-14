@@ -18,7 +18,8 @@ extern int no_purge_flag;
 #define MAX_CTR 64
 #define MAX_RES 256
 #define MAX_STR 256
-#define MAX_TOK ((MAX_RES)+1+(MAX_UTC)+1+(MAX_STR))
+#define MAX_VER 2
+#define MAX_TOK ((MAX_VER)+1+(MAX_RES)+1+(MAX_UTC)+1+(MAX_STR))
 
 #define TIME_MINUTE 60
 #define TIME_HOUR (TIME_MINUTE*60)
@@ -46,6 +47,7 @@ extern int no_purge_flag;
 #define HASHCASH_INVALID -11
 #define HASHCASH_WRONG_RESOURCE -12
 #define HASHCASH_INSUFFICIENT_BITS -13
+#define HASHCASH_UNSUPPORTED_VERSION -14
 
 /* function hashcash_mint calling info:
  *
@@ -107,7 +109,7 @@ unsigned hashcash_count( const char* resource, const char* token );
 /* parse token into time field and resouce name */
 /* max lengths exclude space for trailing \0 */
 
-int hashcash_parse( const char* token, char* utct, int utct_max,
+int hashcash_parse( const char* token, int* vers, char* utct, int utct_max,
 		    char* token_resource, int res_max );
 
 /* return how many seconds the token remains valid for
