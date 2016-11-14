@@ -22,11 +22,8 @@ unsigned long minter_library(int bits, int* best, unsigned char *block, const uI
 	unsigned char* X = Xa;
 	uInt32 *W = (uInt32*)Xa;
 	uInt32 H[ SHA1_DIGEST_WORDS ];
-	int blocks = block[SHA1_INPUT_BYTES] ? 2 : 1;
+	int blocks = (tailIndex+1+8) > SHA1_INPUT_BYTES ? 2 : 1;
 
-	if ( block[SHA1_INPUT_BYTES] == 0x1 ) {
-		block[SHA1_INPUT_BYTES] = 0x0;
-	}
 	*best = 0;
 
 	/* Work out whether we need to swap bytes during encoding */

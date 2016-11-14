@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "HASHCASH 1"
-.TH HASHCASH 1 "2004-12-19" "1.15" "hashcash"
+.TH HASHCASH 1 "2005-01-12" "1.15" "hashcash"
 .SH "NAME"
 hashcash \- hashcash anti\-spam / denial of service counter\-measure tool
 .SH "SYNOPSIS"
@@ -621,7 +621,8 @@ hashcash returns failure and explains what happened.
 Compress the stamp.  This is a time vs space trade off.  Larger stamps
 are faster, but arguably slightly ugly.  For fastest stamps (the
 default) use \-Z 0; for partly compressed stamps use \-Z 1; for very
-compressed, but somewhat slow stamps use \-Z 2.
+compressed, but somewhat slow stamps use \-Z 2.  (Note: due to a late
+discovered bug, \-Z2 is the same as \-Z1 for now until I can fix that.)
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
 .Sh "Creating stamps"

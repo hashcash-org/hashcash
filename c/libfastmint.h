@@ -3,6 +3,7 @@
 
 #if defined(WIN32)
 #include <windows.h>
+#undef small
 #else
 #include <sys/time.h>
 #endif

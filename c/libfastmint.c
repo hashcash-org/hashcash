@@ -414,7 +414,6 @@ unsigned long hashcash_benchtest(int verbose, int core)
 		block[test_tail] = 0x80;
 		memset(block+test_tail+1, 0, 59-test_tail);
 		PUT_WORD(block+60, test_tail << 3);
-		block[SHA1_INPUT_BYTES] = 0x0;
 		
 		/* Run minter, with clock running */
 		end = clock();
@@ -634,9 +633,7 @@ double hashcash_fastmint(const int bits, const char *token, int compress,
 		for(a=0; a < 5; a++) { IV[a] = crypter.H[a]; }
 #endif
 		block = buffer + t;
-		if ( blocks > 1 && block[SHA1_INPUT_BYTES] == 0 ) {
-			block[SHA1_INPUT_BYTES] = blocks-1;
-		}
+
 		/* Fill in the padding and trailer */
 		buffer[tail] = 0x80;
 		PUT_WORD(block+(blocks>1?64:0)+60, tail << 3);

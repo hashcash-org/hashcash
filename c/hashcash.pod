@@ -545,7 +545,8 @@ hashcash returns failure and explains what happened.
 Compress the stamp.  This is a time vs space trade off.  Larger stamps
 are faster, but arguably slightly ugly.  For fastest stamps (the
 default) use -Z 0; for partly compressed stamps use -Z 1; for very
-compressed, but somewhat slow stamps use -Z 2.
+compressed, but somewhat slow stamps use -Z 2.  (Note: due to a late
+discovered bug, -Z2 is the same as -Z1 for now until I can fix that.)
 
 =back
 

@@ -1,4 +1,4 @@
-hashcash-1.15rc1 - 19-Dec-2004 - Adam Back <adam@cypherspace.org>
+hashcash-1.15 - 12-Jan-2005 - Adam Back <adam@cypherspace.org>
 
 	* make "Hashcash:" be accepted as well as "X-Hashcash:"
 	  suggestion by Simon Josefsson <jas@extundo.com>.  This way
@@ -9,9 +9,24 @@ hashcash-1.15rc1 - 19-Dec-2004 - Adam Back <adam@cypherspace.org>
 	* implement the -Z option to compress stamps; in fact the
 	  usage changed so -Z takes an argument: 0, 1 or 2.  0 = not
 	  compressed, 1 = compressed but not so the counter + padding
-	  is split, and 2 = very compressed, but slow.
+	  is split, and 2 = very compressed, but slow.  (Due to a late
+	  discovered bug 2 is the same as 1 for now until I can fix
+	  that.)
 
 	* added -O x -sv to request benchtest of core x only
+
+	* make code work with -DOPENSSL, think this slipped during
+	  integration of Jonathan's libfastmint as it uses some lower
+	  level openssl APIs internally.  I fixed it but it might be
+	  a bit openssl version specific, if they changed the state
+	  fields at any point.  (This change coincidentally I think
+	  should work around the linking with openssl problem that Hal
+	  Finney <hal@finney.org> reported).
+
+	* add libhashcash.a intermediate target to make hashcash more
+	  convenient to link into other software on linux.  (A
+	  suggestion from Hal Finney who was trying to link to his
+	  RPOW system.)
 
 hashcash-1.14 - 14-Dec-2004 - Adam Back <adam@cypherspace.org>
 

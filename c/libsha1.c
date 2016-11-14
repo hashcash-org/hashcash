@@ -50,6 +50,7 @@ static const int endian_test = 1;
 
 #define make_local_endian32( data, len ) \
     ( little_endian ? swap_endian32( data, len ) : 0 )
+
 #if defined( OPENSSL )
 
 void SHA1_Xform( word32* iv, const byte* data ) {

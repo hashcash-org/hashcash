@@ -77,7 +77,7 @@
 #define PPUTS(f,str) PP { fputs(str,f); }
 #define VPUTS(f,str) VV { fputs(str,f); }
 
-#define HDR_LINE_LEN 79
+#define HDR_LINE_LEN 80
 char *read_header( FILE* f, char** s, int* slen, int* alloc, 
 		   char* a, int alen );
 int read_eof( FILE* fp, char* a );
@@ -381,7 +381,10 @@ int main( int argc, char* argv[] )
 	        usage( "error: -z invalid time width: must be 6, 10 or 12" );
 	    }
 	    break;
-	case 'Z': compress = atoi( optarg ); break;
+	case 'Z': compress = atoi( optarg ); 
+            /* temporary work around for bug discovered in 1.15, disable -Z2 */
+	    if ( compress > 1 ) { compress = 1; } 
+	    break;
 	case '?': 
 	    fprintf( stderr, "error: unrecognized option -%c", optopt );
 	    usage( "" );
@@ -1047,6 +1050,7 @@ void usage( const char* msg )
     fprintf( stderr, "\thashcash -cdb20 -r foo 1:20:040806:foo::831d0c6f22eb81ff:15eae4 # check collision\n" );
     fprintf( stderr, "\n" );
     fprintf( stderr, "see hashcash (1) man page or http://www.hashcash.org/ for more details.\n" );
+    fflush( stderr );
     exit( EXIT_ERROR );
 }
 

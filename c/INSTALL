@@ -13,6 +13,14 @@ type:
 
 	make <platform>
 
+to use the openssl SHA1 implementation rather than builtin:
+
+	make <platform> CFLAGS=-DOPENSSL LDFLAGS=-lcrypto
+
+Note: if you are using the libhashcash.a or linking with other
+software that uses openssl, you will want to compile it this way or
+you will get conflicts with function names.
+
 COMPILING WINDOWS
 
 Note the mingw target is using the minimum gnu for windows

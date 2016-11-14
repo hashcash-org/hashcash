@@ -9,11 +9,11 @@ MAKEDEPEND = makedepend
 MSLIB = mslib 
 # here you can choose the regexp style your system has
 # default is POSIX
-# 	CFLAGS = -DREGEXP_POSIX
+# 	REGEXP = -DREGEXP_POSIX
 # if no POSIX regexp support, try BSD
-# 	CFLAGS = -DREGEXP_BSD
+# 	REGEXP = -DREGEXP_BSD
 # if no POSIX or BSD, disable, still have builtin basic wildcard support
-# 	CFLAGS = 
+# 	REGEXP = 
 COPT_DEBUG = -g
 COPT_GENERIC = -O3
 COPT_GNU = -O3 -funroll-loops
@@ -24,7 +24,7 @@ COPT_MINGW = -O3 -funroll-loops -march=i386 -mcpu=pentium -mmmx \
 COPT_G3_OSX = -O3 -funroll-loops -fno-inline -mcpu=750 -faltivec
 COPT_PPC_LINUX = -O3 -funroll-loops -fno-inline -mcpu=604e -maltivec \
 	-mabi=altivec
-CFLAGS = -DREGEXP_POSIX
+REGEXP=-DREGEXP_POSIX
 EXES = hashcash$(EXE) sha1$(EXE) sha1test$(EXE)
 INSTALL = install
 POD2MAN = pod2man
@@ -40,7 +40,7 @@ FASTLIBS = libfastmint.o fastmint_mmx_standard_1.o fastmint_mmx_compact_1.o \
 	fastmint_library.o
 OBJS = libsha1.o libhc.o sdb.o lock.o utct.o random.o sstring.o \
 	getopt.o $(FASTLIBS)
-DLLOBJS = libhc.o libsha1.o utct.o sdb.o lock.o sstring.o random.o $(FASTLIBS)
+LIBOBJS = libhc.o libsha1.o utct.o sdb.o lock.o sstring.o random.o $(FASTLIBS)
 EXEOBJS = hashcash.o
 
 DIST = ../dist.csh
@@ -51,57 +51,63 @@ help:
 	@echo "make <platform> where platform is:"
 	@echo "    x86, mingw, mingw-dll, g3-osx, ppc-linux, gnu, generic"
 	@echo "other make targets are docs, install, clean, distclean, docclean"
+	@echo "make <platform> CFLAGS=-DOPENSSL LDFLAGS=-lcrypto"
+	@echo "to use openssl SHA1 implementation rather than builtin"
 	@echo ""
 	@echo "(doing make generic by default)"
 	@echo ""
 
 generic:
-	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_GENERIC) $(COPT)" build
+	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_GENERIC) $(COPT)" build
 
 debug:
-	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_DEBUG) $(COPT)" build
+	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_DEBUG) $(COPT)" build
 
 gnu:
-	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_GNU) $(COPT)" "CC=gcc" build
+	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_GNU) $(COPT)" "CC=gcc" build
 
 x86: 
-	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_X86) $(COPT)" build
+	$(MAKE) "LIB=.a" "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_X86) $(COPT)" build
 
 mingw: 
-	$(MAKE) "CC=gcc" "EXE=.exe" "CFLAGS=$(COPT_MINGW) -DMONOLITHIC $(COPT)" build
+	$(MAKE) "LIB=.lib" "CC=gcc" "EXE=.exe" "CFLAGS=$(COPT_MINGW) -DMONOLITHIC $(COPT)" build
 
 mingw-dll:
 	$(MAKE) "CC=gcc" "EXE=.exe" "CFLAGS=$(COPT_MINGW) $(COPT)" build-dll
 
 g3-osx:
-	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_G3_OSX) $(COPT)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_G3_OSX) $(COPT)" build
 
 ppc-linux:
-	$(MAKE) "CFLAGS=$(CFLAGS) $(COPT_PPC_LINUX) $(COPT)" build
+	$(MAKE) "CFLAGS=$(CFLAGS) $(REGEXP) $(COPT_PPC_LINUX) $(COPT)" build
 
 build:	hashcash$(EXE) sha1$(EXE)
 
 build-dll:      hashcash-dll$(EXE) sha1$(EXE)
 
-hashcash$(EXE):	hashcash.o $(OBJS) 
-	$(CC) $(LDFLAGS) hashcash.o $(OBJS) -o $@
+hashcash$(EXE):	hashcash.o getopt.o libhashcash$(LIB) 
+	$(CC) hashcash.o getopt.o libhashcash$(LIB) -o $@ $(LDFLAGS)
 
 sha1$(EXE):	sha1.o libsha1.o
-	$(CC) $(LDFLAGS) sha1.o libsha1.o -o $@
+	$(CC) sha1.o libsha1.o -o $@ $(LDFLAGS)
 
-example$(EXE):	example.o $(OBJS)
-	$(CC) $(LDFLAGS) example.o $(OBJS) -o $@
+example$(EXE):	example.o getopt.o libhashcash$(LIB)
+	$(CC) example.o getopt.o libhashcash$(LIB) -o $@ $(LDFLAGS)
 
 hashcash-dll$(EXE):   $(EXEOBJS) hashcash.dll
-	$(CC) $(LDFLAGS) $(EXEOBJS) hashcash.dll -o $@
+	$(CC) $(EXEOBJS) hashcash.dll -o $@ $(LDFLAGS)
 
 sha1test$(EXE):	sha1test.o libsha1.o
-	$(CC) $(LDFLAGS) sha1test.o libsha1.o -o $@
+	$(CC) sha1test.o libsha1.o -o $@ $(LDFLAGS)
 
 all:	$(EXES)
 
-hashcash.dll:   $(DLLOBJS)
-	$(CC) -shared -o hashcash.dll $(DLLOBJS) \
+libhashcash$(LIB):	$(LIBOBJS)
+	$(DELETE) $@
+	$(AR) rcs $@ $(LIBOBJS)
+
+hashcash.dll:   $(LIBOBJS)
+	$(CC) -shared -o hashcash.dll $(LIBOBJS) \
 	-Wl,--output-def,hashcash.def,--out-implib,libhashcash.a
 	$(MSLIB) /machine:x86 /def:hashcash.def
 
