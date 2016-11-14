@@ -1,3 +1,8 @@
+hashcash-0.24 - 15-Mar-2003 - Adam Back <adam@cypherspace.org>
+
+	* fix minor error which made hashcash_expected_tries a tiny
+	  amount less efficient than realised
+
 hashcash-0.23 - 15-Mar-2003 - Adam Back <adam@cypherspace.org>
 
 	* fix error in libhc would always fail in hashcash_check

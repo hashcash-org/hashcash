@@ -471,7 +471,7 @@ double hashcash_estimate_time( int b )
 double hashcash_expected_tries( int b )
 {
     double expected_tests = 1;
-    #define CHUNK ( sizeof( unsigned long ) - 1 )
+    #define CHUNK ( sizeof( unsigned long )*8 - 1 )
     for ( ; b > CHUNK; b -= CHUNK )
     {
 	expected_tests *= ((unsigned long)1) << CHUNK;
