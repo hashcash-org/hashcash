@@ -43,7 +43,7 @@ import java.security.NoSuchAlgorithmException;
  */
 public class HashCash implements Comparable<HashCash> {
 	public static final int DEFAULT_VERSION = 1;
-	private static final int HASH_LENGTH = 160;
+	public static final int HASH_LENGTH = 160;
 	private static final String DATE_FORMAT_V1 = "yyMMdd";
 	private static long millisFor16 = -1;
 
@@ -75,13 +75,12 @@ public class HashCash implements Comparable<HashCash> {
 		
 		HashCash hc = new HashCash();
 		hc.stamp = hashCashStamp;
-		String[] parts = hashCashStamp.split(":");
+		String[] parts = hashCashStamp.split(":",-1); // the -1 ensures that empty strings remain in place
 		hc.version = Integer.parseInt(parts[0]);
 		if (hc.version < 1 || hc.version > 1)
 			throw new IllegalArgumentException("Only supported version is 1");
 
-		if ((hc.version == 0 && parts.length != 6)
-				|| (hc.version == 1 && parts.length != 7))
+		if (hc.version == 1 && parts.length != 7)
 			throw new IllegalArgumentException("Improperly formed HashCash");
 
 		try {
@@ -475,6 +474,9 @@ public class HashCash implements Comparable<HashCash> {
 	 * </ul>
 	 */
 	public static long estimateTime(int value) {
+		if (value < 0 || value > HASH_LENGTH)
+			throw new IllegalArgumentException("Value must be between 0 and "
+					+ HASH_LENGTH);
 		initEstimates();
 		return (long) (millisFor16 * Math.pow(2, value - 16));
 	}
@@ -490,6 +492,8 @@ public class HashCash implements Comparable<HashCash> {
 	 * </ul>
 	 */
 	public static int estimateValue(int secs) {
+		if (secs < 0)
+			throw new IllegalArgumentException("secs must be bigger than 0");
 		initEstimates();
 		int result = 0;
 		long millis = secs * 1000 * 65536;

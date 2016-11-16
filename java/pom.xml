@@ -1,0 +1,23 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.ardash.hashcash</groupId>
+  <artifactId>hashcash</artifactId>
+  <version>0.1</version>
+  <name>Hashcash</name>
+  <description>Hashcash implemenation for Java. Implements a proof-of-work concept. Clients can include this prrof-of-work into an email header or an REST API call header to proof that they are not spamming.</description>
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+  </build>
+  <url>https://github.com/hashcash-org/hashcash</url>
+  <issueManagement>
+  	<url>https://github.com/hashcash-org/hashcash/issues</url>
+  </issueManagement>
+  <dependencies>
+  	<dependency>
+  		<groupId>junit</groupId>
+  		<artifactId>junit</artifactId>
+  		<version>4.11</version>
+  		<scope>test</scope>
+  	</dependency>
+  </dependencies>
+</project>
