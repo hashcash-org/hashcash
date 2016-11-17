@@ -82,8 +82,8 @@ public class CombinationValidationTest {
                     for (int demandedValue : claimedBits) {
                         HashCash stamp = HashCash.mintCash(resource, extension, date, demandedValue, 1);
                         combinations.add(new Object[] {stamp.toString(),demandedValue,true});
-                        combinations.add(new Object[] {stamp.toString(),demandedValue-1,true});
-                        combinations.add(new Object[] {stamp.toString(),demandedValue+1,false});
+                        //combinations.add(new Object[] {stamp.toString(),demandedValue-1,true});
+                        //combinations.add(new Object[] {stamp.toString(),demandedValue+1,false});
                         minted ++;
             		}
         		}
@@ -123,7 +123,7 @@ public class CombinationValidationTest {
     @Test
     public void test() {
     	HashCash hc = HashCash.parseFromString(inputStamp);
-        assertTrue(hc.isValid()==validExpected);
-        assertEquals(hc.getValue(), bitsExpected);
+    	assertEquals("Error with stamp "+inputStamp, validExpected, hc.isValid());
+        assertEquals("Error with stamp "+inputStamp, bitsExpected, hc.getValue());
     }
 }
