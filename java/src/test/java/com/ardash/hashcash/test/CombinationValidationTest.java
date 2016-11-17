@@ -82,14 +82,12 @@ public class CombinationValidationTest {
                     for (int demandedValue : claimedBits) {
                         HashCash stamp = HashCash.mintCash(resource, extension, date, demandedValue, 1);
                         combinations.add(new Object[] {stamp.toString(),demandedValue,true});
-                        //combinations.add(new Object[] {stamp.toString(),demandedValue-1,true});
-                        //combinations.add(new Object[] {stamp.toString(),demandedValue+1,false});
                         minted ++;
             		}
         		}
     		}
             // print status
-            System.out.println("minted: "+minted+ " of "+allCombos);
+            //System.out.println("minted: "+minted+ " of "+allCombos);
 		}
         
         List<Object[]> ret = Arrays.asList(new Object[][] {

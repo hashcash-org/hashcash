@@ -512,14 +512,15 @@ public class HashCash implements Comparable<HashCash> {
 	 * collision on average.
 	 */
 	private static void initEstimates() {
+		final int amountOfMints = 20;
 		if (millisFor16 <=0 ) {
 			mintCash("estimation", 16); // one mint done unmeasured to avoid optimisations
 			long duration = Calendar.getInstance().getTimeInMillis();
-			for (int i = 0; i < 11; i++) {
+			for (int i = 0; i < amountOfMints; i++) {
 				mintCash("estimation", 16);
 			}
 			duration = Calendar.getInstance().getTimeInMillis() - duration;
-			millisFor16 = (duration / 10); // TODO wrong! remove /10
+			millisFor16 = (duration / amountOfMints);
 		}
 	}
 
